@@ -1,0 +1,741 @@
+[
+  {
+    "id": "cmlhrxonm0000hi79ga565isy",
+    "slug": "thue-tncn",
+    "title": "Thuế Thu nhập Cá nhân (TNCN)",
+    "description": "Loại thuế trực thu đánh trên thu nhập từ tiền lương, tiền công và các nguồn thu nhập khác của cá nhân.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Thuế thu nhập cá nhân (TNCN) là loại thuế trực thu, đánh trực tiếp vào thu nhập của cá nhân. Tại Việt Nam, thuế TNCN được quy định trong Luật Thuế thu nhập cá nhân, áp dụng cho cả công dân Việt Nam và người nước ngoài có thu nhập phát sinh tại Việt Nam.",
+            "Thu nhập chịu thuế bao gồm: tiền lương, tiền công, phụ cấp, thưởng; thu nhập từ kinh doanh; thu nhập từ đầu tư vốn; thu nhập từ chuyển nhượng bất động sản; thu nhập từ trúng thưởng, thừa kế, quà tặng."
+          ]
+        },
+        {
+          "heading": "Cách tính thuế TNCN từ tiền lương (2026)",
+          "paragraphs": [
+            "Công thức: Thu nhập tính thuế = Thu nhập chịu thuế - Các khoản giảm trừ",
+            "Thu nhập chịu thuế = Tổng thu nhập - Các khoản miễn thuế (phụ cấp ăn trưa ≤730.000đ, công tác phí...) - BHXH, BHYT, BHTN (10,5% lương)",
+            "Các khoản giảm trừ: Bản thân 15.500.000đ/tháng + Người phụ thuộc 6.200.000đ/người/tháng + Đóng góp từ thiện, nhân đạo",
+            "Thuế TNCN được tính theo biểu thuế lũy tiến từng phần 5 bậc."
+          ]
+        },
+        {
+          "heading": "Biểu thuế lũy tiến 5 bậc (từ 01/01/2026)",
+          "paragraphs": [
+            "Bậc 1: Thu nhập tính thuế đến 10 triệu → Thuế suất 5%",
+            "Bậc 2: Trên 10 triệu đến 30 triệu → Thuế suất 15%",
+            "Bậc 3: Trên 30 triệu đến 50 triệu → Thuế suất 20%",
+            "Bậc 4: Trên 50 triệu đến 100 triệu → Thuế suất 30%",
+            "Bậc 5: Trên 100 triệu → Thuế suất 35%",
+            "Lưu ý: Trước 2026, biểu thuế có 7 bậc (5%, 10%, 15%, 20%, 25%, 30%, 35%) với ngưỡng bậc cao nhất là trên 80 triệu."
+          ]
+        },
+        {
+          "heading": "Nghĩa vụ của người nộp thuế",
+          "paragraphs": [
+            "Đăng ký mã số thuế cá nhân (MST): Mỗi cá nhân có một MST duy nhất, dùng suốt đời.",
+            "Kê khai thuế hàng tháng/quý: Thường do công ty thực hiện thay cho nhân viên.",
+            "Quyết toán thuế hàng năm: Hạn chót 31/03 (qua công ty) hoặc 30/04 (cá nhân tự quyết toán).",
+            "Nộp thuế đầy đủ, đúng hạn: Vi phạm có thể bị phạt từ 1-3 lần số thuế trốn."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Luật Thuế TNCN sửa đổi 2025 (có hiệu lực 01/01/2026)",
+        "Nghị định hướng dẫn thi hành Luật Thuế TNCN",
+        "So sánh thuế TNCN Việt Nam với các nước ASEAN"
+      ],
+      "relatedConcepts": [
+        "Giảm trừ gia cảnh",
+        "Biểu thuế lũy tiến",
+        "Gross vs Net",
+        "Quyết toán thuế",
+        "Mã số thuế cá nhân"
+      ]
+    },
+    "sortOrder": 13,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.394Z",
+    "updatedAt": "2026-02-11T01:34:45.394Z"
+  },
+  {
+    "id": "cmlhrxor60001hi79lwus2mjd",
+    "slug": "giam-tru-gia-canh",
+    "title": "Giảm trừ gia cảnh",
+    "description": "Khoản giảm trừ khỏi thu nhập chịu thuế dành cho bản thân người nộp thuế và người phụ thuộc, nhằm đảm bảo mức sống tối thiểu trước khi tính thuế.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Giảm trừ gia cảnh là khoản tiền được trừ khỏi thu nhập chịu thuế trước khi tính thuế TNCN. Mục đích là đảm bảo người nộp thuế có đủ thu nhập để trang trải nhu cầu sống cơ bản cho bản thân và gia đình trước khi phải đóng thuế.",
+            "Nói cách khác: bạn chỉ phải đóng thuế trên phần thu nhập VƯỢT QUÁ mức giảm trừ gia cảnh."
+          ]
+        },
+        {
+          "heading": "Mức giảm trừ (từ 01/01/2026)",
+          "paragraphs": [
+            "Giảm trừ cho bản thân: 15.500.000 đồng/tháng (186.000.000 đồng/năm). Trước 2026 là 11.000.000đ/tháng.",
+            "Giảm trừ cho mỗi người phụ thuộc: 6.200.000 đồng/người/tháng (74.400.000 đồng/người/năm). Trước 2026 là 4.400.000đ/tháng.",
+            "Ví dụ: Một người có 2 người phụ thuộc được giảm trừ tổng cộng: 15.500.000 + 6.200.000 × 2 = 27.900.000 đồng/tháng. Nghĩa là thu nhập dưới 27,9 triệu/tháng thì không phải đóng thuế TNCN."
+          ]
+        },
+        {
+          "heading": "Người phụ thuộc là ai?",
+          "paragraphs": [
+            "Con dưới 18 tuổi; con từ 18 tuổi trở lên bị khuyết tật hoặc đang học đại học/cao đẳng/trung cấp/dạy nghề.",
+            "Vợ hoặc chồng không có thu nhập hoặc thu nhập không vượt quá 1.000.000đ/tháng.",
+            "Cha mẹ đẻ, cha mẹ vợ/chồng, cha mẹ nuôi hợp pháp ngoài độ tuổi lao động hoặc trong độ tuổi lao động nhưng bị khuyết tật, không có thu nhập.",
+            "Để được giảm trừ, người nộp thuế phải đăng ký người phụ thuộc với cơ quan thuế và cung cấp giấy tờ chứng minh."
+          ]
+        },
+        {
+          "heading": "Ý nghĩa của giảm trừ gia cảnh",
+          "paragraphs": [
+            "Đảm bảo công bằng: Người có gia đình đông, thu nhập thấp được bảo vệ khỏi gánh nặng thuế.",
+            "Phản ánh chi phí sinh hoạt: Mức giảm trừ được điều chỉnh khi CPI tăng trên 20% so với thời điểm ban hành.",
+            "Khuyến khích khai báo trung thực: Khi mức giảm trừ hợp lý, người dân có động lực kê khai đúng thu nhập."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Luật Thuế TNCN sửa đổi 2025 - Điều khoản về giảm trừ gia cảnh",
+        "Hướng dẫn đăng ký người phụ thuộc giảm trừ gia cảnh",
+        "So sánh mức giảm trừ gia cảnh qua các năm"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Thu nhập tính thuế",
+        "Người phụ thuộc",
+        "Biểu thuế lũy tiến",
+        "Quyết toán thuế"
+      ]
+    },
+    "sortOrder": 14,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.522Z",
+    "updatedAt": "2026-02-11T01:34:45.522Z"
+  },
+  {
+    "id": "cmlhrxou20002hi79tmmmuy3q",
+    "slug": "bieu-thue-luy-tien-2026",
+    "title": "Biểu thuế lũy tiến từng phần",
+    "description": "Phương pháp tính thuế trong đó mỗi phần thu nhập được áp dụng một mức thuế suất khác nhau, phần thu nhập cao hơn chịu thuế suất cao hơn.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Biểu thuế lũy tiến từng phần là phương pháp tính thuế trong đó thu nhập tính thuế được chia thành nhiều bậc, mỗi bậc áp dụng một mức thuế suất riêng. Thu nhập ở bậc cao hơn chịu thuế suất cao hơn.",
+            "Điểm quan trọng: Thuế suất cao hơn CHỈ áp dụng cho phần thu nhập vượt quá ngưỡng, không phải toàn bộ thu nhập. Đây là hiểu lầm phổ biến nhất về thuế lũy tiến."
+          ]
+        },
+        {
+          "heading": "Biểu thuế 5 bậc tại Việt Nam (từ 01/01/2026)",
+          "paragraphs": [
+            "Bậc 1: Đến 10 triệu đồng → 5% → Thuế tối đa: 500.000đ",
+            "Bậc 2: Trên 10 - 30 triệu → 15% → Thuế tối đa: 3.000.000đ",
+            "Bậc 3: Trên 30 - 50 triệu → 20% → Thuế tối đa: 4.000.000đ",
+            "Bậc 4: Trên 50 - 100 triệu → 30% → Thuế tối đa: 15.000.000đ",
+            "Bậc 5: Trên 100 triệu → 35%"
+          ]
+        },
+        {
+          "heading": "Ví dụ tính thuế",
+          "paragraphs": [
+            "Giả sử thu nhập tính thuế = 25 triệu đồng/tháng:",
+            "• 10 triệu đầu: 10.000.000 × 5% = 500.000đ",
+            "• 15 triệu tiếp theo (10-25 triệu): 15.000.000 × 15% = 2.250.000đ",
+            "• Tổng thuế = 500.000 + 2.250.000 = 2.750.000đ",
+            "• Thuế suất thực tế = 2.750.000 / 25.000.000 = 11% (thấp hơn nhiều so với thuế suất biên 15%)"
+          ]
+        },
+        {
+          "heading": "So sánh với biểu thuế cũ (trước 2026)",
+          "paragraphs": [
+            "Biểu thuế cũ có 7 bậc: 5%, 10%, 15%, 20%, 25%, 30%, 35%, với bậc cao nhất áp dụng cho thu nhập trên 80 triệu.",
+            "Biểu thuế mới 5 bậc đơn giản hơn, giảm bớt sự phức tạp và nâng ngưỡng chịu thuế suất cao nhất lên 100 triệu.",
+            "Phần lớn người nộp thuế sẽ được giảm thuế nhờ việc gộp các bậc trung gian."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "So sánh biểu thuế lũy tiến và thuế suất cố định",
+        "Biểu thuế lũy tiến tại các nước phát triển",
+        "Lịch sử thay đổi biểu thuế TNCN tại Việt Nam"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Giảm trừ gia cảnh",
+        "Thuế suất biên",
+        "Thuế suất thực tế",
+        "Thu nhập tính thuế"
+      ]
+    },
+    "sortOrder": 15,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.626Z",
+    "updatedAt": "2026-02-11T01:34:45.626Z"
+  },
+  {
+    "id": "cmlhrxox00003hi797mn97twh",
+    "slug": "gross-vs-net",
+    "title": "Lương Gross và Lương Net",
+    "description": "Hai cách thể hiện mức lương: Gross là tổng lương trước các khoản trừ, Net là lương thực nhận sau khi trừ thuế và bảo hiểm.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Lương Gross (lương gộp): Tổng số tiền lương mà công ty chi trả cho bạn, TRƯỚC KHI trừ các khoản bảo hiểm bắt buộc và thuế TNCN.",
+            "Lương Net (lương thực nhận): Số tiền thực tế bạn nhận được trong tài khoản ngân hàng, SAU KHI đã trừ BHXH, BHYT, BHTN và thuế TNCN.",
+            "Công thức: Net = Gross - BHXH (8%) - BHYT (1,5%) - BHTN (1%) - Thuế TNCN"
+          ]
+        },
+        {
+          "heading": "Các khoản trừ từ lương",
+          "paragraphs": [
+            "Bảo hiểm xã hội (BHXH): 8% lương → để hưởng lương hưu, ốm đau, thai sản.",
+            "Bảo hiểm y tế (BHYT): 1,5% lương → để được khám chữa bệnh.",
+            "Bảo hiểm thất nghiệp (BHTN): 1% lương → để hưởng trợ cấp khi mất việc.",
+            "Tổng bảo hiểm người lao động đóng: 10,5% lương.",
+            "Thuế TNCN: Tính theo biểu thuế lũy tiến trên phần thu nhập tính thuế (sau khi trừ bảo hiểm và giảm trừ gia cảnh)."
+          ]
+        },
+        {
+          "heading": "Ví dụ tính lương (2026)",
+          "paragraphs": [
+            "Lương Gross: 20.000.000đ/tháng, chưa có người phụ thuộc:",
+            "• BHXH + BHYT + BHTN = 20.000.000 × 10,5% = 2.100.000đ",
+            "• Thu nhập sau bảo hiểm = 20.000.000 - 2.100.000 = 17.900.000đ",
+            "• Giảm trừ bản thân = 15.500.000đ",
+            "• Thu nhập tính thuế = 17.900.000 - 15.500.000 = 2.400.000đ",
+            "• Thuế TNCN = 2.400.000 × 5% = 120.000đ",
+            "• Lương Net = 20.000.000 - 2.100.000 - 120.000 = 17.780.000đ"
+          ]
+        },
+        {
+          "heading": "Lưu ý khi thương lượng lương",
+          "paragraphs": [
+            "Khi nhận offer, luôn hỏi rõ: \"Đây là lương Gross hay Net?\" để tránh hiểu lầm.",
+            "Lương Gross cao hơn Net khoảng 15-25% tùy mức thu nhập.",
+            "Một số công ty trả lương Net (cam kết lương thực nhận) - khi đó công ty chịu thuế thay nhân viên.",
+            "Phụ cấp ăn trưa (≤730.000đ/tháng), công tác phí, đồng phục... không tính vào thu nhập chịu thuế."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Công cụ tính lương Gross-Net online",
+        "Cách đọc bảng lương (payslip) chi tiết",
+        "Các khoản phụ cấp không chịu thuế TNCN"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Bảo hiểm xã hội",
+        "Giảm trừ gia cảnh",
+        "Thu nhập chịu thuế",
+        "Hợp đồng lao động"
+      ]
+    },
+    "sortOrder": 16,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.732Z",
+    "updatedAt": "2026-02-11T01:34:45.732Z"
+  },
+  {
+    "id": "cmlhrxozv0004hi795olsa9po",
+    "slug": "quyet-toan-thue",
+    "title": "Quyết toán thuế",
+    "description": "Quá trình tổng kết, đối chiếu số thuế TNCN đã tạm nộp trong năm với số thuế thực tế phải nộp, để xác định số thuế nộp thừa hoặc thiếu.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Quyết toán thuế TNCN là việc tổng hợp toàn bộ thu nhập và các khoản giảm trừ trong cả năm, tính lại thuế TNCN phải nộp, so sánh với số thuế đã tạm nộp hàng tháng để xác định số thuế nộp thừa (được hoàn) hoặc nộp thiếu (phải nộp thêm).",
+            "Quyết toán thuế thực hiện theo năm dương lịch (01/01 - 31/12)."
+          ]
+        },
+        {
+          "heading": "Ai phải quyết toán thuế?",
+          "paragraphs": [
+            "Trường hợp BẮT BUỘC: Có thu nhập từ 2 nguồn trở lên; thu nhập vãng lai chưa khấu trừ thuế; nghỉ việc giữa năm.",
+            "Trường hợp KHÔNG CẦN: Chỉ có 1 nguồn thu nhập (1 công ty) và đã ủy quyền quyết toán cho công ty.",
+            "Trường hợp NÊN quyết toán: Khi có người phụ thuộc chưa đăng ký, khi thuế đã khấu trừ lớn hơn thuế phải nộp (để được hoàn thuế)."
+          ]
+        },
+        {
+          "heading": "Thời hạn và cách thực hiện",
+          "paragraphs": [
+            "Hạn chót quyết toán qua công ty: 31/03 năm sau.",
+            "Hạn chót cá nhân tự quyết toán: 30/04 năm sau.",
+            "Cách thực hiện: Qua cổng thuế điện tử thuedientu.gdt.gov.vn, nộp tờ khai 02/QTT-TNCN.",
+            "Thời gian hoàn thuế: 10-45 ngày làm việc kể từ ngày nhận hồ sơ hợp lệ."
+          ]
+        },
+        {
+          "heading": "Tại sao có hoàn thuế?",
+          "paragraphs": [
+            "Thuế tạm nộp hàng tháng được tính dựa trên thu nhập tháng đó. Nhưng thuế thực tế tính trên tổng thu nhập cả năm, có thể khác:",
+            "Lương thay đổi giữa năm (tăng lương, thưởng Tết...)",
+            "Người phụ thuộc đăng ký bổ sung giữa năm",
+            "Thu nhập từ nhiều nguồn đã bị khấu trừ 10% tại nguồn",
+            "Quyết toán giúp tính lại chính xác và hoàn trả phần thuế nộp thừa."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Hướng dẫn quyết toán thuế TNCN trên cổng thuedientu.gdt.gov.vn",
+        "Các trường hợp được hoàn thuế TNCN",
+        "Mẫu tờ khai 02/QTT-TNCN và cách điền"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Giảm trừ gia cảnh",
+        "Hoàn thuế",
+        "Tờ khai thuế",
+        "Mã số thuế"
+      ]
+    },
+    "sortOrder": 17,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.835Z",
+    "updatedAt": "2026-02-11T01:34:45.835Z"
+  },
+  {
+    "id": "cmlhrxp2z0005hi79wg3z4kvw",
+    "slug": "thue-khoan",
+    "title": "Thuế khoán",
+    "description": "Phương pháp tính thuế áp dụng cho hộ kinh doanh cá thể, trong đó mức thuế được ấn định theo tỷ lệ phần trăm trên doanh thu.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Thuế khoán (thuế theo phương pháp khoán) là phương pháp tính thuế đơn giản hóa dành cho hộ kinh doanh cá thể, cá nhân kinh doanh. Thay vì phải ghi sổ sách kế toán chi tiết, cơ quan thuế ấn định mức thuế cố định hàng tháng/quý dựa trên doanh thu ước tính.",
+            "Phương pháp này giúp giảm gánh nặng hành chính cho các hộ kinh doanh nhỏ, đồng thời đảm bảo thu thuế hiệu quả."
+          ]
+        },
+        {
+          "heading": "Thuế suất theo ngành nghề",
+          "paragraphs": [
+            "Phân phối, cung cấp hàng hóa: VAT 1% + TNCN 0,5% = 1,5%",
+            "Dịch vụ, xây dựng không bao thầu nguyên vật liệu: VAT 5% + TNCN 2% = 7%",
+            "Sản xuất, vận tải, dịch vụ có gắn với hàng hóa, xây dựng có bao thầu: VAT 3% + TNCN 1,5% = 4,5%",
+            "Hoạt động kinh doanh khác: VAT 2% + TNCN 1% = 3%",
+            "Lưu ý: Hộ kinh doanh bán thức ăn đường phố thường áp dụng mức 1,5% (phân phối hàng hóa)."
+          ]
+        },
+        {
+          "heading": "Điều kiện áp dụng",
+          "paragraphs": [
+            "Doanh thu trên 100 triệu đồng/năm: Phải đăng ký kinh doanh và nộp thuế.",
+            "Doanh thu dưới 100 triệu đồng/năm: Được miễn thuế VAT và TNCN.",
+            "Khi doanh thu lớn hơn, hộ kinh doanh có thể chuyển sang phương pháp kê khai (ghi sổ sách, xuất hóa đơn) để được khấu trừ chi phí."
+          ]
+        },
+        {
+          "heading": "Cách nộp thuế",
+          "paragraphs": [
+            "Thuế khoán thường nộp theo quý, hạn chót ngày cuối tháng đầu quý sau:",
+            "Quý 1: hạn nộp 30/04",
+            "Quý 2: hạn nộp 31/07",
+            "Quý 3: hạn nộp 31/10",
+            "Quý 4: hạn nộp 31/01 năm sau",
+            "Nộp thuế qua cổng thuế điện tử hoặc tại Chi cục Thuế quận/huyện."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Nghị định về quản lý thuế đối với hộ kinh doanh",
+        "So sánh thuế khoán và thuế kê khai",
+        "Các bước đăng ký thuế khoán cho hộ kinh doanh mới"
+      ],
+      "relatedConcepts": [
+        "Thuế GTGT",
+        "Thuế TNCN",
+        "Hộ kinh doanh cá thể",
+        "Đăng ký kinh doanh",
+        "Hóa đơn điện tử"
+      ]
+    },
+    "sortOrder": 18,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:45.947Z",
+    "updatedAt": "2026-02-11T01:34:45.947Z"
+  },
+  {
+    "id": "cmlhrxp5w0006hi79zbaroeeb",
+    "slug": "dang-ky-kinh-doanh-ho-ca-the",
+    "title": "Đăng ký kinh doanh hộ cá thể",
+    "description": "Thủ tục pháp lý để cá nhân hoặc hộ gia đình được phép kinh doanh hợp pháp, thực hiện tại cơ quan đăng ký kinh doanh cấp quận/huyện.",
+    "category": "Pháp luật kinh doanh",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Hộ kinh doanh cá thể là hình thức kinh doanh do một cá nhân hoặc các thành viên trong hộ gia đình đăng ký, chịu trách nhiệm bằng toàn bộ tài sản của mình đối với hoạt động kinh doanh.",
+            "Đây là hình thức kinh doanh phổ biến nhất tại Việt Nam, phù hợp với quy mô nhỏ như quán ăn, tiệm tạp hóa, xe bán hàng rong, dịch vụ sửa chữa..."
+          ]
+        },
+        {
+          "heading": "Nơi đăng ký",
+          "paragraphs": [
+            "Theo Nghị định 01/2021/NĐ-CP, hộ kinh doanh đăng ký tại Phòng Tài chính - Kế hoạch thuộc UBND cấp quận/huyện nơi đặt địa điểm kinh doanh.",
+            "LƯU Ý QUAN TRỌNG: Đăng ký kinh doanh hộ cá thể thực hiện tại cấp QUẬN/HUYỆN, KHÔNG phải tại UBND phường/xã. Đây là điểm thường bị nhầm lẫn.",
+            "Khi mở thêm địa điểm kinh doanh mới, cũng đăng ký bổ sung tại Phòng ĐKKD cấp quận/huyện nơi có địa điểm mới."
+          ]
+        },
+        {
+          "heading": "Hồ sơ cần thiết",
+          "paragraphs": [
+            "Giấy đề nghị đăng ký hộ kinh doanh (theo mẫu).",
+            "Bản sao CCCD/CMND của chủ hộ kinh doanh.",
+            "Biên bản họp thành viên hộ gia đình (nếu đăng ký dưới danh nghĩa hộ gia đình).",
+            "Giấy chứng nhận đủ điều kiện ATTP (nếu kinh doanh thực phẩm).",
+            "Lệ phí đăng ký: 100.000 đồng.",
+            "Thời gian giải quyết: 3 ngày làm việc."
+          ]
+        },
+        {
+          "heading": "Quyền lợi khi đăng ký",
+          "paragraphs": [
+            "Được hoạt động kinh doanh hợp pháp, tránh bị xử phạt hành chính.",
+            "Có thể mở tài khoản ngân hàng cho hộ kinh doanh.",
+            "Được xuất hóa đơn cho khách hàng (hóa đơn điện tử từ 01/07/2025).",
+            "Có cơ sở pháp lý để ký hợp đồng, thuê mặt bằng, vay vốn ngân hàng.",
+            "Xây dựng thương hiệu và uy tín kinh doanh."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Nghị định 01/2021/NĐ-CP về đăng ký doanh nghiệp",
+        "Phân biệt hộ kinh doanh và doanh nghiệp tư nhân",
+        "Khi nào hộ kinh doanh nên chuyển đổi thành công ty"
+      ],
+      "relatedConcepts": [
+        "Thuế khoán",
+        "Hộ kinh doanh cá thể",
+        "Giấy phép kinh doanh",
+        "An toàn thực phẩm",
+        "Hóa đơn điện tử"
+      ]
+    },
+    "sortOrder": 19,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.052Z",
+    "updatedAt": "2026-02-11T01:34:46.052Z"
+  },
+  {
+    "id": "cmlhrxp8s0007hi795ioaff7j",
+    "slug": "thue-gtgt",
+    "title": "Thuế Giá trị Gia tăng (VAT)",
+    "description": "Thuế gián thu đánh vào giá trị tăng thêm của hàng hóa, dịch vụ phát sinh trong quá trình sản xuất, lưu thông đến người tiêu dùng.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Thuế giá trị gia tăng (GTGT/VAT - Value Added Tax) là loại thuế gián thu, đánh trên phần giá trị tăng thêm của hàng hóa và dịch vụ qua mỗi khâu sản xuất, lưu thông.",
+            "Người tiêu dùng cuối cùng là người chịu thuế thực sự, nhưng doanh nghiệp là người nộp thuế thay cho người tiêu dùng."
+          ]
+        },
+        {
+          "heading": "Các mức thuế suất tại Việt Nam",
+          "paragraphs": [
+            "Thuế suất 0%: Hàng hóa xuất khẩu, dịch vụ cung ứng cho tổ chức nước ngoài.",
+            "Thuế suất 5%: Hàng hóa thiết yếu (nước sạch, thuốc chữa bệnh, thiết bị y tế, sách giáo khoa, phân bón...).",
+            "Thuế suất 8%: Mức giảm từ 10% xuống 8% (áp dụng 07/2025 - 12/2026) cho nhiều hàng hóa, dịch vụ thông thường.",
+            "Thuế suất 10%: Mức tiêu chuẩn cho hầu hết hàng hóa, dịch vụ khác.",
+            "Lưu ý: Giá bán niêm yết thường ĐÃ BAO GỒM VAT. Khi mua hàng 250.000đ (đã bao gồm VAT 10%), phần VAT = 250.000 × 10/110 ≈ 22.727đ (không phải 25.000đ)."
+          ]
+        },
+        {
+          "heading": "VAT trong ngân sách nhà nước",
+          "paragraphs": [
+            "VAT là nguồn thu thuế lớn nhất, chiếm khoảng 23-24,5% tổng thu ngân sách nhà nước.",
+            "VAT dễ thu vì được thu tại mỗi khâu giao dịch, khó trốn thuế hơn so với thuế trực thu.",
+            "Tuy nhiên, VAT có tính chất lũy thoái: người thu nhập thấp dành phần lớn thu nhập cho tiêu dùng → tỷ lệ thuế/thu nhập cao hơn người giàu."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Luật Thuế GTGT sửa đổi",
+        "Nghị định giảm thuế GTGT từ 10% xuống 8%",
+        "So sánh VAT giữa các nước ASEAN"
+      ],
+      "relatedConcepts": [
+        "Thuế gián thu",
+        "Thuế trực thu",
+        "Thuế TNCN",
+        "Ngân sách nhà nước",
+        "Thuế tiêu thụ đặc biệt"
+      ]
+    },
+    "sortOrder": 20,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.156Z",
+    "updatedAt": "2026-02-11T01:34:46.156Z"
+  },
+  {
+    "id": "cmlhrxpbm0008hi79d5qz3ht4",
+    "slug": "thue-dau-tu",
+    "title": "Thuế trên các kênh đầu tư",
+    "description": "Tổng hợp các loại thuế áp dụng cho thu nhập từ đầu tư tại Việt Nam: tiết kiệm, chứng khoán, vàng, bất động sản.",
+    "category": "Thuế & Tài chính",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Thuế trên lãi tiết kiệm",
+          "paragraphs": [
+            "Thuế suất: 5% trên lãi tiết kiệm, khấu trừ tại nguồn (ngân hàng trừ trước khi trả lãi).",
+            "Ví dụ: Gửi 100 triệu, lãi suất 6%/năm → Lãi = 6.000.000đ → Thuế = 300.000đ → Lãi thực nhận = 5.700.000đ.",
+            "Đây là thuế trên thu nhập từ đầu tư vốn, áp dụng cho tất cả loại tiền gửi ngân hàng."
+          ]
+        },
+        {
+          "heading": "Thuế trên chứng khoán",
+          "paragraphs": [
+            "Thuế suất: 0,1% trên giá trị bán (không phải trên lợi nhuận).",
+            "Đặc điểm: Bán lỗ vẫn phải nộp thuế, vì thuế tính trên giá bán, không phải lợi nhuận.",
+            "Ví dụ: Mua 500 cổ phiếu giá 18.500đ = 9.250.000đ. Bán giá 22.000đ = 11.000.000đ → Thuế = 11.000.000 × 0,1% = 11.000đ.",
+            "Phí giao dịch: Thêm phí môi giới (khoảng 0,15% mỗi chiều mua/bán)."
+          ]
+        },
+        {
+          "heading": "Thuế trên vàng (SJC và vàng nhẫn)",
+          "paragraphs": [
+            "Theo quy định pháp luật: Thu nhập từ mua bán vàng chịu thuế TNCN 20% trên lợi nhuận, HOẶC 2% trên giá bán (nếu không xác định được giá mua).",
+            "Thực tế: Đối với giao dịch vàng miếng SJC, vàng nhẫn tại cửa hàng, thuế này rất ít được áp dụng cho cá nhân mua bán lẻ do khó kiểm soát.",
+            "LƯU Ý: Về mặt pháp lý, vàng SJC CÓ chịu thuế. Nói \"mua bán vàng miễn thuế\" là KHÔNG CHÍNH XÁC. Chỉ là thực tế thực thi còn hạn chế."
+          ]
+        },
+        {
+          "heading": "Thuế trên bất động sản",
+          "paragraphs": [
+            "Thuế chuyển nhượng bất động sản: 2% trên giá chuyển nhượng.",
+            "Nếu xác định được giá mua: Có thể chọn nộp 20% trên lợi nhuận (nếu có lợi).",
+            "Lệ phí trước bạ: 0,5% giá trị bất động sản khi sang tên."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Hướng dẫn kê khai thuế từ chuyển nhượng chứng khoán",
+        "Quy định thuế trên giao dịch vàng cá nhân",
+        "So sánh thuế đầu tư giữa các kênh"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Đầu tư cá nhân",
+        "Lãi suất tiết kiệm",
+        "Chứng khoán",
+        "Thuế chuyển nhượng"
+      ]
+    },
+    "sortOrder": 21,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.258Z",
+    "updatedAt": "2026-02-11T01:34:46.258Z"
+  },
+  {
+    "id": "cmlhrxpei0009hi792go9l2wm",
+    "slug": "dau-tu-ca-nhan",
+    "title": "Đầu tư cá nhân cơ bản",
+    "description": "Kiến thức nền tảng về đầu tư cho cá nhân: các kênh đầu tư phổ biến, nguyên tắc phân bổ danh mục, và quản lý rủi ro.",
+    "category": "Tài chính cá nhân",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Nguyên tắc cơ bản",
+          "paragraphs": [
+            "Quỹ khẩn cấp trước tiên: Luôn duy trì 3-6 tháng chi phí sinh hoạt trong tài khoản tiết kiệm trước khi đầu tư.",
+            "Đa dạng hóa: Không bỏ tất cả trứng vào một giỏ. Phân bổ vốn vào nhiều kênh đầu tư khác nhau.",
+            "Rủi ro và lợi nhuận tỷ lệ thuận: Kênh đầu tư có lợi nhuận cao luôn đi kèm rủi ro cao.",
+            "Lãi kép: Thời gian là yếu tố quan trọng nhất. 50 triệu với lãi 10%/năm sau 20 năm = ~336 triệu."
+          ]
+        },
+        {
+          "heading": "Các kênh đầu tư phổ biến",
+          "paragraphs": [
+            "Tiết kiệm ngân hàng: Lãi suất 4-6%/năm, rủi ro thấp nhất. Bảo hiểm tiền gửi tối đa 125 triệu/người/ngân hàng.",
+            "Trái phiếu chính phủ: Lãi suất 5-7%/năm, an toàn cao, do nhà nước đảm bảo.",
+            "Quỹ ETF (ví dụ E1VFVN30): Đầu tư vào rổ 30 cổ phiếu lớn nhất, phí thấp, phù hợp người mới.",
+            "Cổ phiếu riêng lẻ: Lợi nhuận tiềm năng cao nhưng rủi ro lớn, cần kiến thức phân tích.",
+            "Vàng: Kênh trú ẩn khi kinh tế bất ổn, giá biến động trung bình.",
+            "Bất động sản: Cần vốn lớn, thanh khoản thấp, lợi nhuận dài hạn."
+          ]
+        },
+        {
+          "heading": "Phân bổ danh mục mẫu (người mới)",
+          "paragraphs": [
+            "60% Tiết kiệm ngân hàng: An toàn, thanh khoản cao.",
+            "20% Quỹ ETF: Tăng trưởng ổn định, phí thấp.",
+            "20% Cổ phiếu/Trái phiếu: Tìm hiểu dần về thị trường.",
+            "Điều chỉnh tỷ lệ theo tuổi và mức chấp nhận rủi ro: trẻ → nhiều cổ phiếu hơn, lớn tuổi → nhiều tiết kiệm hơn."
+          ]
+        },
+        {
+          "heading": "Cảnh báo lừa đảo đầu tư",
+          "paragraphs": [
+            "Dấu hiệu Ponzi/lừa đảo: Cam kết lợi nhuận cố định cao (>20%/năm), trả lãi bằng tiền người sau.",
+            "Ví dụ: 5%/ngày = 1.825%/năm → KHÔNG CÓ đầu tư hợp pháp nào đạt được.",
+            "Nguyên tắc: Nếu quá tốt để là thật, thì có lẽ không phải thật.",
+            "Luôn kiểm tra giấy phép hoạt động của công ty quản lý quỹ trên website UBCKNN."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "DCA (Dollar Cost Averaging) - Chiến lược đầu tư đều đặn",
+        "Cách mở tài khoản chứng khoán tại Việt Nam",
+        "Phân biệt đầu tư và đầu cơ"
+      ],
+      "relatedConcepts": [
+        "Thuế đầu tư",
+        "Lãi kép",
+        "Quỹ ETF",
+        "Phân bổ tài sản",
+        "Rủi ro đầu tư"
+      ]
+    },
+    "sortOrder": 22,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.362Z",
+    "updatedAt": "2026-02-11T01:34:46.362Z"
+  },
+  {
+    "id": "cmlhrxphj000ahi79erug0x8q",
+    "slug": "deadweight-loss",
+    "title": "Tổn thất vô ích (Deadweight Loss)",
+    "description": "Phần thiệt hại kinh tế phát sinh khi thuế hoặc can thiệp chính sách làm thay đổi hành vi sản xuất và tiêu dùng, dẫn đến mất mát phúc lợi xã hội.",
+    "category": "Kinh tế học",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Tổn thất vô ích (Deadweight Loss - DWL) là phần giá trị kinh tế bị mất đi khi thuế hoặc can thiệp chính sách làm giảm số lượng giao dịch dưới mức hiệu quả của thị trường tự do.",
+            "DWL đại diện cho những giao dịch đôi bên cùng có lợi BỊ MẤT do thuế - không ai được hưởng phần giá trị này: không phải người mua, không phải người bán, cũng không phải chính phủ."
+          ]
+        },
+        {
+          "heading": "Ví dụ minh họa",
+          "paragraphs": [
+            "Một quán cà phê bán 100 ly/ngày với giá 30.000đ/ly. Chính phủ đánh thuế 5.000đ/ly.",
+            "Giá mới: 35.000đ → Số ly bán giảm còn 80 ly → 20 ly không được bán.",
+            "Chính phủ thu thuế: 80 × 5.000 = 400.000đ/ngày.",
+            "Nhưng 20 giao dịch bị mất: cả khách hàng lẽ ra mua được cà phê giá hợp lý và quán lẽ ra bán được → giá trị kinh tế mất đi vĩnh viễn.",
+            "Phần giá trị mất đi này chính là Deadweight Loss."
+          ]
+        },
+        {
+          "heading": "Quy luật quan trọng: DWL tỷ lệ với t²",
+          "paragraphs": [
+            "Khi thuế tăng gấp đôi, tổn thất vô ích tăng gấp BỐN (2² = 4).",
+            "Khi thuế tăng gấp ba, tổn thất tăng gấp CHÍN (3² = 9).",
+            "Hàm ý: Thuế suất thấp trên diện rộng (nhiều loại hàng hóa) gây tổn thất ít hơn thuế suất cao trên ít mặt hàng.",
+            "Đây là cơ sở lý thuyết cho nguyên tắc \"mở rộng cơ sở thuế, hạ thuế suất\" trong cải cách thuế."
+          ]
+        },
+        {
+          "heading": "Ý nghĩa chính sách",
+          "paragraphs": [
+            "Mọi loại thuế đều gây tổn thất vô ích (trừ thuế khoán/lump-sum tax lý thuyết).",
+            "Mục tiêu của chính sách thuế tốt: Thu đủ ngân sách cần thiết với tổn thất vô ích TỐI THIỂU.",
+            "Thuế đánh vào hàng hóa ít co giãn (xăng dầu, thuốc lá) gây ít tổn thất hơn thuế đánh vào hàng hóa co giãn (hàng xa xỉ)."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Arthur Harberger và tam giác Harberger",
+        "Tính toán Deadweight Loss trong thực tế",
+        "Nguyên tắc thuế tối ưu (Optimal Taxation)"
+      ],
+      "relatedConcepts": [
+        "Cung và Cầu",
+        "Độ co giãn",
+        "Hiệu quả Pareto",
+        "Thặng dư tiêu dùng",
+        "Chính sách thuế"
+      ]
+    },
+    "sortOrder": 23,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.471Z",
+    "updatedAt": "2026-02-11T01:34:46.471Z"
+  },
+  {
+    "id": "cmlhrxpke000bhi79x2zidxto",
+    "slug": "khop-dong-xa-hoi",
+    "title": "Khế ước xã hội",
+    "description": "Lý thuyết triết học chính trị cho rằng quyền lực nhà nước và nghĩa vụ công dân dựa trên sự đồng thuận ngầm giữa nhà nước và người dân.",
+    "category": "Triết học chính trị",
+    "icon": null,
+    "content": {
+      "sections": [
+        {
+          "heading": "Định nghĩa",
+          "paragraphs": [
+            "Khế ước xã hội (Social Contract) là lý thuyết cho rằng nhà nước tồn tại dựa trên sự đồng thuận (ngầm hoặc rõ ràng) của người dân: người dân từ bỏ một phần tự do cá nhân, đổi lại nhà nước cung cấp trật tự, an ninh, và phúc lợi công cộng.",
+            "Thuế là biểu hiện cụ thể nhất của khế ước xã hội: công dân đóng thuế để nhà nước cung cấp dịch vụ công (đường sá, bệnh viện, trường học, an ninh quốc phòng...)."
+          ]
+        },
+        {
+          "heading": "Các nhà tư tưởng chính",
+          "paragraphs": [
+            "Thomas Hobbes (1588-1679): Con người trong trạng thái tự nhiên sống trong \"chiến tranh của mọi người chống mọi người\". Khế ước xã hội trao quyền lực tuyệt đối cho nhà nước để duy trì trật tự.",
+            "John Locke (1632-1704): Nhà nước được lập ra để bảo vệ quyền tự nhiên (tính mạng, tự do, tài sản). Nếu nhà nước vi phạm quyền này, người dân có quyền lật đổ.",
+            "Jean-Jacques Rousseau (1712-1778): Khế ước phải phản ánh \"ý chí chung\" (general will) - lợi ích chung của toàn xã hội, không phải lợi ích của nhóm cai trị."
+          ]
+        },
+        {
+          "heading": "Khế ước xã hội và thuế",
+          "paragraphs": [
+            "Thuế hợp pháp khi nhà nước thực hiện đúng phần cam kết: cung cấp dịch vụ công chất lượng, minh bạch ngân sách, bảo vệ quyền công dân.",
+            "\"No taxation without representation\" (Không đánh thuế mà không có đại diện) - nguyên tắc từ Cách mạng Mỹ 1776: người dân phải có tiếng nói trong quyết định thuế.",
+            "Oliver Wendell Holmes Jr.: \"Thuế là giá chúng ta trả cho nền văn minh\" - diễn giải rằng dịch vụ công không miễn phí.",
+            "Khi nhà nước không minh bạch hoặc không cung cấp dịch vụ tương xứng, khế ước xã hội bị suy yếu → người dân mất lòng tin → trốn thuế tăng."
+          ]
+        }
+      ],
+      "furtherReading": [
+        "Thomas Hobbes - Leviathan (1651)",
+        "John Locke - Two Treatises of Government (1689)",
+        "Jean-Jacques Rousseau - The Social Contract (1762)",
+        "John Rawls - A Theory of Justice (1971)"
+      ],
+      "relatedConcepts": [
+        "Thuế TNCN",
+        "Ngân sách nhà nước",
+        "Quyền công dân",
+        "Dân chủ",
+        "Minh bạch tài chính"
+      ]
+    },
+    "sortOrder": 24,
+    "isActive": true,
+    "createdAt": "2026-02-11T01:34:46.574Z",
+    "updatedAt": "2026-02-11T01:34:46.574Z"
+  }
+]

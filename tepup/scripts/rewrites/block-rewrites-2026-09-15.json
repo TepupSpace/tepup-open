@@ -1,0 +1,248 @@
+{
+  "createdAt": "2026-09-15",
+  "database": "production",
+  "rewrites": [
+    {
+      "source": "lesson",
+      "recordId": "cmqv1y5l2000104k1ls8cebra",
+      "where": "Thuế 101 - Thuế & Quyền Công Dân › Thuế thực sự là gì?",
+      "blockIndex": 18,
+      "path": "pairs[0].right",
+      "before": "là khoản tiền bắt buộc mà Nhà nước thu từ cá nhân và tổ chức. Thuế không đi kèm quyền nhận trực tiếp một dịch vụ hay hàng hóa cụ thể từ Nhà nước.",
+      "after": "Khoản tiền bắt buộc Nhà nước thu, không kèm quyền nhận lại một dịch vụ cụ thể"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmqv1y5l2000104k1ls8cebra",
+      "where": "Thuế 101 - Thuế & Quyền Công Dân › Thuế thực sự là gì?",
+      "blockIndex": 18,
+      "path": "pairs[1].right",
+      "before": "là một khoản bạn tự nguyện chi tiêu cho một hàng hóa hay dịch vụ công cụ thể. Người nộp thuế không nhất thiết nhận lại một dịch vụ có giá trị đúng bằng số tiền mình đã đóng.",
+      "after": "Khoản bạn tự nguyện trả để đổi lấy một hàng hoá hay dịch vụ công cụ thể"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtrkomo2000104kv27niaro7",
+      "where": "Thuế 101 - Thuế & Quyền Công Dân › Vì sao chúng ta đóng thuế",
+      "blockIndex": 7,
+      "path": "cards[0].back.text",
+      "before": "Mục tiêu của thuế là tạo nguồn tài chính để Nhà nước duy trì sự tồn tại và thực hiện chức năng của mình. Thuế cung cấp ngân sách cho quân đội, công an, tòa án, hạ tầng giao thông, trường học, bệnh viện và các dịch vụ công.\n",
+      "after": "Tạo nguồn tài chính để Nhà nước duy trì sự tồn tại và thực hiện chức năng của mình: ngân sách cho quân đội, công an, tòa án, hạ tầng giao thông, trường học, bệnh viện và các dịch vụ công."
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtrkomo2000104kv27niaro7",
+      "where": "Thuế 101 - Thuế & Quyền Công Dân › Vì sao chúng ta đóng thuế",
+      "blockIndex": 7,
+      "path": "cards[1].back.text",
+      "before": "Ngoài việc chi tiêu, thuế còn là công cụ điều tiết kinh tế và phân phối lại thu nhập, giúp duy trì an ninh, tạo công bằng trong xã hội. Những phúc lợi dành cho người nghèo, người khuyết tật… đến từ tiền thuế mà tất cả mọi người đã cùng nộp vào ngân sách nhà nước.\n",
+      "after": "Thuế còn là công cụ điều tiết kinh tế và phân phối lại thu nhập, giúp giữ an ninh và tạo công bằng xã hội. Phúc lợi cho người nghèo, người khuyết tật… đến từ tiền thuế mọi người cùng góp."
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtrkomo2000104kv27niaro7",
+      "where": "Thuế 101 - Thuế & Quyền Công Dân › Vì sao chúng ta đóng thuế",
+      "blockIndex": 7,
+      "path": "cards[2].back.text",
+      "before": "Thuế cũng giúp điều chỉnh hành vi của con người thông qua việc đánh thuế những sản phẩm không tốt cho sức khỏe như thuốc lá, rượu bia, hoặc giúp thúc đẩy bảo vệ môi trường thông qua thuế xăng; giảm thuế cho các doanh nghiệp đầu tư vào năng lượng sạch.\n",
+      "after": "Thuế điều chỉnh hành vi: đánh thuế sản phẩm không tốt cho sức khỏe như thuốc lá, rượu bia; thuế xăng để thúc đẩy bảo vệ môi trường; giảm thuế cho doanh nghiệp đầu tư vào năng lượng sạch."
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[0].left",
+      "before": "Tháng nào bán nhiều kem thì tháng đó nhiều vụ đuối nước hơn",
+      "after": "Tháng bán nhiều kem cũng nhiều vụ đuối nước hơn"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[1].left",
+      "before": "Chi phí quảng cáo và doanh thu của công ty tăng song song",
+      "after": "Chi phí quảng cáo và doanh thu tăng song song"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[1].right",
+      "before": "Chiều nhân quả có thể ngược lại: ngân sách quảng cáo được tính theo phần trăm doanh thu kỳ trước",
+      "after": "Chiều nhân quả ngược: ngân sách quảng cáo tính theo phần trăm doanh thu kỳ trước"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[2].left",
+      "before": "Người đi ngủ với giày trong chân hay bị đau đầu buổi sáng",
+      "after": "Ngủ còn nguyên giày thì hay đau đầu buổi sáng"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[3].left",
+      "before": "Các nước tiêu thụ nhiều sô-cô-la có nhiều giải Nobel hơn",
+      "after": "Nước ăn nhiều sô-cô-la có nhiều giải Nobel hơn"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[4].left",
+      "before": "Bệnh nhân nằm viện có tỷ lệ tử vong cao hơn người ở nhà",
+      "after": "Người nằm viện có tỷ lệ tử vong cao hơn ở nhà"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvha29x000bxw79uzfn4rz2",
+      "where": "Cái biểu đồ của sếp › Cùng tăng không có nghĩa là nhân quả",
+      "blockIndex": 6,
+      "path": "pairs[4].right",
+      "before": "Chiều nhân quả ngược: người ta vào viện vì đang bệnh nặng, chứ không phải bệnh nặng vì vào viện",
+      "after": "Chiều nhân quả ngược: vào viện vì đang bệnh nặng, chứ không phải bệnh nặng vì vào viện"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvlvyr3000b04792y3a5fdt",
+      "where": "Lá phiếu của một đời người › Vì sao phải có tấm rèm",
+      "blockIndex": 6,
+      "path": "pairs[0].right",
+      "before": "Người mua phiếu và người gây sức ép kiểm chứng được kết quả, nên việc mua và ép trở nên đáng làm",
+      "after": "Người mua phiếu và người ép kiểm chứng được kết quả, nên mua và ép trở nên đáng làm"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvm6y0o000b9479mywgdu43",
+      "where": "Quỹ lớp và luật chơi › Ba cách tính, ba kết quả",
+      "blockIndex": 10,
+      "path": "pairs[2].left",
+      "before": "Bầu cử ưu tiên: loại phương án thấp nhất, chuyển phiếu",
+      "after": "Bầu cử ưu tiên: loại dần phương án thấp nhất"
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvhlg3u0009an79huu3gf25",
+      "where": "Tin đồn ngoài chợ › Tin đồn ngoài chợ",
+      "blockIndex": 6,
+      "path": "cards[0].back.text",
+      "before": "Cùng nhóm về mức độ CHẮC CHẮN của bằng chứng, không phải về mức độ nguy hiểm. Thuốc lá làm tăng nguy cơ ung thư phổi khoảng hai mươi lần; thịt chế biến làm tăng nguy cơ ung thư đại trực tràng khoảng một phần năm.",
+      "after": "Cùng nhóm về mức độ CHẮC CHẮN của bằng chứng, không phải mức độ nguy hiểm. Thuốc lá tăng nguy cơ ung thư phổi khoảng hai mươi lần; thịt chế biến tăng nguy cơ ung thư đại trực tràng chừng một phần năm."
+    },
+    {
+      "source": "chapter",
+      "recordId": "cmtvhwf8r000dif79t9qsk616",
+      "where": "Group tài xế nói gì › \"Còn bên kia thì sao?\"",
+      "blockIndex": 5,
+      "path": "pairs[3].left",
+      "before": "\"Mấy người kêu ca sao không tự lập công ty mà làm.\"",
+      "after": "\"Kêu ca vậy sao không tự lập công ty mà làm.\""
+    }
+  ],
+  "skipped": [
+    {
+      "source": "lesson",
+      "recordId": "cmtsketom000004lbjfzbmwf7",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Nhón chân nhìn vào cửa sổ",
+      "blockIndex": 17,
+      "path": "cards[0].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 292,
+      "limit": 200,
+      "text": "Mấy giờ An đi ngủ và mấy giờ An thức dậy trong các ngày thường. An không còn thấy vui với công việc hiện tại, tính từ khoảng tháng Ba. An và người yêu đã chia tay trong năm nay. Khoảng thu nhập mỗi tháng. Mẹ An sống một mình. Sáng thứ Bảy, trong khoảng từ chín giờ đến mười một giờ, An ở đâu.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtsketom000004lbjfzbmwf7",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Nhón chân nhìn vào cửa sổ",
+      "blockIndex": 17,
+      "path": "cards[1].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 309,
+      "limit": 200,
+      "text": "Họ tên đầy đủ, sinh năm 2004, quê Quảng Nam. Tốt nghiệp một trường đại học ở Đà Nẵng năm 2026, ngành quản trị kinh doanh. Hiện là nhân viên một công ty du lịch tại quận Hải Châu. Một số điện thoại, kèm theo nhà mạng. Hai địa chỉ email. Bốn tên người dùng trên bốn nền tảng, trong đó có hai cái giống hệt nhau.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtsketom000004lbjfzbmwf7",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Nhón chân nhìn vào cửa sổ",
+      "blockIndex": 17,
+      "path": "cards[2].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 202,
+      "limit": 200,
+      "text": "Tên mẹ. Em trai đang học lớp 11, biết cả tên trường. Ba người bạn thân với mức tương tác gần như hằng ngày. Một người yêu cũ, nhận ra được nhờ những tấm ảnh mà An đã gỡ thẻ nhưng người khác thì chưa gỡ.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmtsketom000004lbjfzbmwf7",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Nhón chân nhìn vào cửa sổ",
+      "blockIndex": 17,
+      "path": "cards[3].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 263,
+      "limit": 200,
+      "text": "Đời điện thoại, đọc ra từ thông tin đính kèm trong ảnh. Tọa độ một chỗ ở cũ, lấy từ tấm ảnh đăng năm 2021 còn nguyên vị trí. Ngân hàng đang dùng, nhìn thấy trong một ảnh chụp màn hình. Phương tiện đi làm là xe máy, còn tuyến đường thì suy ra được từ giờ đăng bài.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmu1ca4uu000104kwsh5hyz2g",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Hồn lìa khỏi xác",
+      "blockIndex": 1,
+      "path": "cards[0].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 292,
+      "limit": 200,
+      "text": "Mấy giờ An đi ngủ và mấy giờ An thức dậy trong các ngày thường. An không còn thấy vui với công việc hiện tại, tính từ khoảng tháng Ba. An và người yêu đã chia tay trong năm nay. Khoảng thu nhập mỗi tháng. Mẹ An sống một mình. Sáng thứ Bảy, trong khoảng từ chín giờ đến mười một giờ, An ở đâu.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmu1ca4uu000104kwsh5hyz2g",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Hồn lìa khỏi xác",
+      "blockIndex": 1,
+      "path": "cards[1].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 309,
+      "limit": 200,
+      "text": "Họ tên đầy đủ, sinh năm 2004, quê Quảng Nam. Tốt nghiệp một trường đại học ở Đà Nẵng năm 2026, ngành quản trị kinh doanh. Hiện là nhân viên một công ty du lịch tại quận Hải Châu. Một số điện thoại, kèm theo nhà mạng. Hai địa chỉ email. Bốn tên người dùng trên bốn nền tảng, trong đó có hai cái giống hệt nhau.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmu1ca4uu000104kwsh5hyz2g",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Hồn lìa khỏi xác",
+      "blockIndex": 1,
+      "path": "cards[2].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 202,
+      "limit": 200,
+      "text": "Tên mẹ. Em trai đang học lớp 11, biết cả tên trường. Ba người bạn thân với mức tương tác gần như hằng ngày. Một người yêu cũ, nhận ra được nhờ những tấm ảnh mà An đã gỡ thẻ nhưng người khác thì chưa gỡ.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    },
+    {
+      "source": "lesson",
+      "recordId": "cmu1ca4uu000104kwsh5hyz2g",
+      "where": "Riêng Tư 101 - Người Lạ Biết Gì Về Bạn › Hồn lìa khỏi xác",
+      "blockIndex": 1,
+      "path": "cards[3].back.text",
+      "kind": "mặt sau quá dài",
+      "length": 263,
+      "limit": 200,
+      "text": "Đời điện thoại, đọc ra từ thông tin đính kèm trong ảnh. Tọa độ một chỗ ở cũ, lấy từ tấm ảnh đăng năm 2021 còn nguyên vị trí. Ngân hàng đang dùng, nhìn thấy trong một ảnh chụp màn hình. Phương tiện đi làm là xe máy, còn tuyến đường thì suy ra được từ giờ đăng bài.",
+      "reason": "liệt kê dày đặc — mỗi mệnh đề là một dữ kiện riêng, rút xuống 200 ký tự là xoá mất dữ kiện; trên điện thoại thẻ chỉ cao ~205px nên vẫn hiển thị trọn"
+    }
+  ]
+}

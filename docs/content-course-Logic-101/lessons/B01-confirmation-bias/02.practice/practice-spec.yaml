@@ -1,0 +1,130 @@
+# Practice spec cho B01 Confirmation Bias
+# Input cho Stage 1B (B1 Question Designer → B2 Generators → B3 Critic → B4 Assemble)
+# Schema: xem 02.Workflow.md §2.5
+
+lesson_id: B01
+references_theory: final.md   # output của Stage 1A, B1+B2 đọc làm input
+
+# ─── Tiers (tổng 27 câu, target ≥70% mỗi tier + ≥70% tổng) ─────────────────
+
+tiers:
+  - level: easy
+    count: 10
+    pass_threshold: 7              # 7/10 = 70%
+    difficulty_rubric: |
+      Bias rõ rành, 1 type duy nhất, 1 situation, cue hiển nhiên.
+      Audience đọc 5-10s là thấy. Stem set up tình huống cụ thể (post FB, tin báo,
+      câu nói của nhân vật fictional), correct answer là 1 trong 6 type được dạy
+      trong theory. Distractor near-miss = 1 type khác cùng family (vd. selective
+      attention vs cherry-picking — gần nhưng phân biệt được).
+
+  - level: medium
+    count: 10
+    pass_threshold: 7              # 7/10 = 70%
+    difficulty_rubric: |
+      Bias ẩn qua cue cảm xúc (audience phải nhận ra "validation / anger /
+      vindication" feeling trong stem trước khi nhận diện bias). 1-2 type kết hợp
+      (vd. selective attention + motivated reasoning). Mixed situation trong stem
+      (vd. nhân vật fictional đầu tư crypto nhưng dùng meme cung hoàng đạo để
+      justify). Phải áp 2-trigger filter (stake × khớp ngọt) để giải.
+
+  - level: hard
+    count: 7
+    pass_threshold: 5              # 5/7 = 71%
+    difficulty_rubric: |
+      Nuanced, multi-type kết hợp, edge case. BẮT BUỘC có:
+      - ≥1 câu "KHÔNG phải bias" — stem mô tả ai đó update belief sau khi gặp
+        evidence ngược → correct = "đây là rational update, không phải confirmation
+        bias"
+      - ≥1 câu "bias đúng đắn để cẩn trọng" — vd. doctor nghi ngờ symptom hiếm
+        nhưng vẫn order thêm test → correct = "skeptical priors, không phải bias"
+      - Distractor cực gần: 2 type bias plausible, phải so sánh nuance để chọn
+    edge_cases_required: 2          # cứng: ít nhất 2/7 câu là edge case ở trên
+
+# ─── Coverage requirements ─────────────────────────────────────────────────
+
+type_coverage_required:
+  - "selective attention / selective exposure"   # Input stage — anchor zodiac dễ
+  - "motivated reasoning"                         # Processing stage
+  - "cherry-picking evidence"                     # cross-stage
+  - "biased interpretation"                       # Processing stage — nuanced, push Hard
+  - "belief perseverance"                         # Output stage — push Hard
+  - "echo chamber reinforcement"                  # Input stage (social) — bridge B12
+
+# Mỗi type ≥3 câu spread across 3 tier. Hard tier ưu tiên biased interpretation
+# + belief perseverance (subtle nhất). Easy tier ưu tiên cherry-picking +
+# selective attention (rõ ràng nhất).
+
+situation_coverage_required:
+  - "đầu tư / tiền (crypto, stock, scheme, MMO)"
+  - "sức khoẻ / diet (detox, IF, supplement, fitness routine)"
+  - "đời thường (cung hoàng đạo, đội bóng, tribe tech iPhone/Android, mê tín dị đoan)"
+  - "workplace / career (boss, đồng nghiệp, career path myth, evaluation bias)"
+  - "social media (Threads/FB drama, viral post, comment thread, group dynamic)"
+  - "education / parenting (con học sớm, song ngữ, skill training, learning style myth)"
+
+# Mỗi situation ~4-5 câu (27 câu / 6 situation). KHÔNG được rơi >40% câu vào
+# 1 situation (max 11 câu / situation).
+
+# ─── Safety guardrails (inherit + extend) ──────────────────────────────────
+
+forbidden_examples_inherit_from_lesson_spec: true
+# Tức là: tham chiếu forbidden_examples ở lesson-spec.yaml B01 (5 zones).
+# Thêm guardrail riêng cho practice:
+
+additional_practice_forbidden:
+  - "Không quote post của KOL / nhân vật có thật trong VN (fictional only)"
+  - "Không nhắc tên trường / phương pháp giáo dục cụ thể (Montessori, RMIT, ...)"
+  - "Không nhắc tên công ty VN cụ thể (Vingroup, Viettel, FPT, ...) — dùng 'công ty X'"
+  - "Không dùng tên người thật — chỉ first name fictional (Minh, An, Linh, ...)"
+
+# ─── Question format ───────────────────────────────────────────────────────
+
+question_format: MCQ
+options_per_mcq: 4
+
+# Distractor design (per question):
+#   - 1 correct
+#   - 1 near-miss: type bias khác plausible (vd. correct = selective attention,
+#     near-miss = cherry-picking)
+#   - 1 no-bias: claim "không có lỗi gì" / "đây là reasoning bình thường"
+#   - 1 unrelated: 1 fallacy hoàn toàn khác zone (vd. ad hominem trong câu về data)
+# Hard tier có thể swap "no-bias claim" thành correct (edge case).
+
+include_distractor_explanation: true
+# Mỗi q phải có distractor_explanations: vì sao 3 distractor sai. Đây là phần
+# dạy "anti-pattern" — học viên đọc cả correct + 3 wrong explanation sẽ học
+# nhiều hơn cả correct.
+
+# ─── Answer key schema (cho B2 Generator output) ───────────────────────────
+
+answer_key_format:
+  schema: |
+    questions:
+      - q_id: <vd. q1>
+        stem: "<1-2 câu setup tình huống fictional cụ thể>"
+        type_tested: <1 trong 6 type_coverage_required, exact match>
+        situation: <1 trong 6 situation_coverage_required, exact match>
+        options:
+          A: "<đáp án>"
+          B: "<đáp án>"
+          C: "<đáp án>"
+          D: "<đáp án>"
+        correct: <A | B | C | D>
+        explanation: "<2-3 câu vì sao correct đúng, ref concept theory>"
+        distractor_explanations:
+          A: "<nếu A ≠ correct, ghi vì sao A sai>"
+          B: "<...>"
+          C: "<...>"
+          D: "<...>"
+        ref_citation_id: <cN nếu cần, từ research-notes; optional>
+
+# ─── Target score (cho UI / progression logic) ─────────────────────────────
+
+target_score: 0.70
+# Pass module B01 = đạt ≥70% TỔNG (19/27) — không phải tier nào cũng cần pass riêng,
+# nhưng pass_threshold per tier là gợi ý cho UI hiển thị "bạn cần ôn thêm tier X".
+
+# ─── Output expectations ───────────────────────────────────────────────────
+
+output_file: practice-final.md   # B4 Assemble ghi vào đây

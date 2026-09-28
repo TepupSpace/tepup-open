@@ -1,0 +1,1088 @@
+/* ============================================================================
+   Landing v2 — nền giấy, cam #E03E28, dàn nhân vật cắt ghép.
+
+   Nguồn: tepup-demo-v2/demo-landing-v2.html (2 section đầu) và Figma
+   "Web Design - Tepup" node 140:5491 (các section sau).
+
+   File này cố ý KHÔNG nằm trong globals.css: mọi thứ ở đây bọc trong .lp nên
+   không rò sang /learn, /admin hay phần còn lại của site.
+   ========================================================================= */
+
+.lp {
+  /* --- Hệ đo -------------------------------------------------------------
+     Toàn bộ toạ độ trong 2 section đầu được map 1:1 từ khung Figma 1512×982.
+     --u là số px thật cho mỗi "design-px", lấy theo cạnh bị bó hẹp hơn.
+
+     Đây là chỗ sửa lỗi gốc: bản demo đo chữ bằng clamp() có trần cứng, còn đo
+     nhân vật bằng vw không trần. Màn càng rộng thì chữ càng đứng yên trong khi
+     nhân vật cứ phình ra, tới một tỉ lệ nào đó là đoàn người trèo lên đè chữ.
+     Nhân mọi thứ với cùng một --u thì tỉ lệ chữ : ảnh thành hằng số.      */
+  --u: min(100vw / 1512, 100vh / 982);
+
+  /* --- Màu (rút từ Figma) --- */
+  --paper: #e8e8e8;
+  --ink: #313131;
+  --ink-900: #141414;
+  --o: #e03e28;
+  --teal: #2cab8b;
+  --blue: #3187d7;
+  --purple: #aa76cf;
+  --pink: #e65983;
+
+  /* --- Chữ ---
+     Voyage chỉ đủ glyph cho slogan hero ("Tép riu / Stép up / Stép out").
+     Font này thiếu 44/67 dấu tiếng Việt thường dùng — đừng tái sử dụng nó
+     cho bất kỳ chỗ nào khác, chữ sẽ rơi về font dự phòng giữa câu. */
+  --serif: var(--font-fraunces), Georgia, serif;
+  --sans: var(--font-be-vietnam), system-ui, sans-serif;
+  --voyage: var(--font-voyage), var(--font-fraunces), Georgia, serif;
+
+  background: var(--paper);
+  font-family: var(--sans);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.lp img {
+  display: block;
+  max-width: none;
+}
+
+/* ============================================================================
+   HEADER — pill nổi
+   ========================================================================= */
+
+.lp-hdr {
+  position: fixed;
+  top: 21px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  gap: 66px;
+  align-items: center;
+  white-space: nowrap;
+}
+.lp-hdr__logo {
+  height: 60px;
+  width: auto;
+}
+.lp-hdr__nav {
+  background: #fff;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  border-radius: 1000px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 5%);
+}
+.lp-hdr__nav a {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 22.2px;
+  color: var(--ink-900);
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.lp-hdr__nav a + a {
+  margin-left: 60px;
+}
+.lp-hdr__nav a:hover,
+.lp-hdr__nav a.is-active {
+  color: var(--o);
+}
+.lp-cta {
+  background: var(--o);
+  color: #fff;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 20px 0 24px;
+  border-radius: 1000px;
+  border: 1.5px solid rgb(232 232 232 / 91%);
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20.2px;
+  text-decoration: none;
+  transition: background 0.18s;
+}
+.lp-cta:hover {
+  background: #c9351f;
+}
+.lp-cta svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* hamburger + dropdown: chỉ bật ở mobile */
+.lp-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  padding: 9px;
+  background: #fff;
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 5%);
+  cursor: pointer;
+}
+.lp-burger span {
+  display: block;
+  height: 2.5px;
+  width: 100%;
+  background: var(--ink-900);
+  border-radius: 2px;
+  transition: transform 0.25s, opacity 0.2s;
+}
+.lp-hdr.is-open .lp-burger span:nth-child(1) {
+  transform: translateY(7.5px) rotate(45deg);
+}
+.lp-hdr.is-open .lp-burger span:nth-child(2) {
+  opacity: 0;
+}
+.lp-hdr.is-open .lp-burger span:nth-child(3) {
+  transform: translateY(-7.5px) rotate(-45deg);
+}
+.lp-mmenu {
+  display: none;
+}
+
+/* ============================================================================
+   SECTION 1 + 2 — khung cuộn dính, hai trang chồng nhau
+   ========================================================================= */
+
+.lp-scroller {
+  height: 250vh;
+  position: relative;
+}
+.lp-viewport {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.lp-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  z-index: 0;
+}
+.lp-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/landing/bg.webp') center / cover;
+  opacity: 0.5;
+}
+.lp-page {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+.lp-page--2 {
+  opacity: 0;
+}
+
+/* Sân khấu 1512×982 căn giữa. Mọi toạ độ con tính bằng design-px × --u, nên
+   bố cục bên trong giữ nguyên tỉ lệ ở mọi kích cỡ màn. Nền và dải đất cố ý
+   nằm NGOÀI sân khấu để tràn hết bề ngang. */
+.lp-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(1512 * var(--u));
+  height: calc(982 * var(--u));
+  z-index: 12;
+}
+
+/* --- Section 1 --- */
+.lp-p1-center {
+  position: absolute;
+  left: 50%;
+  top: calc(367 * var(--u));
+  transform: translate(-50%, -50%);
+  width: calc(804 * var(--u));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: calc(36 * var(--u));
+  align-items: center;
+  z-index: 15;
+}
+.lp-slogan {
+  font-family: var(--voyage);
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+/* ba dòng hiện lần lượt, thong thả: Tép riu → Stép up → Stép out */
+.lp-slogan span {
+  display: block;
+  font-size: calc(110 * var(--u));
+  line-height: 1;
+  opacity: 0;
+  transform: translateY(16px);
+  animation: lp-rise 0.7s ease forwards;
+}
+.lp-slogan span:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.lp-slogan span:nth-child(2) {
+  animation-delay: 1.05s;
+}
+.lp-slogan span:nth-child(3) {
+  animation-delay: 1.8s;
+}
+.lp-slogan .lp-up {
+  color: var(--o);
+}
+/* hero xong khoảng 2.5s, body đợi thêm ~0.3s mới vào */
+.lp-p1-sub {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: calc(20 * var(--u));
+  line-height: 1.4;
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(14px);
+  animation: lp-rise 0.75s ease 2.8s forwards;
+}
+
+/* dải đất taupe, tràn hết bề ngang */
+.lp-ground {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: calc(111 * var(--u));
+  z-index: 3;
+}
+.lp-ground img {
+  width: 100%;
+  height: 100%;
+}
+
+/* Băng chuyền: ba bản cast giống hệt xếp ngang, dịch đúng một bản rồi lặp.
+   Ba bản (chứ không phải hai như bản demo) là để trên màn siêu rộng — nơi
+   khung 1512 hẹp hơn viewport — không hở khoảng trống nào trước khi bản kế
+   tiếp trôi tới. Dịch -33.3333% của tổng bề rộng = đúng một bản. */
+.lp-parade {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  width: calc(3 * 1512 * var(--u));
+  pointer-events: none;
+  will-change: transform;
+  animation: lp-parade 22s steps(28, end) 3.7s infinite;
+}
+@keyframes lp-parade {
+  to {
+    transform: translateX(-33.3333%);
+  }
+}
+.lp-cast {
+  position: relative;
+  flex: 0 0 auto;
+  width: calc(1512 * var(--u));
+  height: 100%;
+}
+/* mỗi nhân vật tự khai bề rộng bên dưới; height auto giữ đúng tỉ lệ ảnh */
+.lp-cast .lp-p {
+  position: absolute;
+  height: auto;
+}
+.lp-cast .lp-c13 { left: calc(-5 * var(--u));   bottom: calc(5 * var(--u));    width: calc(164 * var(--u)); z-index: 2; }
+.lp-cast .lp-c14 { left: calc(112 * var(--u));  bottom: calc(21 * var(--u));   width: calc(340 * var(--u)); z-index: 8; }
+.lp-cast .lp-c15 { left: calc(418 * var(--u));  bottom: calc(-9 * var(--u));   width: calc(157 * var(--u)); z-index: 3; }
+.lp-cast .lp-c16 { left: calc(554 * var(--u));  bottom: calc(-8 * var(--u));   width: calc(314 * var(--u)); z-index: 1; }
+.lp-cast .lp-c17 { left: calc(839 * var(--u));  bottom: calc(2 * var(--u));    width: calc(387 * var(--u)); z-index: 4; }
+.lp-cast .lp-c18 { left: calc(1169 * var(--u)); bottom: calc(-8 * var(--u));   width: calc(170 * var(--u)); z-index: 5; }
+.lp-cast .lp-c19 { left: calc(1286 * var(--u)); bottom: calc(-11 * var(--u));  width: calc(229 * var(--u)); z-index: 6; }
+
+/* --- Section 2 --- */
+.lp-redline {
+  position: absolute;
+  left: 48.93%;
+  top: 31.45%;
+  transform: translateX(-50%);
+  width: calc(1606 * var(--u));
+  z-index: 4;
+  pointer-events: none;
+}
+.lp-redline svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  display: block;
+}
+.lp-redline path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+/* nét vẽ một hơi, đều và thong thả, trong lúc các nhân vật lần lượt hiện ra */
+.lp-page--2.is-playing .lp-redline path {
+  animation: lp-draw 3.4s linear 0.1s forwards;
+}
+@keyframes lp-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.lp-ch {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+}
+.lp-ch .lp-rot {
+  transform: rotate(var(--rot));
+}
+.lp-ch img {
+  width: 100%;
+  height: auto;
+  transform-origin: bottom center;
+}
+/* hiện bằng fade sạch (luôn về đúng 100%), rồi lắc stop-motion từ lúc xuất hiện */
+.lp-page--2.is-playing .lp-ch {
+  animation: lp-pop 0.3s ease-out var(--d) both;
+}
+.lp-page--2.is-playing .lp-ch img {
+  animation: lp-sway 1.4s steps(3, end) var(--d) infinite;
+}
+@keyframes lp-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+/* lắc nghiêng giật cục quanh chân, kiểu stop-motion */
+@keyframes lp-sway {
+  0% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+  100% { transform: rotate(-2.5deg); }
+}
+
+/* Toạ độ 5 nhân vật, quy từ bản demo về design-px của khung 1512×982.
+   Để trong CSS chứ không viết inline: media query mobile bên dưới cần ghi đè
+   được mấy giá trị này, mà inline style thì luôn thắng. */
+.lp-ch--10 { left: calc(245 * var(--u));  top: calc(316 * var(--u)); width: calc(140 * var(--u)); }
+.lp-ch--07 { left: calc(1381 * var(--u)); top: calc(307 * var(--u)); width: calc(280 * var(--u)); }
+.lp-ch--04 { left: calc(374 * var(--u));  top: calc(812 * var(--u)); width: calc(240 * var(--u)); }
+.lp-ch--05 { left: calc(68 * var(--u));   top: calc(497 * var(--u)); width: calc(140 * var(--u)); }
+.lp-ch--06 { left: calc(1210 * var(--u)); top: calc(745 * var(--u)); width: calc(200 * var(--u)); }
+
+.lp-p2-center {
+  position: absolute;
+  left: 50%;
+  top: calc(416.5 * var(--u));
+  transform: translate(-50%, -50%);
+  width: calc(753 * var(--u));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: calc(32 * var(--u));
+  align-items: center;
+  z-index: 12;
+}
+.lp-p2-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 600;
+  color: var(--o);
+  font-size: calc(70 * var(--u));
+  line-height: 1.233;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  opacity: 0;
+  transform: translateY(14px);
+}
+.lp-p2-title .lp-b {
+  color: var(--ink);
+}
+.lp-p2-body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(28 * var(--u));
+  color: var(--ink);
+  opacity: 0;
+  transform: translateY(14px);
+}
+.lp-p2-body p {
+  font-size: calc(18 * var(--u));
+  line-height: calc(28 * var(--u));
+}
+.lp-p2-body .lp-em {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-style: italic;
+  font-size: calc(24 * var(--u));
+}
+/* tiêu đề vào trước, body theo sau */
+.lp-page--2.is-playing .lp-p2-title {
+  animation: lp-rise 0.6s ease 0.1s forwards;
+}
+.lp-page--2.is-playing .lp-p2-body {
+  animation: lp-rise 0.7s ease 0.9s forwards;
+}
+@keyframes lp-rise {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================================
+   CÁC SECTION SAU (Figma 140:5491) — cuộn thường
+   ========================================================================= */
+
+.lp-flow {
+  position: relative;
+  z-index: 20;
+  background: var(--paper);
+  padding: 200px 0 0;
+}
+.lp-flow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/landing/bg.webp') center / cover;
+  opacity: 0.5;
+  pointer-events: none;
+}
+.lp-flow > * {
+  position: relative;
+}
+
+/* container 1240 của Figma, gap 200 giữa các section */
+.lp-sections {
+  width: min(1240px, calc(100vw - 48px));
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 200px;
+}
+
+.lp-h2 {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 600;
+  font-size: 70px;
+  line-height: 1.233;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  color: var(--o);
+  text-wrap: balance;
+}
+.lp-h2 .lp-b {
+  color: var(--ink);
+}
+.lp-sub {
+  font-size: 18px;
+  line-height: 28px;
+  color: #000;
+}
+.lp-em {
+  font-weight: 600;
+  font-style: italic;
+  font-size: 24px;
+}
+
+.lp-sec__head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.lp-card__title {
+  font-weight: 600;
+  font-size: 28px;
+  line-height: 28px;
+  color: var(--ink);
+}
+.lp-card__body {
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--ink);
+}
+.lp-icon {
+  width: 70px;
+  height: 70px;
+}
+
+/* Neo cho link trên header: header nổi cố định che mất ~90px đầu trang, nếu
+   không chừa thì nhảy tới section nào cũng bị cụt mất tiêu đề. */
+.lp-how,
+.lp-pillars,
+.lp-open {
+  scroll-margin-top: 110px;
+}
+
+/* --- A · Học như thế nào? --- */
+.lp-how {
+  width: min(1080px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+/* Figma để tiêu đề tràn khỏi khối 520px và nằm gọn một dòng; bó lại đúng
+   520px thì "Học như thế nào?" bị bẻ đôi. */
+.lp-how .lp-sec__head {
+  width: 100%;
+}
+.lp-how__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 120px;
+  row-gap: 80px;
+}
+.lp-how__item {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.lp-how__item > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* --- B · 03 trụ cột kiến thức --- */
+.lp-pillars {
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+.lp-pillars .lp-sec__head {
+  width: 100%;
+}
+.lp-pillars__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 80px;
+}
+.lp-pillars__col {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.lp-pillars__col > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.lp-eyebrow {
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 20.2px;
+}
+.lp-link {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 25.3px;
+  color: var(--o);
+  text-decoration: none;
+}
+.lp-link svg {
+  width: 28px;
+  height: 28px;
+  transition: transform 0.18s;
+}
+.lp-link:hover svg {
+  transform: translateX(4px);
+}
+
+/* --- C · Nền tảng mở cho tất cả --- */
+.lp-open {
+  width: min(1000px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 60px;
+}
+.lp-open__text {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+/* Figma: tiêu đề căn giữa, riêng phần thân căn trái. */
+.lp-open__text > .lp-h2 {
+  text-align: center;
+}
+/* khoảng cách giữa các đoạn là 28px — trong Figma đây là một dòng trống của
+   chính text node, không phải gap của khối */
+.lp-open__paras {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.lp-open__text p {
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--ink);
+}
+.lp-open__text strong {
+  font-weight: 600;
+}
+/* đoạn cuối: cả khối in nghiêng màu hồng, cụm mở đầu đậm hơn */
+.lp-open__note {
+  color: var(--pink);
+  font-style: italic;
+}
+.lp-open__note b {
+  font-weight: 600;
+}
+.lp-open__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* nút dùng chung cho section C và D */
+.lp-btn {
+  height: 56px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 24px 8px 28px;
+  border-radius: 1000px;
+  font-weight: 600;
+  font-size: 20px;
+  line-height: 25.3px;
+  text-decoration: none;
+  transition: background 0.18s, color 0.18s;
+}
+.lp-btn svg {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+.lp-btn--solid {
+  background: var(--o);
+  color: #fff;
+}
+.lp-btn--solid:hover {
+  background: #c9351f;
+}
+.lp-btn--outline {
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.lp-btn--outline:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* --- D · CTA Sẵn sàng bắt đầu --- */
+.lp-final {
+  background: var(--ink);
+  border-radius: 40px;
+  padding: 40px 60px;
+}
+.lp-final__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  align-items: flex-start;
+}
+.lp-final__head {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lp-final .lp-h2 .lp-b {
+  color: var(--paper);
+}
+.lp-final__sub {
+  font-size: 18px;
+  line-height: 28px;
+  color: var(--paper);
+}
+.lp-final__sub strong {
+  font-weight: 600;
+}
+
+/* ============================================================================
+   FOOTER — không có trong Figma, dựng theo cùng bộ token.
+   Cố ý để nền giấy chứ không nền tối: ngay phía trên đã là card CTA #313131,
+   hai khối tối liền nhau sẽ dính vào làm một.
+   ========================================================================= */
+
+.lp-footer {
+  margin-top: 200px;
+  border-top: 1px solid rgb(49 49 49 / 12%);
+  padding: 48px 0 56px;
+}
+.lp-footer__inner {
+  width: min(1240px, calc(100vw - 48px));
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+.lp-footer__logo {
+  height: 44px;
+  width: auto;
+}
+.lp-footer__tagline {
+  margin-top: 10px;
+  font-size: 16px;
+  line-height: 24px;
+  color: rgb(49 49 49 / 70%);
+}
+.lp-footer__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+}
+.lp-footer__nav a {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 22.2px;
+  color: var(--ink-900);
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  text-decoration: none;
+  transition: color 0.18s;
+}
+.lp-footer__nav a:hover {
+  color: var(--o);
+}
+.lp-footer__legal {
+  width: min(1240px, calc(100vw - 48px));
+  margin: 40px auto 0;
+  font-size: 14px;
+  line-height: 20px;
+  color: rgb(49 49 49 / 50%);
+}
+
+/* ============================================================================
+   TABLET
+   ========================================================================= */
+
+@media (max-width: 1100px) {
+  .lp-sections {
+    gap: 140px;
+  }
+  .lp-flow {
+    padding-top: 140px;
+  }
+  .lp-footer {
+    margin-top: 140px;
+  }
+  .lp-h2 {
+    font-size: 52px;
+  }
+  .lp-how__grid {
+    column-gap: 64px;
+    row-gap: 56px;
+  }
+  .lp-pillars__row {
+    gap: 48px;
+  }
+  .lp-final {
+    padding: 40px;
+  }
+}
+
+@media (max-width: 900px) {
+  .lp-hdr {
+    gap: 34px;
+  }
+  .lp-hdr__nav {
+    padding: 0 26px;
+  }
+  .lp-hdr__nav a + a {
+    margin-left: 32px;
+  }
+  .lp-hdr__nav a {
+    font-size: 16px;
+  }
+  .lp-pillars__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+  }
+}
+
+/* ============================================================================
+   MOBILE — nhánh riêng, cố ý KHÔNG dùng hệ --u.
+   Ở màn dọc, khung 1512×982 co lại thì chữ nhỏ tới mức không đọc nổi, nên
+   phần này giữ nguyên cách bố trí đã tinh chỉnh riêng của bản demo.
+   ========================================================================= */
+
+@media (max-width: 640px) {
+  /* header: hamburger (trái) + logo (giữa), link và CTA dồn vào dropdown */
+  .lp-hdr {
+    top: 14px;
+    left: 0;
+    transform: none;
+    width: 100%;
+    padding: 0 16px;
+    gap: 0;
+    justify-content: flex-start;
+    white-space: normal;
+  }
+  .lp-burger {
+    display: flex;
+  }
+  .lp-hdr__logo {
+    height: 42px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .lp-hdr__nav,
+  .lp-hdr > .lp-cta {
+    display: none;
+  }
+  .lp-mmenu {
+    position: absolute;
+    top: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    background: #fff;
+    border-radius: 20px;
+    padding: 16px;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 14px 36px rgb(0 0 0 / 16%);
+  }
+  .lp-hdr.is-open .lp-mmenu {
+    display: flex;
+  }
+  .lp-mmenu a {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--ink-900);
+    text-decoration: none;
+    padding: 11px 12px;
+    border-radius: 12px;
+    font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  }
+  .lp-mmenu a.is-active {
+    color: var(--o);
+  }
+  .lp-mmenu .lp-cta {
+    margin-top: 8px;
+    height: auto;
+    padding: 12px;
+    border: none;
+    justify-content: center;
+    gap: 6px;
+    color: #fff;
+  }
+  .lp-mmenu .lp-cta svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* sân khấu trả về full viewport: toạ độ % bên dưới ăn theo viewport */
+  .lp-stage {
+    left: 0;
+    top: 0;
+    transform: none;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* section 1 — thu lại cho vừa */
+  .lp-p1-center {
+    top: 37%;
+    width: 88vw;
+    gap: 18px;
+  }
+  .lp-slogan span {
+    font-size: clamp(42px, 13.5vw, 60px);
+  }
+  .lp-p1-sub {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .lp-p1-sub br {
+    display: none;
+  }
+  .lp-ground {
+    height: 11.3vh;
+  }
+
+  /* băng chuyền → marquee ngang. Bề rộng giữ đúng tỉ lệ scale của bản web
+     (height auto nên aspect vẫn chuẩn); khoảng cách bóp lại để lọt ~3 người
+     mỗi khung. Vẫn ba bản cast nên keyframe -33.3333% dùng chung được. */
+  .lp-parade {
+    top: auto;
+    bottom: 0;
+    width: max-content;
+    height: auto;
+    align-items: flex-end;
+    animation-duration: 20s;
+    animation-timing-function: steps(20, end);
+  }
+  .lp-cast {
+    width: auto;
+    height: auto;
+    display: flex;
+    align-items: flex-end;
+  }
+  .lp-cast .lp-p {
+    position: relative;
+    left: auto;
+    bottom: auto;
+    margin-right: 2.5vw;
+  }
+  .lp-cast .lp-c13 { width: 24vw; }
+  .lp-cast .lp-c14 { width: 49vw; }
+  .lp-cast .lp-c15 { width: 23vw; }
+  .lp-cast .lp-c16 { width: 46vw; }
+  .lp-cast .lp-c17 { width: 56vw; }
+  .lp-cast .lp-c18 { width: 25vw; }
+  .lp-cast .lp-c19 { width: 33vw; }
+
+  /* section 2 — chữ lên trên; 4 nhân vật rải so le dưới đáy; bỏ đường kẻ */
+  .lp-p2-center {
+    top: 28%;
+    width: 90vw;
+    gap: 14px;
+  }
+  .lp-p2-title {
+    font-size: clamp(30px, 8vw, 40px);
+    line-height: 1.12;
+  }
+  .lp-p2-body {
+    gap: 14px;
+  }
+  .lp-p2-body p {
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  .lp-p2-body .lp-em {
+    font-size: 16px;
+  }
+  .lp-p2-body br {
+    display: none;
+  }
+  .lp-redline {
+    display: none;
+  }
+  /* 4 nhân vật rải ra (giữ aspect), không chồng nhau, nằm dưới khối chữ */
+  .lp-ch--05 { display: none; }
+  .lp-ch--10 { left: 17%; top: 63%; width: 26vw; }
+  .lp-ch--07 { left: 79%; top: 57%; width: 31vw; }
+  .lp-ch--04 { left: 30%; top: 88%; width: 42vw; }
+  .lp-ch--06 { left: 73%; top: 85%; width: 37vw; }
+
+  /* các section sau */
+  .lp-flow {
+    padding-top: 96px;
+  }
+  .lp-sections {
+    width: calc(100vw - 40px);
+    gap: 96px;
+  }
+  .lp-h2 {
+    font-size: 36px;
+  }
+  .lp-sub,
+  .lp-open__text p,
+  .lp-card__body,
+  .lp-final__sub {
+    font-size: 16px;
+    line-height: 26px;
+  }
+  .lp-em {
+    font-size: 20px;
+  }
+  .lp-card__title {
+    font-size: 22px;
+    line-height: 30px;
+  }
+  .lp-how__grid {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 48px;
+  }
+  .lp-icon {
+    width: 56px;
+    height: 56px;
+  }
+  .lp-final {
+    border-radius: 28px;
+    padding: 32px 24px;
+  }
+  .lp-btn {
+    font-size: 17px;
+    padding: 8px 20px 8px 24px;
+  }
+  .lp-footer {
+    margin-top: 96px;
+  }
+  .lp-footer__inner,
+  .lp-footer__legal {
+    width: calc(100vw - 40px);
+  }
+  .lp-footer__nav {
+    gap: 20px;
+  }
+}
+
+/* ============================================================================
+   GIẢM CHUYỂN ĐỘNG
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-parade {
+    animation: none !important;
+  }
+  .lp-slogan span,
+  .lp-p1-sub {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .lp-cast:not(:first-child) {
+    display: none;
+  }
+  .lp-cast .lp-p,
+  .lp-ch img {
+    animation: none !important;
+  }
+  .lp-ch {
+    opacity: 1 !important;
+    animation: none !important;
+  }
+  .lp-p2-title,
+  .lp-p2-body {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+  .lp-redline path {
+    stroke-dashoffset: 0 !important;
+    animation: none !important;
+  }
+}

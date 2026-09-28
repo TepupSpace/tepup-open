@@ -1,0 +1,33 @@
+lesson_id: B19
+title: Intellectual humility
+slug: intellectual-humility
+level: 5
+position_in_level: 3 of 4
+one_line_summary_from_outline: Mindset — sau 18 bài thấy mình bị lừa nhiều lần, câu 'tôi có thể sai' mới thấm
+key_concepts_from_outline:
+- changing mind as strength, not weakness
+- '''tôi có thể sai'' là mặc định'
+- Dunning-Kruger effect
+- 'calibration: how confident should you be?'
+learning_objectives:
+- '# TODO: fill 3 Bloom-verb objectives'
+- '# eg. ''Phân biệt được X và Y trong 1 phát biểu cụ thể'''
+key_examples_seed:
+- '# TODO: fill 2-3 ví dụ bạn đã nghĩ ra (Researcher sẽ bổ sung thêm)'
+anchor_refs_seed:
+- type: paper
+  hint: '# TODO: paper/study gốc bạn muốn cite'
+- type: framework
+  hint: '# TODO: framework name'
+connections:
+  builds_on:
+  - B17
+  - B18
+  sets_up:
+  - B20
+  callbacks:
+  - '# TODO: callback explicit (vd ''Nhắc lại confirmation bias B01 ở §2'')'
+  - '# AI cũng được phép tự sinh callback ngoài list này'
+target_takeaway: '# TODO: 1 câu — sau bài này học viên sẽ làm gì khác?'
+forbidden_examples:
+- '# TODO (optional): ví dụ politically sensitive cần tránh'

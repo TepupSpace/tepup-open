@@ -1,0 +1,34 @@
+lesson_id: B04
+title: Thao túng số liệu
+slug: thao-tung-so-lieu
+level: 1
+position_in_level: 4 of 4
+one_line_summary_from_outline: Số liệu thật cũng có thể nói dối — qua cách trình bày
+key_concepts_from_outline:
+- cherry-picked statistics
+- misleading graphs (truncated y-axis, dual axis)
+- base rate fallacy
+- sample bias
+- percentage vs absolute number
+learning_objectives:
+- '# TODO: fill 3 Bloom-verb objectives'
+- '# eg. ''Phân biệt được X và Y trong 1 phát biểu cụ thể'''
+key_examples_seed:
+- '# TODO: fill 2-3 ví dụ bạn đã nghĩ ra (Researcher sẽ bổ sung thêm)'
+anchor_refs_seed:
+- type: paper
+  hint: '# TODO: paper/study gốc bạn muốn cite'
+- type: framework
+  hint: '# TODO: framework name'
+connections:
+  builds_on:
+  - B01
+  - B02
+  - B03
+  sets_up: []
+  callbacks:
+  - '# TODO: callback explicit (vd ''Nhắc lại confirmation bias B01 ở §2'')'
+  - '# AI cũng được phép tự sinh callback ngoài list này'
+target_takeaway: '# TODO: 1 câu — sau bài này học viên sẽ làm gì khác?'
+forbidden_examples:
+- '# TODO (optional): ví dụ politically sensitive cần tránh'

@@ -1,0 +1,470 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String?
+  username         String?           @unique
+  email            String?           @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  role             UserRole          @default(USER)
+  isBanned         Boolean           @default(false)
+  bannedAt         DateTime?
+  bannedReason     String?
+  accounts         Account[]
+  sessions         Session[]
+  progress         UserProgress[]
+  contributions    Contribution[]
+  reviews          Review[]
+  featureRequests  FeatureRequest[]
+  customBlockTypes CustomBlockType[]
+  suggestionReviews Suggestion[]   @relation("SuggestionReviewer")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model UserProgress {
+  id          String    @id @default(cuid())
+  userId      String
+  contentType String
+  contentId   String
+  completed   Boolean   @default(false)
+  score       Int?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, contentType, contentId])
+  @@index([userId])
+  @@index([contentId])
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String   @default("brain")
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  courses     Course[]
+
+  @@index([sortOrder])
+  @@index([slug])
+}
+
+model Course {
+  id              String                      @id @default(cuid())
+  slug            String                      @unique
+  name            String
+  description     String?
+  icon            String                      @default("book-open")
+  isNew           Boolean                     @default(false)
+  /// Ảnh bìa thẻ khoá học ở /courses (220×280), lưu trên Supabase Storage.
+  imageUrl        String?
+  isActive        Boolean                     @default(true)
+  categoryId      String
+  sortOrder       Int                         @default(0)
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  category        Category                    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  levels          Level[]
+  lessons         Lesson[]
+  recommendations CourseStoryRecommendation[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([sortOrder])
+}
+
+model Level {
+  id        String   @id @default(cuid())
+  name      String
+  courseId  String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lessons   Lesson[]
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([sortOrder])
+}
+
+model Lesson {
+  id        String         @id @default(cuid())
+  slug      String
+  name      String
+  levelId   String
+  courseId  String
+  sortOrder Int            @default(0)
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  exercises Exercise[]
+  level     Level          @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  course    Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  content   LessonContent?
+
+  @@unique([courseId, slug])
+  @@index([levelId])
+  @@index([courseId])
+  @@index([sortOrder])
+}
+
+model LessonContent {
+  id        String   @id @default(cuid())
+  lessonId  String   @unique
+  title     String
+  blocks    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  lessonId    String
+  type        String
+  title       String
+  instruction String
+  options     Json?
+  visualData  Json?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId])
+  @@index([sortOrder])
+}
+
+model Character {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  role        String
+  description String?
+  icon        String   @default("user")
+  color       String   @default("text-blue-600")
+  bgColor     String   @default("bg-blue-50")
+  /// Avatar vuông (cắt tròn khi hiển thị) ở /courses.
+  avatarUrl   String?
+  /// Ảnh nhân vật lớn, nền trong suốt, ở /courses.
+  imageUrl    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  stories     Story[]
+
+  @@index([sortOrder])
+  @@index([slug])
+}
+
+model Story {
+  id              String                      @id @default(cuid())
+  slug            String                      @unique
+  characterId     String
+  title           String
+  teaser          String?
+  icon            String                      @default("book")
+  estimatedTime   String                      @default("~20 phút")
+  /// Deprecated: superseded by CourseStoryRecommendation. Data migrated by
+  /// scripts/migrate-slugs.ts; column kept until the new code is deployed, then dropped.
+  relatedCourses  String[]                    @default([])
+  sortOrder       Int                         @default(0)
+  isActive        Boolean                     @default(true)
+  createdAt       DateTime                    @default(now())
+  updatedAt       DateTime                    @updatedAt
+  character       Character                   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  parts           StoryPart[]
+  chapters        Chapter[]
+  recommendations CourseStoryRecommendation[]
+
+  @@index([characterId])
+  @@index([slug])
+  @@index([sortOrder])
+}
+
+model StoryPart {
+  id        String    @id @default(cuid())
+  storyId   String
+  name      String
+  sortOrder Int       @default(0)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  chapters  Chapter[]
+  story     Story     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@index([storyId])
+  @@index([sortOrder])
+}
+
+model Chapter {
+  id        String          @id @default(cuid())
+  slug      String
+  partId    String
+  storyId   String
+  title     String
+  sortOrder Int             @default(0)
+  isActive  Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  part      StoryPart       @relation(fields: [partId], references: [id], onDelete: Cascade)
+  story     Story           @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  content   ChapterContent?
+
+  @@unique([storyId, slug])
+  @@index([partId])
+  @@index([storyId])
+  @@index([sortOrder])
+}
+
+model ChapterContent {
+  id        String   @id @default(cuid())
+  chapterId String   @unique
+  title     String
+  blocks    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  chapter   Chapter  @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+}
+
+model CourseStoryRecommendation {
+  id        String   @id @default(cuid())
+  courseId  String
+  storyId   String
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  story  Story  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, storyId])
+  @@index([courseId])
+  @@index([storyId])
+}
+
+model LibraryDocument {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  title       String
+  description String
+  category    String?
+  icon        String?
+  content     Json
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([slug])
+  @@index([sortOrder])
+}
+
+model Contribution {
+  id            String           @id @default(cuid())
+  contributorId String
+  type          ContributionType
+  targetId      String?
+  status        ContentStatus    @default(DRAFT)
+  data          Json
+  message       String?
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  submittedAt   DateTime?
+  resolvedAt    DateTime?
+
+  contributor User     @relation(fields: [contributorId], references: [id], onDelete: Cascade)
+  reviews     Review[]
+
+  @@index([contributorId])
+  @@index([status])
+  @@index([type])
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  contributionId String
+  reviewerId     String
+  action         ReviewAction
+  feedback       String?
+  createdAt      DateTime     @default(now())
+
+  contribution Contribution @relation(fields: [contributionId], references: [id], onDelete: Cascade)
+  reviewer     User         @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+
+  @@index([contributionId])
+  @@index([reviewerId])
+}
+
+enum UserRole {
+  USER
+  CONTRIBUTOR
+  TRUSTED_CONTRIBUTOR
+  REVIEWER
+  ADMIN
+}
+
+enum ContentStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum ContributionType {
+  NEW_COURSE
+  NEW_LEVEL
+  NEW_LESSON
+  EDIT_LESSON_CONTENT
+  EDIT_COURSE
+}
+
+enum ReviewAction {
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+}
+
+enum FeatureRequestRole {
+  LEARNER
+  CONTRIBUTOR
+}
+
+enum FeatureRequestStatus {
+  PENDING
+  IN_PROGRESS
+  DONE
+  REJECTED
+}
+
+model FeatureRequest {
+  id          String               @id @default(cuid())
+  role        FeatureRequestRole
+  title       String
+  description String
+  status      FeatureRequestStatus @default(PENDING)
+  adminNote   String?
+  userId      String?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+}
+
+model CustomBlockType {
+  id          String   @id @default(cuid())
+  slug        String   @unique
+  name        String
+  description String?
+  icon        String   @default("puzzle")
+  accentColor String   @default("cyan")
+  config      Json
+  usageCount  Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([slug])
+}
+
+model ScriptLog {
+  id      String   @id @default(cuid())
+  name    String
+  status  String
+  message String?
+  ranAt   DateTime @default(now())
+
+  @@index([name])
+}
+
+/// Anonymous "suggest a fix" on a published lesson or story chapter (Wikipedia-style
+/// edit request). No account needed; deliberately stores NO IP, user agent or identity.
+/// Reviewers triage it; accepted suggestions are applied by an editor through the normal
+/// content editor, never written to the lesson automatically.
+model Suggestion {
+  id         String           @id @default(cuid())
+  targetType SuggestionTarget
+  /// Lesson.id or Chapter.id, depending on targetType (polymorphic, so no FK)
+  targetId   String
+  /// The passage the suggestion is about (optional, usually the learner's selection)
+  quote      String?
+  /// What should change
+  proposal   String
+  /// Why / source (optional)
+  reason     String?
+  status     SuggestionStatus @default(PENDING)
+  reviewerId String?
+  reviewer   User?            @relation("SuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewNote String?
+  createdAt  DateTime         @default(now())
+  resolvedAt DateTime?
+
+  @@index([status, createdAt])
+  @@index([targetType, targetId])
+}
+
+enum SuggestionTarget {
+  LESSON
+  CHAPTER
+}
+
+enum SuggestionStatus {
+  PENDING
+  ACCEPTED // valid, waiting for an editor to apply it
+  APPLIED
+  REJECTED
+}

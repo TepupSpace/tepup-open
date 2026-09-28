@@ -1,0 +1,35 @@
+lesson_id: B03
+title: Correlation ≠ Causation
+slug: correlation-causation
+level: 1
+position_in_level: 3 of 4
+one_line_summary_from_outline: Hai biến đi cùng nhau không có nghĩa cái này gây ra cái kia
+key_concepts_from_outline:
+- correlation
+- causation
+- confounding variable
+- reverse causation
+- coincidence
+- spurious correlation
+learning_objectives:
+- '# TODO: fill 3 Bloom-verb objectives'
+- '# eg. ''Phân biệt được X và Y trong 1 phát biểu cụ thể'''
+key_examples_seed:
+- '# TODO: fill 2-3 ví dụ bạn đã nghĩ ra (Researcher sẽ bổ sung thêm)'
+anchor_refs_seed:
+- type: paper
+  hint: '# TODO: paper/study gốc bạn muốn cite'
+- type: framework
+  hint: '# TODO: framework name'
+connections:
+  builds_on:
+  - B01
+  - B02
+  sets_up:
+  - B04
+  callbacks:
+  - '# TODO: callback explicit (vd ''Nhắc lại confirmation bias B01 ở §2'')'
+  - '# AI cũng được phép tự sinh callback ngoài list này'
+target_takeaway: '# TODO: 1 câu — sau bài này học viên sẽ làm gì khác?'
+forbidden_examples:
+- '# TODO (optional): ví dụ politically sensitive cần tránh'

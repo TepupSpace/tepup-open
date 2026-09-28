@@ -1,0 +1,16 @@
+# Không cần cho build — chỉ làm phình gói upload lên Vercel
+
+# Nội dung nháp local (có file mp3 vượt giới hạn 100MB của Vercel)
+_workspace/
+
+# Tài liệu, không tham gia build
+docs/
+
+# Dependencies & build output (Vercel tự cài và tự build)
+node_modules/
+.next/
+tepup/tepup-(.env)/
+
+# Cache Python của workflow soạn nội dung
+__pycache__/
+*.pyc

@@ -1,0 +1,33 @@
+lesson_id: B09
+title: Tin giả (misinformation)
+slug: tin-gia-misinformation
+level: 3
+position_in_level: 1 of 4
+one_line_summary_from_outline: Vì sao tin giả lan nhanh hơn tin thật
+key_concepts_from_outline:
+- misinformation (sai nhưng không cố ý)
+- disinformation (cố ý sai)
+- cơ chế lan truyền (tin giả lan nhanh gấp 6 lần — MIT 2018)
+- emotional contagion
+- deepfake / synthetic media
+learning_objectives:
+- '# TODO: fill 3 Bloom-verb objectives'
+- '# eg. ''Phân biệt được X và Y trong 1 phát biểu cụ thể'''
+key_examples_seed:
+- '# TODO: fill 2-3 ví dụ bạn đã nghĩ ra (Researcher sẽ bổ sung thêm)'
+anchor_refs_seed:
+- type: paper
+  hint: '# TODO: paper/study gốc bạn muốn cite'
+- type: framework
+  hint: '# TODO: framework name'
+connections:
+  builds_on:
+  - B08
+  sets_up:
+  - B10
+  callbacks:
+  - '# TODO: callback explicit (vd ''Nhắc lại confirmation bias B01 ở §2'')'
+  - '# AI cũng được phép tự sinh callback ngoài list này'
+target_takeaway: '# TODO: 1 câu — sau bài này học viên sẽ làm gì khác?'
+forbidden_examples:
+- '# TODO (optional): ví dụ politically sensitive cần tránh'

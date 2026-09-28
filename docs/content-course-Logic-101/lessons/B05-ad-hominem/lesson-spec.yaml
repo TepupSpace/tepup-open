@@ -1,0 +1,31 @@
+lesson_id: B05
+title: Ad hominem
+slug: ad-hominem
+level: 2
+position_in_level: 1 of 4
+one_line_summary_from_outline: Đánh người, không đánh luận điểm
+key_concepts_from_outline:
+- tấn công cá nhân thay vì đánh luận điểm
+- genetic fallacy (chồng chéo)
+- you too / tu quoque (variant)
+learning_objectives:
+- '# TODO: fill 3 Bloom-verb objectives'
+- '# eg. ''Phân biệt được X và Y trong 1 phát biểu cụ thể'''
+key_examples_seed:
+- '# TODO: fill 2-3 ví dụ bạn đã nghĩ ra (Researcher sẽ bổ sung thêm)'
+anchor_refs_seed:
+- type: paper
+  hint: '# TODO: paper/study gốc bạn muốn cite'
+- type: framework
+  hint: '# TODO: framework name'
+connections:
+  builds_on:
+  - B04
+  sets_up:
+  - B06
+  callbacks:
+  - '# TODO: callback explicit (vd ''Nhắc lại confirmation bias B01 ở §2'')'
+  - '# AI cũng được phép tự sinh callback ngoài list này'
+target_takeaway: '# TODO: 1 câu — sau bài này học viên sẽ làm gì khác?'
+forbidden_examples:
+- '# TODO (optional): ví dụ politically sensitive cần tránh'

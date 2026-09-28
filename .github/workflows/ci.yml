@@ -1,0 +1,38 @@
+name: ci
+
+# Public-repo CI. Runs on pull requests from forks with NO secrets
+# (plain `pull_request`, never `pull_request_target`).
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: tepup
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # check-committed-media --all scans history
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: tepup/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npx prisma generate
+      - name: Type-check
+        run: npx tsc --noEmit
+      - name: Formula evaluator tests
+        run: npx tsx scripts/test-safe-expr.ts
+      - name: Image sanitiser tests
+        run: npx tsx scripts/test-image-sanitize.ts
+      - name: No identifying metadata in committed media
+        run: npx tsx scripts/check-committed-media.ts --all

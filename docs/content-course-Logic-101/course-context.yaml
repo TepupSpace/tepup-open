@@ -1,0 +1,75 @@
+# Course Context — fix 1 lần, dùng cho mọi bài
+# Tham chiếu: 02.Workflow.md §2.2
+
+course: Logic 101
+total_lessons: 20
+
+audience:
+  age_range: "22-35"
+  occupation: "chủ yếu đã đi làm 1-5 năm, dùng FB/Threads/X hàng ngày"
+  reading_level: "đọc được Spiderum/Vietcetera (1500-2500 chữ), không phải sách non-fiction 300 trang"
+  prior_knowledge: "zero formal logic, có 'cảm giác' về bias qua mạng xã hội"
+  motivation: "tò mò + bực mình vì 'tranh luận trên mạng toàn rác', muốn không bị lừa và không lừa người khác"
+  duration_per_lesson_min: "10-15"
+
+structure:
+  - level: 1
+    name: "Bản thân — não bạn bị lừa"
+    lessons: [B01, B02, B03, B04]
+  - level: 2
+    name: "Người khác — ngụy biện quanh bạn"
+    lessons: [B05, B06, B07, B08]
+  - level: 3
+    name: "Hệ thống — truyền thông lừa bạn"
+    lessons: [B09, B10, B11, B12]
+  - level: 4
+    name: "Xã hội — chính trị dùng chiêu"
+    lessons: [B13, B14, B15, B16]
+  - level: 5
+    name: "Hành động — bạn làm gì?"
+    lessons: [B17, B18, B19, B20]
+
+forbidden_zones:
+  - "Nhắc đích danh đảng/chính trị gia VN cụ thể"
+  - "Ví dụ có thể bị hiểu là quan điểm chính trị một chiều"
+  - "Châm biếm cá nhân cụ thể (ngay cả celebrity)"
+  - "So sánh chế độ chính trị một phía"
+
+word_count_target:
+  min: 4500
+  max: 5500
+
+illustrations:
+  hero_image_required: true
+  inline_image_max: 2
+
+# Chính sách block — áp dụng cho CẢ 20 BÀI
+#
+# Hai loại block, khác nhau về mục đích và về tính bắt buộc:
+#
+# 1. {!CHECK#N} — MCQ chọn đáp án đúng. BẮT BUỘC.
+#    Mỗi section thân bài (§1, §2, §3) kết thúc bằng đúng 1 CHECK, chốt lại
+#    ý chính của section vừa đọc. Mục đích là NHẮC học viên nhớ, không phải
+#    bài kiểm tra khó. Stage 2 map thẳng sang block type `question`.
+#
+# 2. {!BLOCK#N} — block tương tác sâu. OPTIONAL.
+#    Chỉ dùng khi có cách cho học viên *làm* một việc mà MCQ không diễn đạt
+#    được (vd argument-mapper, bias-detector). Stage 2 chọn 1 trong 23
+#    interactive type. Bài không có block nào vẫn hợp lệ.
+#
+# Enforce: gates.py::gate_a2_validate_outline (check #4, #5, #6)
+blocks:
+  checks_required_per_body_section: 1
+  body_sections: ["§1", "§2", "§3"]
+  checks_min: 3
+  checks_max: 5
+  interactive_blocks_min: 0
+  interactive_blocks_max: 2
+
+citation_source_tiers:
+  A: "academic paper, top university (MIT/Stanford/Anthropic), peer-reviewed journal"
+  B: "major news (VnExpress, Tuoi Tre, BBC, NYT), Wikipedia có ref, established think tank"
+  C: "blog cá nhân, Spiderum, Medium — flag rõ, không dùng cho anchor refs"
+
+anchor_refs_minimum: 3
+vn_examples_minimum: 5

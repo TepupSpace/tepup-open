@@ -1,0 +1,39 @@
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+tepup/tepup-(.env)/
+
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Generated Prisma client
+**/generated/prisma/
+
+# Large media — exceeds GitHub's 100MB file limit
+*.mp3
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Nội dung nháp (transcript, fact-check) — giữ ở local, không đẩy lên repo
+_workspace/
+
+# Editor
+.vscode/
+.idea/
+.vercel
+
+# Python cache
+__pycache__/
+*.pyc

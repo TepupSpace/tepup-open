@@ -1,0 +1,296 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Custom Animations */
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 100%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.4s ease-out;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Library Document Block Animations */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.25s ease-out;
+}
+
+/* Exercise Block Animations (Nối cặp / Phân loại vào rổ / Lật thẻ).
+   Không cần khai báo prefers-reduced-motion riêng: khối toàn cục ở cuối file đã
+   tắt mọi animation/transition bằng !important. */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Lật thẻ: hai mặt chồng lên nhau trong không gian 3D, xoay quanh trục dọc.
+   Hai mặt chồng khít bằng cách cùng chiếm ô (1 / 1) của một lưới, chứ không phải
+   bằng position: absolute. Khác biệt ở chỗ: mặt absolute bị tách khỏi luồng layout
+   nên không đóng góp chiều cao nào — thẻ buộc phải bị khoá cứng một con số chọn tay,
+   và nội dung dài thì cuộn ngầm bên trong trông như bị cắt mất. Mặt xếp lưới vẫn
+   chồng khít, vẫn xoay 3D, nhưng vẫn tính vào chiều cao, nên thẻ tự cao theo mặt dài hơn. */
+.flip-card {
+  perspective: 1000px;
+  /* Để .flip-card-inner giãn kín nút thẻ mà không cần height: 100%. */
+  display: grid;
+}
+
+.flip-card-inner {
+  display: grid;
+  transition: transform 0.5s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flip-card.is-flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-face {
+  grid-area: 1 / 1;
+  /* Neo cho nhãn mặt thẻ và dấu check, vốn định vị absolute. */
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  /* Không có dòng này thì mặt sau lộ ngược ra khi thẻ đang úp. */
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+}
+
+/* ---------------------------------------------------------------------------
+   Vùng an toàn cho app đã cài
+   ---------------------------------------------------------------------------
+   Khi chạy toàn màn hình (viewportFit: cover), tai thỏ và thanh home của iPhone
+   nằm đè lên nội dung. Các tiện ích dưới đây cộng thêm phần đệm đúng bằng vùng
+   hệ điều hành chiếm chỗ; trên máy không có tai thỏ, env() trả về 0 nên không
+   ảnh hưởng gì.
+--------------------------------------------------------------------------- */
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --tab-bar-height: 3.5rem;
+}
+
+.pt-safe {
+  padding-top: var(--safe-top);
+}
+
+.pb-safe {
+  padding-bottom: var(--safe-bottom);
+}
+
+/* Cho thanh dính ở đáy: giữ nguyên phần đệm sẵn có rồi cộng thêm vùng an toàn. */
+.pb-safe-4 {
+  padding-bottom: calc(1rem + var(--safe-bottom));
+}
+
+/* Chừa chỗ cho thanh tab dưới đáy, dùng cho vùng nội dung cuộn được. */
+.pb-tab-bar {
+  padding-bottom: calc(var(--tab-bar-height) + var(--safe-bottom));
+}
+
+/* Chiều cao khung nhìn động: tránh nhảy layout khi thanh địa chỉ Safari thu gọn. */
+.min-h-screen-dvh {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* ---------------------------------------------------------------------------
+   Thang lớp chồng
+   ---------------------------------------------------------------------------
+   Giữ đúng thứ tự này, nếu không hộp thoại sẽ chui xuống dưới thanh tab:
+
+     z-40   chrome cố định   — thanh tab dưới đáy
+     z-50   thanh dính       — header, chân trang trình phát
+     z-55   nút chat nổi
+     z-60   nền mờ hộp thoại — phải phủ được toàn bộ những lớp trên
+     z-61   thân hộp thoại
+--------------------------------------------------------------------------- */
+
+/* Neo cho thứ nổi ở góc dưới: nút chat, popup bài học.
+   Trên mobile phải nâng lên khỏi phần giao diện dính ở đáy — thanh tab khi đang
+   duyệt, nút Tiếp tục khi đang học — nếu không sẽ che mất đúng nút cần bấm.
+   Chiều cao chrome do từng màn tự khai báo qua hook useBottomChrome. */
+.above-bottom-chrome {
+  bottom: 1.5rem;
+}
+
+@media (max-width: 767px) {
+  .above-bottom-chrome {
+    bottom: calc(0.75rem + var(--bottom-chrome, 0px) + var(--safe-bottom));
+  }
+}
+
+/* Nút kéo của thanh trượt.
+   Mặc định trình duyệt cho nút kéo cỡ 16px, dưới ngưỡng chạm thoải mái 44px.
+   Phóng to nút mà vẫn giữ rãnh trượt mảnh như thiết kế. */
+.range-touch::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: currentColor;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}
+
+.range-touch::-moz-range-thumb {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
+  background: currentColor;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+}
+
+/* Thanh cuộn ngang trên mobile (tab, bảng) — ẩn thanh nhưng vẫn cuộn được. */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
+/* Accessibility: Respect reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keep the BlockNote authoring surface on the same typographic scale as the learner
+   player (components/learn/BlockRenderer.tsx + NativeBlock.tsx), so authors see the
+   real rhythm instead of inserting empty blocks to fake spacing. */
+.tepup-lesson-editor .bn-default-styles { font-size: 1.125rem; }              /* text-lg */
+.tepup-lesson-editor .bn-block-outer { line-height: 1.625; }                  /* leading-relaxed */
+.tepup-lesson-editor .bn-block-content[data-content-type="paragraph"] { padding-block: 0.5rem; }  /* -> 16px between paragraphs */
+.tepup-lesson-editor .bn-block-content[data-content-type="heading"] { padding-top: 2rem; padding-bottom: 0.5rem; }
+.tepup-lesson-editor [data-content-type="heading"] { --level: 1.875rem; }     /* level 1 = text-3xl */
+.tepup-lesson-editor [data-content-type="heading"][data-level="2"] { --level: 1.5rem; }
+.tepup-lesson-editor [data-content-type="heading"][data-level="3"] { --level: 1.5rem; }
+/* BlockNote reads --prev-level while a block is changing type; without these the
+   heading size would jump mid-edit. */
+.tepup-lesson-editor [data-prev-level="1"] { --prev-level: 1.875rem; }
+.tepup-lesson-editor [data-prev-level="2"] { --prev-level: 1.5rem; }
+.tepup-lesson-editor [data-prev-level="3"] { --prev-level: 1.5rem; }
