@@ -1,12 +1,13 @@
 import { notFound } from 'next/navigation';
-import Link from '@/components/ui/AppLink';
 import { getLessonPage } from '@/lib/services/content-service';
-import LessonPlayer from '@/components/learn/LessonPlayer';
+import LessonRouteView from '@/components/learn/LessonRouteView';
 
 // ISR. Trước đây `.next/prerender-manifest.json` có `dynamicRoutes: {}` — nghĩa là
 // mọi route nội dung đều SSR lại từ đầu ở mỗi lượt xem, không hề có cache CDN.
 // Người đầu tiên trả giá, những người sau ăn cache. An toàn vì các route này
 // không đọc cookie/header, và admin lưu bài sẽ xoá cache ngay.
+// Người đã đăng nhập không tới đây: proxy.ts rewrite họ sang /staff-view/... để
+// người có quyền xem được cả bài đang ẩn ở đúng URL này.
 export const revalidate = 300;
 
 /**
@@ -34,34 +35,5 @@ export default async function LessonRoute({ params }: LessonPageProps) {
   const data = await getLessonPage(slug, lessonSlug);
   if (!data) notFound();
 
-  const exitHref = `/courses/${data.course.slug}`;
-
-  // No content authored yet. Say so — never invent placeholder lessons, which is
-  // what previously made an unreachable lesson look like a real (fake) one.
-  if (!data.content || data.content.blocks.length === 0) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.lesson.name}</h1>
-          <p className="text-gray-500 mb-6">Bài học này chưa có nội dung.</p>
-          <Link
-            href={exitHref}
-            className="inline-block px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Quay lại khoá học
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <LessonPlayer
-      contentId={data.lesson.id}
-      contentType="lesson"
-      title={data.content.title || data.lesson.name}
-      blocks={data.content.blocks}
-      exitHref={exitHref}
-    />
-  );
+  return <LessonRouteView data={data} />;
 }

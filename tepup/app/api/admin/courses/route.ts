@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 // POST /api/admin/courses - Create new course
 export async function POST(request: Request) {
   try {
-    const { error } = await requireAdminSession();
+    const { session, error } = await requireAdminSession();
     if (error) return error;
 
     const body = await request.json();
@@ -83,6 +83,7 @@ export async function POST(request: Request) {
         isNew: isNew ?? false,
         imageUrl: imageUrl?.trim() || null,
         sortOrder,
+        createdById: session.user.id,
       },
       include: {
         category: {

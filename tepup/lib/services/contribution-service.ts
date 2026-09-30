@@ -56,7 +56,7 @@ export async function publishContribution(contributionId: string, reviewerId: st
   try {
     switch (contribution.type) {
       case 'NEW_COURSE':
-        await publishNewCourse(data as CourseContributionData);
+        await publishNewCourse(data as CourseContributionData, contribution.contributorId);
         break;
       case 'EDIT_LESSON_CONTENT':
         await publishEditLessonContent(contribution.targetId!, data as { blocks: ContentBlock[] });
@@ -90,7 +90,7 @@ async function releaseClaim(contributionId: string) {
   });
 }
 
-async function publishNewCourse(data: CourseContributionData) {
+async function publishNewCourse(data: CourseContributionData, contributorId: string) {
   const { course, levels } = data;
 
   const category = await prisma.category.findUnique({ where: { id: course.categoryId }, select: { id: true } });
@@ -119,6 +119,8 @@ async function publishNewCourse(data: CourseContributionData) {
         sortOrder: (maxSortOrder._max.sortOrder ?? 0) + 1,
         isActive: false,
         isNew: true,
+        // Tác giả khoá: cho phép contributor xem bài đang ẩn trong khoá của mình.
+        createdById: contributorId,
       },
     });
 

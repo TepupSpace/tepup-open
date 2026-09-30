@@ -6,6 +6,8 @@
 import { prisma } from '../prisma';
 import { unstable_cache } from 'next/cache';
 import { CONTENT_TAG } from '../cache';
+import { canReviewContent, isContributorOrAbove } from '../role-utils';
+import type { UserRole } from '@prisma/client';
 import type {
   CategoryDisplay,
   CourseDisplay,
@@ -199,14 +201,55 @@ async function getLessonPageInternal(
   courseSlug: string,
   lessonSlug: string
 ): Promise<LessonPage | null> {
-  const lesson = await prisma.lesson.findFirst({
-    where: { slug: lessonSlug, isActive: true, course: { slug: courseSlug } },
+  const row = await findLessonRow(courseSlug, lessonSlug, false);
+  return row ? mapLessonRow(row) : null;
+}
+
+/**
+ * Bài đang ẩn chỉ người có quyền mới xem được, qua đúng URL của bài (proxy.ts
+ * rewrite sang route staff). Reviewer/Admin xem mọi bài; contributor chỉ xem bài
+ * trong khoá do chính họ tạo (`Course.createdById`).
+ *
+ * Không cache: kết quả phụ thuộc người xem.
+ */
+export async function getLessonPageForViewer(
+  courseSlug: string,
+  lessonSlug: string,
+  viewer: { id: string; role: UserRole } | null
+): Promise<{ page: LessonPage; isHidden: boolean } | null> {
+  if (!viewer || !isContributorOrAbove(viewer.role)) {
+    const page = await getLessonPage(courseSlug, lessonSlug);
+    return page ? { page, isHidden: false } : null;
+  }
+
+  const row = await findLessonRow(courseSlug, lessonSlug, true);
+  if (!row) return null;
+
+  // Chỉ bài ẩn mới cần tra tác giả khoá — query công khai không đụng tới createdById.
+  if (!row.isActive && !canReviewContent(viewer.role)) {
+    const owned = await prisma.course.count({
+      where: { id: row.level.course.id, createdById: viewer.id },
+    });
+    if (!owned) return null;
+  }
+
+  return { page: mapLessonRow(row), isHidden: !row.isActive };
+}
+
+function findLessonRow(courseSlug: string, lessonSlug: string, includeHidden: boolean) {
+  return prisma.lesson.findFirst({
+    where: {
+      slug: lessonSlug,
+      ...(includeHidden ? {} : { isActive: true }),
+      course: { slug: courseSlug },
+    },
     // `select` chứ không phải `include`: trước đây `course: true` kéo nguyên
     // dòng cho 6 field, còn `level.lessons` kéo mọi cột dù chỉ dùng id/slug/name.
     select: {
       id: true,
       slug: true,
       name: true,
+      isActive: true,
       content: { select: { title: true, blocks: true } },
       level: {
         select: {
@@ -232,9 +275,11 @@ async function getLessonPageInternal(
       },
     },
   });
+}
 
-  if (!lesson) return null;
+type LessonRow = NonNullable<Awaited<ReturnType<typeof findLessonRow>>>;
 
+function mapLessonRow(lesson: LessonRow): LessonPage {
   const course = lesson.level.course;
 
   return {
