@@ -93,9 +93,9 @@ export default async function DraftsPage() {
                       <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
                         <div className="flex items-center gap-1 text-xs text-amber-700 font-medium mb-1">
                           <MessageSquare className="w-3 h-3" />
-                          Feedback từ Reviewer
+                          Góp ý từ người duyệt — sửa rồi gửi lại
                         </div>
-                        <p className="text-sm text-amber-800">{latestReview.feedback}</p>
+                        <p className="text-sm text-amber-800 whitespace-pre-line">{latestReview.feedback}</p>
                       </div>
                     )}
                   </div>
@@ -108,9 +108,10 @@ export default async function DraftsPage() {
                       <FileEdit className="w-3.5 h-3.5" />
                       Sửa
                     </Link>
-                    {contribution.status === 'DRAFT' && (
-                      <SubmitDraftButton contributionId={contribution.id} />
-                    )}
+                    <SubmitDraftButton
+                      contributionId={contribution.id}
+                      label={contribution.status === 'CHANGES_REQUESTED' ? 'Gửi lại' : undefined}
+                    />
                   </div>
                 </div>
               </div>

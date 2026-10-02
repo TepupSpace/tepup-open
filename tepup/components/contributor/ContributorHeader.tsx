@@ -19,19 +19,19 @@ export default function ContributorHeader() {
   const displayName = session?.user?.username || session?.user?.name || 'Contributor';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6">
-      <div>
-        <h1 className="text-lg font-semibold text-gray-900">
+    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 pl-16 pr-4 sm:pr-6 lg:px-6">
+      <div className="min-w-0">
+        <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
           Khu vực Contributor
         </h1>
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex shrink-0 items-center gap-3 sm:gap-4">
         {/* View site link */}
         <Link
           href="/"
           target="_blank"
-          className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900 transition-colors"
         >
           Xem trang chủ
         </Link>

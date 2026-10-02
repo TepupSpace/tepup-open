@@ -18,7 +18,7 @@ export default async function ContributorLayout({
 
   return (
     <SessionProvider>
-      <DesktopOnlyNotice />
+      <DesktopOnlyNotice area="contributor" />
       <div className="min-h-screen bg-gray-50">
         <ContributorSidebar />
         <div className="lg:pl-64 transition-all duration-300">

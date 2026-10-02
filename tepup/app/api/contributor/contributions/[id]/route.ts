@@ -87,17 +87,19 @@ export async function PUT(
       allowCustom: session.user.role === 'ADMIN',
     });
     if (!checked.ok) {
-      return NextResponse.json(contentErrorBody(checked.issues), { status: 400 });
+      return NextResponse.json(contentErrorBody(checked.issues, prepared.data), { status: 400 });
     }
     cleanData = checked.value as Prisma.InputJsonValue;
   }
 
+  // Status is left alone: a CHANGES_REQUESTED contribution stays CHANGES_REQUESTED
+  // while the author fixes it, so the reviewer's feedback stays visible (editor, drafts
+  // list, dashboard) until it is resubmitted. Only submit moves it on.
   const updated = await prisma.contribution.update({
     where: { id },
     data: {
       ...(cleanData !== undefined && { data: cleanData }),
       ...(message !== undefined && { message }),
-      status: 'DRAFT',
     },
   });
 

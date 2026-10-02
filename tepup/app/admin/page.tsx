@@ -1,7 +1,41 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
-import { FolderTree, BookOpen, GraduationCap, Users, BookMarked } from 'lucide-react';
+import { FolderTree, BookOpen, GraduationCap, Users, BookMarked, Hourglass } from 'lucide-react';
 import Link from '@/components/ui/AppLink';
+import { getCoursesForContributions } from '@/lib/services/contribution-service';
+
+/**
+ * Courses created by approved contributions that are still hidden (`isActive: false`).
+ * Approval never makes a course public; an admin activates it, so list them here.
+ */
+async function getCoursesAwaitingActivation() {
+  try {
+    const approved = await prisma.contribution.findMany({
+      where: { type: 'NEW_COURSE', status: 'APPROVED' },
+      orderBy: { resolvedAt: 'desc' },
+      take: 200,
+      select: {
+        id: true,
+        type: true,
+        status: true,
+        targetId: true,
+        contributorId: true,
+        data: true,
+        resolvedAt: true,
+        contributor: { select: { username: true, name: true } },
+      },
+    });
+    const courses = await getCoursesForContributions(approved);
+    return approved.flatMap((c) => {
+      const course = courses.get(c.id);
+      if (!course || course.isActive) return [];
+      return [{ course, resolvedAt: c.resolvedAt, by: c.contributor.username || c.contributor.name || 'Ẩn danh' }];
+    });
+  } catch (error) {
+    console.error('Failed to fetch courses awaiting activation:', error);
+    return [];
+  }
+}
 
 async function getStats() {
   try {
@@ -23,6 +57,7 @@ async function getStats() {
 export default async function AdminDashboard() {
   const [stats, session] = await Promise.all([getStats(), auth()]);
   const isAdmin = session?.user?.role === 'ADMIN';
+  const awaiting = isAdmin ? await getCoursesAwaitingActivation() : [];
 
   const statCards = [
     {
@@ -71,13 +106,39 @@ export default async function AdminDashboard() {
         </p>
       </div>
 
+      {awaiting.length > 0 && (
+        <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-6" data-testid="awaiting-activation">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-amber-900">
+            <Hourglass className="w-5 h-5" />
+            {awaiting.length} khóa học đã duyệt đang chờ kích hoạt
+          </h2>
+          <p className="mt-1 text-sm text-amber-800">
+            Duyệt đóng góp chỉ tạo khóa học ở trạng thái ẩn. Kiểm tra lần cuối, rồi đánh dấu &ldquo;Hiển thị khóa học&rdquo; trong
+            trang khóa học để người học thấy. Người đóng góp thấy trạng thái &ldquo;chờ kích hoạt&rdquo; cho tới lúc đó.
+          </p>
+          <ul className="mt-3 space-y-1.5">
+            {awaiting.map(({ course, resolvedAt, by }) => (
+              <li key={course.id} className="text-sm text-amber-900">
+                <Link href={`/admin/courses/${course.id}`} className="font-medium underline underline-offset-2 hover:text-amber-700">
+                  {course.name}
+                </Link>
+                <span className="text-amber-800">
+                  {' '}— của {by}
+                  {resolvedAt ? `, duyệt ngày ${resolvedAt.toLocaleDateString('vi-VN')}` : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         {statCards.map((card) => {
           const Icon = card.icon;
           return (
             <Link
-              key={card.href}
+              key={card.title}
               href={card.href}
               className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow"
             >

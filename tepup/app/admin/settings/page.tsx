@@ -23,6 +23,11 @@ export default function SettingsPage() {
       return;
     }
 
+    if (newPassword === currentPassword) {
+      setError('Mật khẩu mới phải khác mật khẩu hiện tại');
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/user/change-password', {
@@ -79,11 +84,13 @@ export default function SettingsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="admin-current-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Mật khẩu hiện tại
               </label>
               <div className="relative">
                 <input
+                  id="admin-current-password"
+                  autoComplete="current-password"
                   type={showCurrent ? 'text' : 'password'}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -102,11 +109,13 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="admin-new-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Mật khẩu mới
               </label>
               <div className="relative">
                 <input
+                  id="admin-new-password"
+                  autoComplete="new-password"
                   type={showNew ? 'text' : 'password'}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
@@ -126,10 +135,12 @@ export default function SettingsPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label htmlFor="admin-confirm-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Xác nhận mật khẩu mới
               </label>
               <input
+                id="admin-confirm-password"
+                autoComplete="new-password"
                 type="password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

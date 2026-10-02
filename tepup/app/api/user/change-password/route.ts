@@ -47,6 +47,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Mật khẩu hiện tại không đúng' }, { status: 400 });
   }
 
+  // Checked after the current password, so this never reveals anything to a guesser.
+  if (newPassword === currentPassword) {
+    return NextResponse.json({ error: 'Mật khẩu mới phải khác mật khẩu hiện tại' }, { status: 400 });
+  }
+
   const hashedPassword = await bcrypt.hash(newPassword, 12);
   await prisma.user.update({
     where: { id: session.user.id },

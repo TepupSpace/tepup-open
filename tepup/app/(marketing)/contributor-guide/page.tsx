@@ -143,8 +143,8 @@ export default function ContributorGuidePage() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Được duyệt → Lên web!</h3>
-                  <p className="text-gray-600 text-sm">Nội dung xuất hiện trên Tepup cho người học. Nếu bị từ chối, bạn sẽ nhận feedback cụ thể để sửa và gửi lại.</p>
+                  <h3 className="font-semibold text-gray-900">Được duyệt → chờ kích hoạt → lên web</h3>
+                  <p className="text-gray-600 text-sm">Khi được duyệt, khóa học mới được tạo ở trạng thái ẩn. Quản trị viên kiểm tra lần cuối rồi kích hoạt, lúc đó người học mới thấy. Trang &ldquo;Đã gửi&rdquo; cho biết khóa học đang chờ kích hoạt hay đã lên web. Nếu Reviewer yêu cầu chỉnh sửa, góp ý hiện ngay trong trình soạn để bạn sửa và gửi lại.</p>
                 </div>
               </div>
             </div>
@@ -173,7 +173,7 @@ export default function ContributorGuidePage() {
                 <Star className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold text-gray-900 text-sm">Trusted Contributor <span className="text-gray-400 font-normal">(Cấp 1)</span></h3>
-                  <p className="text-gray-600 text-xs">Được ban quản trị xét duyệt, thường sau khoảng <strong>5 bài được duyệt</strong>. Có thể đề xuất chỉnh sửa nội dung đã có.</p>
+                  <p className="text-gray-600 text-xs">Được ban quản trị xét duyệt, thường sau khoảng <strong>5 bài được duyệt</strong>. Là sự ghi nhận của ban quản trị. Hiện quyền soạn và gửi duyệt giống Contributor; việc đề xuất chỉnh sửa bài đã có trên web đang được phát triển, chưa có trên giao diện.</p>
                 </div>
               </div>
 

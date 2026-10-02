@@ -71,7 +71,6 @@ const COURSE_ORDER: Record<string, number> = {
   'logic-101': 0,
   thue: 1,
   'nguoi-la-biet-gi-ve-ban': 2,
-  'dan-chu-101': 3,
 };
 
 /** Ước lượng thời gian đọc từ chính nội dung, làm tròn tới 5 phút.

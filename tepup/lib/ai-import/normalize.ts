@@ -7,6 +7,7 @@
  * Dùng chung cho drawer (khi dán JSON từ AI) và các route lưu bài.
  */
 import { checkBlock, isKnownBlockType } from '@/lib/schemas/blocks';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 
 type Obj = Record<string, unknown>;
 
@@ -70,6 +71,10 @@ export function normalizeBlock(block: unknown): unknown {
 /**
  * Chuẩn hoá + kiểm cả mảng block trước khi ghi DB.
  *
+ * "Block #N" trong lỗi là chỉ số (từ 1) trong mảng nhận vào. Bên gọi phải truyền mảng
+ * ĐÃ `trimEmptyBlocks`, để số khớp với số ở lề trình soạn (xem CLAUDE.md, "Block
+ * numbers have one contract"). `prepareContributionData` tự trim.
+ *
  * Block có `type` không nằm trong schema (các loại cũ chưa có renderer) được giữ
  * nguyên và KHÔNG chặn — bài cũ vẫn phải lưu được. Mọi loại đã biết thì phải hợp lệ.
  */
@@ -88,15 +93,21 @@ export function prepareBlocksForSave(blocks: unknown): { blocks: unknown[]; erro
   return { blocks: out, errors };
 }
 
+const trimmed = (blocks: unknown) => trimEmptyBlocks(blocks).blocks;
+
 /**
  * Như `prepareBlocksForSave`, cho `Contribution.data`: dạng `{ blocks }`
  * (EDIT_LESSON_CONTENT) hoặc `{ levels: [{ lessons: [{ content: { blocks } }] }] }`
  * (NEW_COURSE). Mọi dạng khác được giữ nguyên.
+ *
+ * Bỏ dòng trống (`trimEmptyBlocks`) TRƯỚC khi kiểm, giống route xuất bản của admin:
+ * nếu không, "Block #N" đếm cả dòng trống và lệch với số ở lề trình soạn. Dữ liệu trả
+ * về cũng đã trim.
  */
 export function prepareContributionData(data: unknown): { data: unknown; errors: string[] } {
   if (!isObj(data)) return { data, errors: [] };
   if (data.blocks !== undefined) {
-    const r = prepareBlocksForSave(data.blocks);
+    const r = prepareBlocksForSave(trimmed(data.blocks));
     return { data: { ...data, blocks: r.blocks }, errors: r.errors };
   }
   if (!Array.isArray(data.levels)) return { data, errors: [] };
@@ -105,7 +116,7 @@ export function prepareContributionData(data: unknown): { data: unknown; errors:
     if (!isObj(level) || !Array.isArray(level.lessons)) return level;
     const lessons = level.lessons.map((lesson, bi) => {
       if (!isObj(lesson) || !isObj(lesson.content) || lesson.content.blocks === undefined) return lesson;
-      const r = prepareBlocksForSave(lesson.content.blocks);
+      const r = prepareBlocksForSave(trimmed(lesson.content.blocks));
       const name = typeof lesson.name === 'string' && lesson.name ? lesson.name : `bài ${bi + 1}`;
       errors.push(...r.errors.map((e) => `Level ${li + 1} › ${name} › ${e}`));
       return { ...lesson, content: { ...lesson.content, blocks: r.blocks } };

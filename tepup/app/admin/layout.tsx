@@ -1,4 +1,6 @@
+import { redirect } from 'next/navigation';
 import { requireAuth } from '@/lib/admin-auth';
+import { canReviewContent } from '@/lib/role-utils';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DesktopOnlyNotice from '@/components/mobile/DesktopOnlyNotice';
@@ -14,8 +16,13 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Check login (admin role check is handled per-route)
-  await requireAuth();
+  // The admin shell is for reviewers and admins. Reviewers reach the dashboard, reviews/ and
+  // settings/; everything ADMIN-only sits in (restricted)/, which checks requireAdmin() itself.
+  // Contributors have their own area. (API routes check their own sessions; see CLAUDE.md.)
+  const session = await requireAuth();
+  if (!canReviewContent(session.user.role)) {
+    redirect('/contributor');
+  }
 
   return (
     <SessionProvider>

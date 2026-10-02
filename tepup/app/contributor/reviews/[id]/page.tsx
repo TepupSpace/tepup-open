@@ -12,6 +12,9 @@ import {
   Clock,
 } from 'lucide-react';
 import ContributionPreview from '@/components/review/ContributionPreview';
+import { approveActionText, reviewActionLabel } from '@/lib/contribution-labels';
+import { getRoleDisplayName } from '@/lib/role-utils';
+import type { UserRole } from '@prisma/client';
 
 interface ContributionData {
   id: string;
@@ -155,7 +158,7 @@ export default function ReviewDetailPage() {
                           ? 'bg-red-100 text-red-700'
                           : 'bg-amber-100 text-amber-700'
                       }`}>
-                        {review.action}
+                        {reviewActionLabel(review.action)}
                       </span>
                       <span className="text-gray-500">
                         bởi {review.reviewer.username || review.reviewer.name}
@@ -183,13 +186,20 @@ export default function ReviewDetailPage() {
               </div>
               <div>
                 <p className="font-medium text-gray-900">{contributorName}</p>
-                <p className="text-xs text-gray-500">{contribution.contributor.role}</p>
+                <p className="text-xs text-gray-500">{getRoleDisplayName(contribution.contributor.role as UserRole) ?? contribution.contributor.role}</p>
               </div>
             </div>
             <div className="text-xs text-gray-500 flex items-center gap-1">
               <Clock className="w-3 h-3" />
               Gửi: {new Date(contribution.submittedAt).toLocaleDateString('vi-VN')}
             </div>
+            {contribution.message && (
+              <div className="mt-3 rounded-lg bg-gray-50 p-3">
+                <p className="text-xs font-medium text-gray-600 mb-1">Lời nhắn cho người duyệt</p>
+                {/* Plain text: contributor input is untrusted. */}
+                <p className="text-sm text-gray-700 whitespace-pre-line break-words">{contribution.message}</p>
+              </div>
+            )}
           </div>
 
           {/* Review actions */}
@@ -213,8 +223,11 @@ export default function ReviewDetailPage() {
                   }`}
                 >
                   <CheckCircle className="w-4 h-4" />
-                  Duyệt (Publish)
+                  {approveActionText(contribution.type).label}
                 </button>
+                {action === 'APPROVED' && (
+                  <p className="px-1 text-xs text-gray-500">{approveActionText(contribution.type).hint}</p>
+                )}
 
                 <button
                   onClick={() => setAction('CHANGES_REQUESTED')}

@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     allowCustom: session.user.role === 'ADMIN',
   });
   if (!checked.ok) {
-    return NextResponse.json(contentErrorBody(checked.issues), { status: 400 });
+    return NextResponse.json(contentErrorBody(checked.issues, prepared.data), { status: 400 });
   }
 
   const contribution = await prisma.contribution.create({

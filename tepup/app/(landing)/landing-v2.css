@@ -160,8 +160,19 @@
    ========================================================================= */
 
 .lp-scroller {
-  height: 250vh;
+  /* 100vh khung dính + 85vh cuộn: chuyển cảnh 1 → 2 trong ~0.5 màn đầu, trang 2
+     đứng đọc ~0.35 màn rồi nhả (kịch bản trong HeroScroller.tsx). Đổi số này
+     thì đổi cả các mốc ở đó. */
+  height: 185vh;
   position: relative;
+}
+/* Neo #gioi-thieu: trang 2 đã hiện đủ (từ 0.50) và khung còn dính (tới 0.85). */
+.lp-anchor {
+  position: absolute;
+  top: 62vh;
+  left: 0;
+  width: 1px;
+  height: 1px;
 }
 .lp-viewport {
   position: sticky;
@@ -186,9 +197,17 @@
   position: absolute;
   inset: 0;
   z-index: 10;
+  /* mỗi trang một lớp riêng: mờ/hiện chỉ là việc của compositor, không vẽ lại
+     cả màn ảnh mỗi khung hình */
+  will-change: opacity;
 }
 .lp-page--2 {
   opacity: 0;
+  pointer-events: none; /* JS trả lại khi trang đã hiện đủ */
+}
+/* trang 1 đã tắt hẳn (JS gắn .is-off): dừng băng chuyền cho đỡ việc */
+.lp-page--1.is-off .lp-parade {
+  animation-play-state: paused;
 }
 
 /* Sân khấu 1512×982 căn giữa. Mọi toạ độ con tính bằng design-px × --u, nên
@@ -217,6 +236,7 @@
   gap: calc(36 * var(--u));
   align-items: center;
   z-index: 15;
+  will-change: transform, opacity; /* JS đẩy nhẹ lên và tắt lúc trang 1 mờ đi */
 }
 .lp-slogan {
   font-family: var(--voyage);
@@ -320,6 +340,9 @@
   width: calc(1606 * var(--u));
   z-index: 4;
   pointer-events: none;
+  /* nét vẽ là animation phải vẽ lại mỗi khung (stroke-dashoffset); cho nó lớp
+     riêng để không kéo cả trang 2 (ảnh, chữ) rasterize lại theo */
+  will-change: transform;
 }
 .lp-redline svg {
   width: 100%;
@@ -331,9 +354,17 @@
   stroke-dasharray: 1;
   stroke-dashoffset: 1;
 }
-/* nét vẽ một hơi, đều và thong thả, trong lúc các nhân vật lần lượt hiện ra */
-.lp-page--2.is-playing .lp-redline path {
-  animation: lp-draw 3.4s linear 0.1s forwards;
+/* Nét vẽ một hơi, đều và thong thả, trong lúc các nhân vật lần lượt hiện ra.
+   Hoạt cảnh của trang 2 gắn sẵn từ lúc tải ở trạng thái paused (cả độ trễ cũng
+   đứng yên), .is-playing chỉ bật running. Gắn mới 11 animation đúng lúc đang
+   cuộn tốn một khung hình 50–80ms (đo được); bật running thì gần như không. */
+.lp-page--2 .lp-redline path {
+  animation: lp-draw 3.4s linear 0.1s forwards paused;
+}
+.lp-page--2.is-playing .lp-redline path,
+.lp-page--2.is-playing .lp-ch,
+.lp-page--2.is-playing .lp-ch img {
+  animation-play-state: running;
 }
 @keyframes lp-draw {
   to {
@@ -345,7 +376,10 @@
   position: absolute;
   z-index: 5;
   transform: translate(-50%, -50%);
-  opacity: 0;
+  /* 0.001 chứ không phải 0: mắt không thấy, nhưng trình duyệt vẫn vẽ nên ảnh
+     được giải mã sẵn từ lúc tải, thay vì cả 5 ảnh cùng giải mã đúng khung hình
+     bắt đầu hoạt cảnh (giữa lúc đang cuộn). Xem `floor` trong HeroScroller. */
+  opacity: 0.001;
 }
 .lp-ch .lp-rot {
   transform: rotate(var(--rot));
@@ -356,15 +390,15 @@
   transform-origin: bottom center;
 }
 /* hiện bằng fade sạch (luôn về đúng 100%), rồi lắc stop-motion từ lúc xuất hiện */
-.lp-page--2.is-playing .lp-ch {
-  animation: lp-pop 0.3s ease-out var(--d) both;
+.lp-page--2 .lp-ch {
+  animation: lp-pop 0.3s ease-out var(--d) both paused;
 }
-.lp-page--2.is-playing .lp-ch img {
-  animation: lp-sway 1.4s steps(3, end) var(--d) infinite;
+.lp-page--2 .lp-ch img {
+  animation: lp-sway 1.4s steps(3, end) var(--d) infinite paused;
 }
 @keyframes lp-pop {
   0% {
-    opacity: 0;
+    opacity: 0.001; /* như .lp-ch: vẫn được vẽ sẵn trong lúc chờ */
     transform: translate(-50%, -50%) scale(0.9);
   }
   100% {
@@ -409,8 +443,7 @@
   font-size: calc(70 * var(--u));
   line-height: 1.233;
   font-variation-settings: 'SOFT' 0, 'WONK' 1;
-  opacity: 0;
-  transform: translateY(14px);
+  will-change: transform, opacity; /* JS đưa vào theo vị trí cuộn */
 }
 .lp-p2-title .lp-b {
   color: var(--ink);
@@ -420,8 +453,7 @@
   flex-direction: column;
   gap: calc(28 * var(--u));
   color: var(--ink);
-  opacity: 0;
-  transform: translateY(14px);
+  will-change: transform, opacity;
 }
 .lp-p2-body p {
   font-size: calc(18 * var(--u));
@@ -433,13 +465,8 @@
   font-style: italic;
   font-size: calc(24 * var(--u));
 }
-/* tiêu đề vào trước, body theo sau */
-.lp-page--2.is-playing .lp-p2-title {
-  animation: lp-rise 0.6s ease 0.1s forwards;
-}
-.lp-page--2.is-playing .lp-p2-body {
-  animation: lp-rise 0.7s ease 0.9s forwards;
-}
+/* Tiêu đề và body KHÔNG chạy theo thời gian: HeroScroller đưa chúng vào theo
+   vị trí cuộn (tiêu đề trước, body sát sau), để cuộn tới đâu đọc được tới đó. */
 @keyframes lp-rise {
   to {
     opacity: 1;
@@ -837,15 +864,20 @@
 
 @media (max-width: 640px) {
   /* header: hamburger (trái) + logo (giữa), link và CTA dồn vào dropdown */
+  /* A paper-coloured bar rather than a floating logo: section 2 and the sections after it
+     scroll up under the header, and text showed through behind the logo. No backdrop blur:
+     repainting a blur over moving content is what makes cheap phones stutter. */
   .lp-hdr {
-    top: 14px;
+    top: 0;
     left: 0;
     transform: none;
     width: 100%;
-    padding: 0 16px;
+    padding: 14px 16px 8px;
     gap: 0;
     justify-content: flex-start;
     white-space: normal;
+    background: color-mix(in srgb, var(--paper) 98%, transparent);
+    box-shadow: 0 1px 0 rgb(0 0 0 / 5%);
   }
   .lp-burger {
     display: flex;
@@ -853,6 +885,7 @@
   .lp-hdr__logo {
     height: 42px;
     position: absolute;
+    top: 13px; /* level with the burger, inside the 64px bar */
     left: 50%;
     transform: translateX(-50%);
   }
@@ -862,7 +895,7 @@
   }
   .lp-mmenu {
     position: absolute;
-    top: 56px;
+    top: 70px; /* 56px below the logo, as before; the header now starts at 0 with 14px padding */
     left: 50%;
     transform: translateX(-50%);
     width: calc(100vw - 32px);
@@ -1055,6 +1088,28 @@
    ========================================================================= */
 
 @media (prefers-reduced-motion: reduce) {
+  /* Không chuyển cảnh theo cuộn: hai trang nằm nối nhau như hai màn thường.
+     JS cũng đứng ngoài (xem HeroScroller). */
+  .lp-scroller {
+    height: auto;
+  }
+  .lp-anchor {
+    top: 100vh;
+  }
+  .lp-viewport {
+    position: relative;
+    height: auto;
+    overflow: visible;
+  }
+  .lp-page {
+    position: relative;
+    inset: auto;
+    height: 100vh;
+    overflow: hidden;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    will-change: auto;
+  }
   .lp-parade {
     animation: none !important;
   }

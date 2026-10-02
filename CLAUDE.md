@@ -4,9 +4,7 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 
 ## Repo layout
 - `tepup/` — the Next.js app. **The only thing that builds or deploys.** All commands below run from here.
-- `docs/` — lesson-structure guideline, course source material, Logic 101 authoring pipeline (Python). Excluded from Vercel uploads.
-- `tepup-design-system/` — design tokens, fonts, UI-kit previews. Not imported by the build.
-- `_backups/` — JSON snapshots that scripts write before bulk content rewrites.
+- `docs/` — architecture overview and the lesson-structure guideline. Excluded from Vercel uploads.
 
 ## Stack
 - Next.js 16 (App Router only), React 19, TypeScript 5, Tailwind CSS 4, Lucide icons
@@ -15,7 +13,7 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - Supabase Storage for lesson images (`lib/supabase-storage.ts`, `app/api/admin/upload-image`)
 - Groq's **free tier** powers the learner AI chat (`app/api/ai/chat`, personas in `lib/ai/personas.ts`). See [AI chat](#ai-chat-low-priority-free-tier) before touching it. Anthropic powers the admin-only block builder (`app/api/admin/ai/build-block`). Authors can also paste JSON produced by their own AI: `lib/ai-import/` normalises it, and `checkBlock` in `lib/schemas/blocks.ts` checks its structure.
 - BlockNote (admin editor), Sandpack (admin-defined `custom` blocks), zod 4, isomorphic-dompurify
-- Vercel (Hobby plan), region `sin1`, deployed by GitHub Actions on every push to `main` (see [Deployment](#deployment-every-push-to-main-goes-to-production)). Cloudflare sits in front: DNS, plus a 5-minute edge cache for public pages (see [Edge caching](#edge-caching-cloudflare)). Installable as a PWA.
+- Vercel (Hobby plan), region `sin1`. Cloudflare sits in front: DNS, plus a 5-minute edge cache for public pages (see [Edge caching](#edge-caching-cloudflare)). Installable as a PWA.
 
 ## Commands (from `tepup/`)
 - `npm run dev` — dev server on :3000
@@ -27,20 +25,20 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - `npx prisma studio`
 - `npx tsx scripts/<name>.ts` — seed, migration and audit scripts
 - `npx tsx scripts/test-safe-expr.ts` — the only automated check (no test framework). Run it after touching `lib/security/safe-expr.ts` or any block formula.
-- `docker compose up --build` — the full app against a **local, disposable** Postgres, production-like (`next build` + `next start`), on http://localhost:3000. See [Local Docker stack](#local-docker-stack). Use it to test anything that writes to the database, instead of staging.
+- `docker compose up --build` — the full app against a **local, disposable** Postgres, production-like (`next build` + `next start`), on http://localhost:3000. See [Local Docker stack](#local-docker-stack). Optional: a convenient way to test database writes without touching staging, but any reasonable test (staging, `next dev`, a script) is fine.
 
 ## Environments & databases
 - `tepup/.env` → your development database (a Supabase project). `next dev` and the Prisma CLI read it.
 - Variables are listed in `tepup/.env.example`. Never commit `.env*` (gitignored).
 
 ### Script safety conventions (follow these for new scripts)
-Newer scripts (`add-block-test-course.ts`, `add-logic-101-production.ts`, `seed-stories-v2.ts`, `resolve-library-doc-slugs.ts`, …) follow these rules:
+Newer scripts (`add-block-test-course.ts`, `seed-stories-v2.ts`, `resolve-library-doc-slugs.ts`, …) follow these rules:
 - **`--env=<path>` is required.** There is no default and no silent fallback to `.env`. Staging: `--env=.env`. Production: `--env='tepup-(.env)/.env.production'`.
 - **Dry run by default.** Nothing is written without `--apply`.
 - Print the target (map the Supabase project ref to STAGING/PRODUCTION) before doing anything.
 - Upsert by slug so re-runs are idempotent. Snapshot affected content to `../_backups/` before bulk rewrites.
 - Scripts create their own `PrismaClient` with `PrismaPg` after loading the env file. Don't import `lib/prisma.ts`, which reads `process.env` at import time.
-- Older scripts (`add-*-course.ts`, `update-danchu101-*`) read `.env` implicitly. Check which DB they hit before running one.
+- Older scripts read `.env` implicitly. Check which DB they hit before running one.
 - **Never run a script against production unless the user asks for that specific run.**
 
 ## Code map (`tepup/`)
@@ -53,7 +51,7 @@ app/
                         story player   /story/[characterId]/[storySlug]/[chapterSlug]
   (auth)/               login, register(-contributor), banned, feature-request
   (marketing)/          contributor-guide (+ /block-demo showing every interactive block)
-  admin/                layout = requireAuth(); (restricted)/ = requireAdmin(); reviews/ & settings/ sit outside it
+  admin/                layout = REVIEWER+ (contributors → /contributor); (restricted)/ = requireAdmin(); reviews/ & settings/ sit outside it
   contributor/          contributor dashboard, drafts, submissions, reviews
   dev/blocks/           block preview playground
   api/                  route handlers: admin/**, contributor/**, ai/chat, library, register, user, progress, feature-requests
@@ -90,7 +88,7 @@ Course ⇄ Story via CourseStoryRecommendation;  LibraryDocument (reference arti
   - Native: `heading`, `quote`, `code`, `bullet-list`, `numbered-list`, `check-list`, `toggle`, `table`, `video`, `audio`, `file`, `step-break`
 - The editor groups interactive blocks into **question** blocks (checkpoints, e.g. `question`, `pair-match`, `sort-bucket`) and **explainer** blocks (simulations that replace body text). The grouping lives in the `group` field of `blockTypes` in `components/admin/editor/block-utils.ts`.
 - **Only types in `INTERACTIVE_BLOCK_MAP` (`components/learn/BlockRenderer.tsx`) render. Any other type silently renders nothing.** The key doc's "only 6 types" list is out of date; the map is the source of truth.
-- Learner queries filter `isActive: true`, so an inactive course is admin-only.
+- Learner queries filter `isActive: true` (on the course too, for course and lesson pages), so an inactive course is admin-only. Missing/hidden courses and lessons are real HTTP 404s: the check sits in each route's `layout.tsx`, because a `notFound()` inside the `loading.tsx` Suspense boundary only produces a soft 404 (status 200).
 - Learner progress lives only in `localStorage` (`lib/contexts/ProgressContext.tsx`). `UserProgress` and `/api/progress` exist but no client uses them.
 
 ### Adding a new block type
@@ -108,7 +106,11 @@ Author content is untrusted: contributors self-register. Keep these rules:
 - **Media URLs must pass `isAllowedMediaUrl`** (`lib/security/safe-url.ts`). Only the two Supabase projects and `upload.wikimedia.org/wikipedia/` are allowed. Anything else renders `BlockedMedia` and never fetches, so the learner's IP doesn't leak. Don't add wildcard hosts.
 - **Validate on save.** `validateContributionData` checks contributor content strictly and rejects `custom` and unknown types. `sanitizeAdminBlocks` handles admin saves (HTML plus media only; legacy/`custom` blocks are kept).
 - Every `app/api/admin/**` route checks `getAdminSession()` itself; the layouts don't protect API routes. Contributor routes use `getContributorSession()`.
-- Login, register, change-password and AI chat are rate-limited in memory (`lib/security/rate-limit.ts`, per instance). Password rules live in `lib/security/password-policy.ts`.
+- Login, register, change-password, feature requests and AI chat are rate-limited in memory (`lib/security/rate-limit.ts`, per instance). Password rules live in `lib/security/password-policy.ts`.
+  - Login counts only **failed** attempts (per username+IP, plus a looser per-username and per-IP cap; see `lib/auth.ts`). Refusals reach the client as a `CredentialsSignin` `code` (`lib/auth-messages.ts`), since NextAuth hides thrown messages.
+  - `clientIp` prefers `cf-connecting-ip` (Cloudflare), which can be spoofed by anyone hitting the `*.vercel.app` origin directly.
+  - Usernames are stored lowercase; login matches case-insensitively when unambiguous.
+  - Post-login `callbackUrl`s go through `safeRedirectPath` (`lib/security/safe-redirect.ts`): same-site paths only.
 - Baseline security headers are set in `next.config.ts`. There is no script-src CSP yet, because Sandpack and the image hosts need testing first.
 - The JWT callback in `lib/auth.ts` re-reads role and ban status every 60s, so a ban ends the session.
 - **Anonymous suggestions** (`app/api/suggestions`, table `Suggestion`) must stay identity-free: never store an IP, user agent or user id on them, and always render them as plain text. They go to the reviewer queue and are never applied to content automatically. Only an ADMIN marks one APPLIED.
@@ -120,7 +122,8 @@ Author content is untrusted: contributors self-register. Keep these rules:
 - Route handlers live in `app/api/<resource>/route.ts` and export GET/POST/PUT/DELETE.
 - Reads go through `lib/services/content-service.ts` (`unstable_cache`, tagged). **After every successful admin content mutation, call `revalidateContent()` (or `revalidateLibrary()`)** from `lib/cache.ts`. Otherwise edits stay stale until the TTL expires.
 - Slugs: use the helpers in `lib/api-helpers.ts` (`lessonSlugInCourse`, `uniqueSlugForModel`, `chapterSlugInStory`). Lesson slugs are unique per course; course and story slugs are globally unique.
-- Contribution publish (`publishContribution` in `contribution-service.ts`) supports only `NEW_COURSE` and `EDIT_LESSON_CONTENT`. It re-validates the content, creates new courses hidden (`isActive: false`) until an admin activates them, and forbids self-review. Promotion is manual (auto-promotion was removed).
+- Contribution publish (`publishContribution` in `contribution-service.ts`) supports only `NEW_COURSE` and `EDIT_LESSON_CONTENT`. It re-validates the content, creates new courses hidden (`isActive: false`) until an admin activates them, and forbids self-review. An approved `NEW_COURSE` stores the created course id in `Contribution.targetId`; contributors see "Đã duyệt — chờ quản trị viên kích hoạt" until it is active, and the admin dashboard lists approved courses that are still hidden (`getCoursesForContributions`). Promotion is manual (auto-promotion was removed).
+- Contribution status: saving never changes it. `CHANGES_REQUESTED` stays until the author resubmits (submit sets `PENDING_REVIEW` and clears `resolvedAt`), so the reviewer's feedback stays visible in the editor, the drafts list and the dashboard.
 - Code comments and UI copy are often in Vietnamese. Match the language of the surrounding file.
 - Don't edit `node_modules/`, `.next/` or the generated Prisma client.
 
@@ -133,7 +136,7 @@ Author content is untrusted: contributors self-register. Keep these rules:
   - 0–2 optional **explainer** blocks per lesson, replacing body text, and only types that render.
   - An `inline` `library-document` for further reading, and a `success` callout as the summary.
   - A neutral tone, with sources cited.
-- Reference seed: `scripts/add-thue101v2-course.ts`. Story seeds must pass `scripts/stories-v2/validate.ts`.
+- Reference: `scripts/add-block-test-course.ts` and `/contributor-guide/block-demo`. Story seeds must pass `scripts/stories-v2/validate.ts`.
 - `scripts/audit-block-limits.ts` checks existing DB content against `lib/blockLimits.ts`.
 
 ## Git remotes & deployment
@@ -157,7 +160,14 @@ Author content is untrusted: contributors self-register. Keep these rules:
   - If you change how blocks are converted (`blocknote-converter.ts`) or trimmed, keep all three in step, or errors will point at the wrong block.
 - **New lessons start hidden** (`isActive: false` in `POST /api/admin/levels/[levelId]/lessons`). The first "Xuất bản" of a hidden lesson that has never been published asks first ("bài học sẽ HIỂN THỊ CÔNG KHAI…"). Confirming ticks "Hiển thị bài học" and publishes it visible. A lesson that was hidden deliberately after being published stays hidden when its edits are published.
   - Hovering over "Xuất bản" or "Lưu nháp" shows what each does (`publishHint` / `saveDraftHint` on `EditorSaveBar`).
-- `NotionBlockEditor` builds itself **once** from its `blocks` prop. To show different content (after discarding a draft, or once publishing has dropped empty lines), remount it by changing its `key`, as both editor pages do.
+- `NotionBlockEditor` builds itself **once** from its `blocks` prop. To show different content (after discarding a draft, or once publishing has dropped empty lines), remount it by changing its `key`, as the editor pages do (the contributor editor also keys it per lesson).
+
+## Contributor editor
+- `app/contributor/contributions/[id]/edit` autosaves the whole `Contribution.data` (plus `message`) with `useDraftAutosave` (`PUT /api/contributor/contributions/[id]`), has the `useUnsavedChangesGuard` leave warning, and Ctrl+S. "Gửi duyệt" saves first and only then submits (submit sends the **server** copy).
+- Contributor saves are **validated strictly** (unlike admin drafts). A rejected save keeps the editor as is, shows the error (with the gutter's "Block #N") until the next successful save, and isn't re-sent until the content changes. Until the server has the latest edits, the page keeps a copy in `localStorage` (`tepup:contribution-backup:<id>`) and restores it on reload.
+- Contributor routes trim before checking (`prepareContributionData` runs `trimEmptyBlocks` first), and `contentErrorBody(issues, data)` names NEW_COURSE lessons: `Level 1 › <bài> › Block #6 › …`.
+- `NotionBlockEditor mode="contributor"` never calls `/api/admin/**` (custom block types, upload, admin library): no upload (BlockNote shows only the URL tab), a Vietnamese note on allowed image hosts, and the library picker uses `/api/library`. Block forms read the mode from `EditorModeContext`. **Image upload is admin-only by decision**; don't add a contributor upload endpoint without asking.
+- BlockNote's UI uses its Vietnamese dictionary (`@blocknote/core/locales`).
 
 ## Local Docker stack
 - `tepup/compose.yaml` runs `db` (Postgres 16, data in a named volume) and `app` (`tepup/Dockerfile`, built on start by `docker/entrypoint.mjs`). The entrypoint does: wait for the database → `prisma db push` as the owner → `docker/after-push.sql` (RLS on every table plus grants, as in production) → `scripts/docker-seed.ts --apply` → `next build` → `next start`.
@@ -171,17 +181,6 @@ Author content is untrusted: contributors self-register. Keep these rules:
   - No AI chat answers unless you pass `GROQ_API_KEY`; without it the chat fails gracefully.
   - Not used by Vercel. `.dockerignore` keeps every `.env*` file and `tepup-(.env)/` out of the image.
 
-## Deployment: every push to `main` goes to production
-- `.github/workflows/deploy-production.yml` runs on every push to `main` (and on **Actions → deploy-production → Run workflow**). It uploads the repo with the Vercel CLI and a token, Vercel builds it, and the result **replaces tepup.space**. There are no preview deployments, so **pushing to `main` is a production release**. Test locally against staging first.
-- **Keep the `Drop Git metadata` step (`rm -rf .git`).** On Vercel's Hobby plan, a deployment that carries commit metadata is blocked unless the commit author is the Vercel account owner ("Deployment Blocked … commit email could not be matched"). The CLI then just hangs at `Building...` until the job times out. Without `.git` the token alone authorises the upload, so anyone's commits deploy.
-- **Don't use Vercel's *Redeploy* button.** It reuses the old commit metadata and gets blocked. Re-run the workflow instead. To undo a bad release: Vercel → Deployments → previous production deployment → **Instant Rollback**.
-- The run ends with a **smoke test** (`/`, `/courses`, `/api/library`, `/api/suggestions`). Red means the live site returned a wrong status: check it now. A yellow warning only means Cloudflare challenged GitHub's runner.
-- **The website's database role is restricted.** Production `DATABASE_URL` logs in as a role that can read and write rows (it bypasses RLS), but can't create, alter or drop anything. Schema SQL therefore runs from a developer machine with the owner connection, never from Vercel. **Don't put `DIRECT_URL` or any `postgres`-owner URL in Vercel.**
-- **Vercel environment variables:** add secrets as **Type: Secret** for **Production only**.
-  - Never use *All Environments*: Development values stay readable and `vercel env pull` copies them to laptops. Never point Development at the production database.
-  - Changing a variable only takes effect on the next deployment.
-  - Rotating `AUTH_SECRET` logs everyone out (JWT sessions).
-  - `SUPABASE_SERVICE_ROLE_KEY` holds a Supabase **secret key** (`sb_secret_…`). Supabase rejects it from browsers, so `lib/supabase-storage.ts` must stay server-only.
 
 ## Edge caching (Cloudflare)
 - Cloudflare caches the public pages for 5 minutes. Two parts must agree: the `Cloudflare-CDN-Cache-Control` header in `tepup/next.config.ts` (`publicPages`), and the Cloudflare Cache Rule "Public pages, anonymous only" (dashboard). Browsers still get `max-age=0`.
@@ -198,6 +197,14 @@ Author content is untrusted: contributors self-register. Keep these rules:
   - Check Groq's model list before changing the models; free-plan models change without notice.
 - The browser shows the route's `{ error }` text **verbatim** (`ChatApiError` in `lib/contexts/AIChatContext.tsx`). So error strings must be short, Vietnamese and non-technical: no keys, model names or upstream messages. Groq SDK retries are off on purpose (`maxRetries: 0`).
 - Learner text goes to an external AI service. Keep the disclaimer under the chat input, and never send an IP, user id or other identity to the AI.
+
+## Working agreements for AI assistants
+Several people work on this repo through AI coding assistants, and each needs to pick up the others' work without asking. Every assistant follows these rules:
+- **Before starting:** read `git log` since your last session, and any handover notes the maintainers keep. If the user's request touches an open item, say so.
+- **Commit messages explain the change for the next person.** Say what changed and why, and the effect a user or admin will see. Say how it was tested: which environment (local `next dev`, staging, the Docker stack, a script, a manual check on the live site) and which checks passed. List any manual step it needs (SQL to apply first, environment variables, dashboard settings). One logical change per commit.
+- **Test before pushing, in whatever way fits** (see Commands), and write down what you tested. A push to `main` is a production release.
+- **Keep this file current.** When you add a rule that others must keep (an invariant, a gotcha, a "never do X"), add it to the relevant section here, in the same commit.
+- **Open items** (things left undone, decisions waiting on someone, rotations, clean-ups) go on the maintainers' pending-ops list, with who should do them.
 
 ## Grill me
 - Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".

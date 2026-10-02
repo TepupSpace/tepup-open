@@ -37,3 +37,8 @@ _workspace/
 # Python cache
 __pycache__/
 *.pyc
+
+# Written by `next dev` (Next 16.3+) when it detects an AI coding agent. Not ours: the
+# project guide is the root CLAUDE.md; a stray tepup/CLAUDE.md would be loaded on top of it.
+tepup/AGENTS.md
+tepup/CLAUDE.md

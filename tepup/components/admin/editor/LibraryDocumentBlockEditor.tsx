@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Search, ExternalLink } from 'lucide-react';
 import type { LibraryDocumentBlock } from './BlockEditor';
+import { useEditorMode } from './EditorModeContext';
 
 interface LibraryDocument {
   id: string;
@@ -28,48 +29,51 @@ export default function LibraryDocumentBlockEditor({
   const [documents, setDocuments] = useState<LibraryDocument[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDoc, setSelectedDoc] = useState<LibraryDocument | null>(null);
+  // Contributors read the public library API (active documents only); /api/admin/library is 401 for them.
+  const libraryApi = useEditorMode() === 'contributor' ? '/api/library' : '/api/admin/library';
 
   // Initialize documentContent for inline mode
   const documentContent = block.documentContent || { sections: [{ paragraphs: [''] }] };
 
   // Fetch documents for reference mode
   useEffect(() => {
-    if (mode === 'reference') {
-      fetchDocuments();
-    }
-  }, [mode]);
+    if (mode !== 'reference') return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(libraryApi);
+        const data = await res.json();
+        if (!cancelled && data.data) {
+          // The public list has no isActive field (it only returns active documents).
+          setDocuments(data.data.filter((doc: { isActive?: boolean }) => doc.isActive !== false));
+        }
+      } catch (err) {
+        console.error('Error fetching documents:', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, libraryApi]);
 
   // Fetch selected document info if documentId exists
   useEffect(() => {
-    if (mode === 'reference' && block.documentId && !selectedDoc) {
-      fetchSelectedDocument();
-    }
-  }, [block.documentId, mode, selectedDoc]);
-
-  async function fetchDocuments() {
-    try {
-      const res = await fetch('/api/admin/library');
-      const data = await res.json();
-      if (data.data) {
-        setDocuments(data.data.filter((doc: { isActive: boolean }) => doc.isActive));
+    const documentId = block.documentId;
+    if (mode !== 'reference' || !documentId || selectedDoc) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${libraryApi}/${documentId}`);
+        const data = await res.json();
+        if (!cancelled && data.data) setSelectedDoc(data.data);
+      } catch (err) {
+        console.error('Error fetching document:', err);
       }
-    } catch (err) {
-      console.error('Error fetching documents:', err);
-    }
-  }
-
-  async function fetchSelectedDocument() {
-    if (!block.documentId) return;
-    try {
-      const res = await fetch(`/api/admin/library/${block.documentId}`);
-      const data = await res.json();
-      if (data.data) {
-        setSelectedDoc(data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching document:', err);
-    }
-  }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [block.documentId, mode, selectedDoc, libraryApi]);
 
   function handleModeChange(newMode: 'reference' | 'inline') {
     setMode(newMode);

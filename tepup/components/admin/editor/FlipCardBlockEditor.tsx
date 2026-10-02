@@ -5,6 +5,7 @@ import { Image as ImageIcon, Loader2, Plus, Trash2, Type as TypeIcon } from 'luc
 import type { FlipCardBlock, FlipCardFace } from './types';
 import CharCount from './CharCount';
 import { FLIP_CARD_LIMITS } from '@/lib/blockLimits';
+import { useEditorMode, CONTRIBUTOR_NO_UPLOAD_MESSAGE } from './EditorModeContext';
 
 interface Props {
   block: FlipCardBlock;
@@ -33,6 +34,8 @@ function FaceEditor({
 }) {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
+  // Contributors can't upload (admin-only endpoint): they paste an allowed image URL.
+  const canUpload = useEditorMode() === 'admin';
 
   // Same endpoint ImageBlockEditor and the Notion editor use.
   async function upload(file: File) {
@@ -105,15 +108,29 @@ function FaceEditor({
               className="max-h-28 w-auto rounded border border-gray-100"
             />
           )}
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) upload(file);
-            }}
-            className="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-          />
+          {canUpload ? (
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) upload(file);
+              }}
+              className="block w-full text-xs text-gray-500 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+            />
+          ) : (
+            <>
+              <input
+                type="url"
+                value={face.src ?? ''}
+                onChange={(e) => onChange({ kind: 'image', src: e.target.value, alt: face.alt ?? '' })}
+                placeholder="https://upload.wikimedia.org/wikipedia/…"
+                aria-label="URL ảnh"
+                className={`${inputClass} text-sm`}
+              />
+              <p className="text-xs text-gray-500">{CONTRIBUTOR_NO_UPLOAD_MESSAGE}</p>
+            </>
+          )}
           <input
             type="text"
             value={face.alt ?? ''}

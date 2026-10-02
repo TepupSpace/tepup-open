@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 
-export default function SubmitDraftButton({ contributionId }: { contributionId: string }) {
+export default function SubmitDraftButton({ contributionId, label = 'Gửi duyệt' }: { contributionId: string; label?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +35,7 @@ export default function SubmitDraftButton({ contributionId }: { contributionId: 
       className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50"
     >
       <Send className="w-3.5 h-3.5" />
-      {loading ? 'Đang gửi...' : 'Gửi duyệt'}
+      {loading ? 'Đang gửi...' : label}
     </button>
   );
 }

@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '../prisma';
+import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { CONTENT_TAG } from '../cache';
 import { canReviewContent, isContributorOrAbove } from '../role-utils';
@@ -154,8 +155,10 @@ export const getCategories = unstable_cache(
 );
 
 async function getCourseBySlugInternal(slug: string): Promise<CourseDisplay | null> {
-  const course = await prisma.course.findUnique({
-    where: { slug },
+  // Khoá đang ẩn (`isActive: false`, vd. khoá contributor mới chờ admin bật) không công khai:
+  // trước đây trang khoá vẫn mở được bằng URL, kèm tên, mô tả và danh sách bài.
+  const course = await prisma.course.findFirst({
+    where: { slug, isActive: true },
     include: {
       levels: {
         orderBy: { sortOrder: 'asc' },
@@ -180,12 +183,13 @@ async function getCourseBySlugInternal(slug: string): Promise<CourseDisplay | nu
   return mapCourseToDisplay(course);
 }
 
-// Cached version
-export const getCourseBySlug = (slug: string) => unstable_cache(
+// Cached version. React `cache` dedupes it within one render: the course route's layout
+// (which turns a missing course into a real 404) and its page both call it in parallel.
+export const getCourseBySlug = cache((slug: string) => unstable_cache(
   () => getCourseBySlugInternal(slug),
-  ['course-by-slug', slug],
+  ['course-by-slug-v2', slug], // v2: hidden courses are filtered now; don't serve old cached rows
   { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
-)()
+)())
 
 // ============================================================
 // Lesson Functions
@@ -225,15 +229,18 @@ export async function getLessonPageForViewer(
   const row = await findLessonRow(courseSlug, lessonSlug, true);
   if (!row) return null;
 
+  // Bài ẩn, hoặc bài nằm trong khoá đang ẩn, chỉ staff xem được.
+  const isHidden = !row.isActive || !row.level.course.isActive;
+
   // Chỉ bài ẩn mới cần tra tác giả khoá — query công khai không đụng tới createdById.
-  if (!row.isActive && !canReviewContent(viewer.role)) {
+  if (isHidden && !canReviewContent(viewer.role)) {
     const owned = await prisma.course.count({
       where: { id: row.level.course.id, createdById: viewer.id },
     });
     if (!owned) return null;
   }
 
-  return { page: mapLessonRow(row), isHidden: !row.isActive };
+  return { page: mapLessonRow(row), isHidden };
 }
 
 function findLessonRow(courseSlug: string, lessonSlug: string, includeHidden: boolean) {
@@ -241,7 +248,8 @@ function findLessonRow(courseSlug: string, lessonSlug: string, includeHidden: bo
     where: {
       slug: lessonSlug,
       ...(includeHidden ? {} : { isActive: true }),
-      course: { slug: courseSlug },
+      // Bài của khoá đang ẩn cũng không công khai (trước đây chỉ lọc isActive của bài).
+      course: { slug: courseSlug, ...(includeHidden ? {} : { isActive: true }) },
     },
     // `select` chứ không phải `include`: trước đây `course: true` kéo nguyên
     // dòng cho 6 field, còn `level.lessons` kéo mọi cột dù chỉ dùng id/slug/name.
@@ -258,6 +266,7 @@ function findLessonRow(courseSlug: string, lessonSlug: string, includeHidden: bo
           course: {
             select: {
               id: true,
+              isActive: true,
               slug: true,
               name: true,
               description: true,
@@ -326,13 +335,16 @@ function mapLessonRow(lesson: LessonRow): LessonPage {
  * Cached. Đây là query đứng sau cú bấm "Bắt đầu" — cú bấm được thực hiện nhiều
  * nhất và cũng là cú người dùng thấy chậm nhất. Trước đây nó là một trong hai
  * hàm nội dung duy nhất không hề được cache.
+ *
+ * React `cache` gộp các lần gọi trong cùng một lượt render: layout của route bài học
+ * (biến bài không tồn tại thành 404 thật) và page gọi song song.
  */
-export const getLessonPage = (courseSlug: string, lessonSlug: string) =>
+export const getLessonPage = cache((courseSlug: string, lessonSlug: string) =>
   unstable_cache(
     () => getLessonPageInternal(courseSlug, lessonSlug),
-    ['lesson-page', courseSlug, lessonSlug],
+    ['lesson-page-v2', courseSlug, lessonSlug], // v2: lessons of hidden courses are filtered now
     { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
-  )();
+  )());
 
 // ============================================================
 // Character Functions

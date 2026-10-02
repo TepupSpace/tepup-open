@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Image as ImageIcon, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import type { ImageBlock } from './BlockEditor';
+import { useEditorMode, CONTRIBUTOR_NO_UPLOAD_MESSAGE } from './EditorModeContext';
 
 interface ImageBlockEditorProps {
   block: ImageBlock;
@@ -18,6 +19,8 @@ export default function ImageBlockEditor({
   const [uploadState, setUploadState] = useState<UploadState>('idle');
   const [errorMsg, setErrorMsg] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+  // Contributors can't upload (admin-only endpoint): URL only, no drop, no re-hosting.
+  const canUpload = useEditorMode() === 'admin';
 
   const uploadToStorage = async (body: BodyInit, isFormData: boolean) => {
     setUploadState('uploading');
@@ -36,6 +39,11 @@ export default function ImageBlockEditor({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
+    if (!canUpload) {
+      setErrorMsg(CONTRIBUTOR_NO_UPLOAD_MESSAGE);
+      setUploadState('error');
+      return;
+    }
     const file = e.dataTransfer.files[0];
     if (!file || !file.type.startsWith('image/')) return;
     const fd = new FormData();
@@ -47,7 +55,7 @@ export default function ImageBlockEditor({
   };
 
   const handleUrlBlur = () => {
-    if (!block.src) return;
+    if (!block.src || !canUpload) return;
     if (block.src.includes('supabase.co/storage')) return;
     uploadToStorage(JSON.stringify({ url: block.src }), false).catch(err => {
       setErrorMsg((err as Error).message);
@@ -81,7 +89,7 @@ export default function ImageBlockEditor({
           <div className="flex flex-col items-center justify-center h-32 text-gray-400">
             <ImageIcon className="w-8 h-8 mx-auto mb-2" />
             <p className="text-sm">
-              {isDragging ? 'Thả ảnh vào đây' : 'Kéo thả ảnh hoặc nhập URL bên dưới'}
+              {!canUpload ? 'Nhập URL ảnh bên dưới' : isDragging ? 'Thả ảnh vào đây' : 'Kéo thả ảnh hoặc nhập URL bên dưới'}
             </p>
           </div>
         )}
@@ -107,9 +115,10 @@ export default function ImageBlockEditor({
             setUploadState('idle');
           }}
           onBlur={handleUrlBlur}
-          placeholder="https://example.com/image.jpg"
+          placeholder={canUpload ? 'https://example.com/image.jpg' : 'https://upload.wikimedia.org/wikipedia/…'}
           className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+        {!canUpload && <p className="text-xs text-gray-500 mt-1">{CONTRIBUTOR_NO_UPLOAD_MESSAGE}</p>}
         {/* Upload status */}
         {uploadState === 'uploading' && (
           <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">

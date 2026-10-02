@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Bot, Copy, Check, Download, Undo2, BookOpen, AlertTriangle } from 'lucide-react';
+import { Bot, Copy, Check, Download, Undo2, BookOpen, AlertTriangle, ChevronDown } from 'lucide-react';
 import Link from '@/components/ui/AppLink';
 import { applyImportedJson } from '@/lib/ai-import/apply';
 import { buildBlockPrompt, buildFixPrompt, type CustomTypeInfo } from '@/lib/ai-import/build-doc';
@@ -34,6 +34,9 @@ function customInfo(block: ContentBlock): CustomTypeInfo | undefined {
 /**
  * "Dùng AI của bạn": copy prompt / tải đặc tả → người dùng hỏi AI riêng → dán JSON
  * về đây. Không gọi AI nào phía server.
+ *
+ * Mặc định thu gọn và nằm dưới form của block: ô nhập của nó từng nằm trên cùng và
+ * bị nhầm là ô nhập câu hỏi.
  */
 export default function AiImportPanel({ block, onApply }: Props) {
   const [idea, setIdea] = useState('');
@@ -42,6 +45,7 @@ export default function AiImportPanel({ block, onApply }: Props) {
   const [copied, setCopied] = useState<'prompt' | 'fix' | null>(null);
   const [previous, setPrevious] = useState<ContentBlock | null>(null);
   const [applied, setApplied] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const custom = customInfo(block);
   const query =
@@ -91,13 +95,30 @@ export default function AiImportPanel({ block, onApply }: Props) {
   return (
     <section className="rounded-xl border border-violet-200 bg-violet-50/60 p-3 space-y-3">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="flex items-center gap-1.5 text-sm font-medium text-violet-700">
-          <Bot className="w-4 h-4" /> Dùng AI của bạn
-        </h3>
-        <Link href="/contributor/ai-guide" className="inline-flex items-center gap-1 text-xs text-violet-600 hover:underline">
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+          className="flex min-w-0 items-center gap-1.5 text-left text-sm font-medium text-violet-700"
+        >
+          <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? '' : '-rotate-90'}`} />
+          <Bot className="w-4 h-4 shrink-0" />
+          <span>
+            Tuỳ chọn: Dùng AI của bạn
+            {!open && (
+              <span className="block text-xs font-normal text-gray-500">
+                Nhờ ChatGPT / Claude / Gemini soạn block này rồi dán kết quả vào
+              </span>
+            )}
+          </span>
+        </button>
+        <Link href="/contributor/ai-guide" className="inline-flex shrink-0 items-center gap-1 text-xs text-violet-600 hover:underline">
           <BookOpen className="w-3.5 h-3.5" /> Hướng dẫn
         </Link>
       </div>
+
+      {open && (
+      <>
 
       {/* Bước 1 */}
       <div className="space-y-2">
@@ -133,7 +154,7 @@ export default function AiImportPanel({ block, onApply }: Props) {
       <div className="space-y-2">
         <p className="text-xs text-gray-600">
           <b>2.</b> Bấm nút <b>Copy</b> trên khối code AI trả về rồi dán vào đây. Nội dung block sẽ được thay khi bấm Áp
-          dụng — nhớ bấm Lưu bài sau đó.
+          dụng, rồi kiểm tra lại các ô phía trên.
         </p>
         <textarea
           value={pasted}
@@ -160,7 +181,7 @@ export default function AiImportPanel({ block, onApply }: Props) {
               <Undo2 className="w-4 h-4" /> Hoàn tác
             </button>
           )}
-          {applied && <span className="text-xs text-emerald-700">Đã áp dụng — kiểm tra lại form bên dưới.</span>}
+          {applied && <span className="text-xs text-emerald-700">Đã áp dụng — kiểm tra lại các ô phía trên.</span>}
         </div>
       </div>
 
@@ -179,6 +200,8 @@ export default function AiImportPanel({ block, onApply }: Props) {
             {copied === 'fix' ? 'Đã copy' : 'Copy lỗi để AI sửa'}
           </button>
         </div>
+      )}
+      </>
       )}
     </section>
   );

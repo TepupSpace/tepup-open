@@ -349,19 +349,45 @@ export function sanitizeAdminBlocks(blocks: unknown, path = 'blocks'): ContentRe
  * `blocks[6].options[1]` → `Block #7 › options[1]`: the same 1-based number the editor
  * shows in its gutter (and that `prepareBlocksForSave` errors use), so authors can find
  * the block. Only the top-level block index is renumbered.
+ *
+ * With the contribution `data`, a NEW_COURSE path also names the lesson, like the
+ * structure check does: `data.levels[0].lessons[1].content.blocks[5].options` →
+ * `Level 1 › <tên bài> › Block #6 › options`.
  */
-export function describeContentPath(path: string): string {
-  return path.replace(/(^|\.)blocks\[(\d+)\]\.?/, (_m, sep: string, i: string) =>
-    `${sep ? ' › ' : ''}Block #${Number(i) + 1}${_m.endsWith('.') ? ' › ' : ''}`
+export function describeContentPath(path: string, data?: unknown): string {
+  let out = path;
+  const lessonAt = /^data\.levels\[(\d+)\]\.lessons\[(\d+)\]\.(?:content\.)?/.exec(out);
+  if (lessonAt) {
+    const li = Number(lessonAt[1]);
+    const si = Number(lessonAt[2]);
+    out = `${lessonLabel(data, li, si)} › ${out.slice(lessonAt[0].length)}`;
+  } else {
+    const levelAt = /^data\.levels\[(\d+)\]\.?/.exec(out);
+    if (levelAt) out = `Level ${Number(levelAt[1]) + 1}${levelAt[0].endsWith('.') ? ' › ' : ''}${out.slice(levelAt[0].length)}`;
+    else out = out.replace(/^data\.course\./, 'Thông tin khóa học › ');
+  }
+  return out.replace(/(^|\.| › )blocks\[(\d+)\]\.?/, (_m, sep: string, i: string) =>
+    `${sep === '.' ? ' › ' : sep}Block #${Number(i) + 1}${_m.endsWith('.') ? ' › ' : ''}`
   );
+}
+
+/** "Level 1 › <tên bài>" (or "bài 2" when unnamed), matching `prepareContributionData`. */
+function lessonLabel(data: unknown, li: number, si: number): string {
+  const levels = isObj(data) && Array.isArray(data.levels) ? data.levels : [];
+  const level = levels[li];
+  const lessons = isObj(level) && Array.isArray(level.lessons) ? level.lessons : [];
+  const lesson = lessons[si];
+  const name = isObj(lesson) && typeof lesson.name === 'string' && lesson.name.trim() ? lesson.name : `bài ${si + 1}`;
+  return `Level ${li + 1} › ${name.slice(0, 80)}`;
 }
 
 /**
  * Body JSON cho phản hồi 400. `error` chứa luôn lỗi đầu tiên vì giao diện hiện chỉ
- * hiển thị `data.error`; `details` liệt kê đủ để debug.
+ * hiển thị `data.error`; `details` liệt kê đủ để debug. Truyền `data` (nội dung đóng
+ * góp) để đường dẫn NEW_COURSE ghi tên bài thay vì chỉ số.
  */
-export function contentErrorBody(issues: ContentIssue[]) {
-  const readable = issues.map((iss) => ({ ...iss, path: describeContentPath(iss.path) }));
+export function contentErrorBody(issues: ContentIssue[], data?: unknown) {
+  const readable = issues.map((iss) => ({ ...iss, path: describeContentPath(iss.path, data) }));
   const first = readable[0];
   const more = readable.length > 1 ? ` (+${readable.length - 1} lỗi khác / more)` : '';
   return {

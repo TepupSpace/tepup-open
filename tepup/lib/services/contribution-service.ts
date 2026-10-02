@@ -57,7 +57,7 @@ export async function publishContribution(contributionId: string, reviewerId: st
   try {
     switch (contribution.type) {
       case 'NEW_COURSE':
-        await publishNewCourse(data as CourseContributionData, contribution.contributorId);
+        await publishNewCourse(data as CourseContributionData, contribution.contributorId, contributionId);
         break;
       case 'EDIT_LESSON_CONTENT':
         await publishEditLessonContent(contribution.targetId!, data as { blocks: ContentBlock[] });
@@ -91,7 +91,7 @@ async function releaseClaim(contributionId: string) {
   });
 }
 
-async function publishNewCourse(data: CourseContributionData, contributorId: string) {
+async function publishNewCourse(data: CourseContributionData, contributorId: string, contributionId: string) {
   const { course, levels } = data;
 
   const category = await prisma.category.findUnique({ where: { id: course.categoryId }, select: { id: true } });
@@ -124,6 +124,11 @@ async function publishNewCourse(data: CourseContributionData, contributorId: str
         createdById: contributorId,
       },
     });
+
+    // Link the contribution to the course it created, so the contributor can see
+    // whether it is still waiting for activation (and get a link once it's live), and
+    // admins can list approved courses that are still hidden.
+    await tx.contribution.update({ where: { id: contributionId }, data: { targetId: newCourse.id } });
 
     // Create levels and lessons. The course is brand new, so lesson slugs only have
     // to avoid colliding with each other — track them as we go.
@@ -200,4 +205,54 @@ export async function rejectContribution(
       feedback,
     },
   });
+}
+
+export interface ContributionCourse {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+}
+
+/**
+ * The course each approved NEW_COURSE contribution created, keyed by contribution id.
+ * New approvals store it in `targetId`; for approvals from before that, fall back to the
+ * contributor's own course with the same name (`Course.createdById`).
+ */
+export async function getCoursesForContributions(
+  contributions: { id: string; type: string; status: string; targetId: string | null; contributorId: string; data: unknown }[]
+): Promise<Map<string, ContributionCourse>> {
+  const approved = contributions.filter((c) => c.type === 'NEW_COURSE' && c.status === 'APPROVED');
+  const out = new Map<string, ContributionCourse>();
+  if (!approved.length) return out;
+
+  const select = { id: true, name: true, slug: true, isActive: true, createdById: true, createdAt: true } as const;
+  const ids = approved.map((c) => c.targetId).filter((id): id is string => !!id);
+  const byId = new Map(
+    (ids.length ? await prisma.course.findMany({ where: { id: { in: ids } }, select }) : []).map((c) => [c.id, c])
+  );
+
+  const legacy = approved.filter((c) => !c.targetId);
+  const nameOf = (data: unknown) => {
+    const course = data && typeof data === 'object' ? (data as { course?: { name?: unknown } }).course : undefined;
+    return typeof course?.name === 'string' ? course.name : '';
+  };
+  const legacyCourses = legacy.length
+    ? await prisma.course.findMany({
+        where: {
+          createdById: { in: [...new Set(legacy.map((c) => c.contributorId))] },
+          name: { in: legacy.map((c) => nameOf(c.data)).filter(Boolean) },
+        },
+        orderBy: { createdAt: 'desc' },
+        select,
+      })
+    : [];
+
+  for (const c of approved) {
+    const course = c.targetId
+      ? byId.get(c.targetId)
+      : legacyCourses.find((k) => k.createdById === c.contributorId && k.name === nameOf(c.data));
+    if (course) out.set(c.id, { id: course.id, name: course.name, slug: course.slug, isActive: course.isActive });
+  }
+  return out;
 }

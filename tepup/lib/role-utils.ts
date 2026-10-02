@@ -38,3 +38,21 @@ export function getRoleDisplayName(role: UserRole): string {
   };
   return names[role];
 }
+
+/**
+ * Where a signed-in user lands after login (or on visiting /login) when no valid
+ * `callbackUrl` was given. Learners have no accounts, so every role here is staff.
+ */
+export function homePathForRole(role: UserRole | null | undefined): string {
+  switch (role) {
+    case 'ADMIN':
+      return '/admin';
+    case 'REVIEWER':
+      return '/admin/reviews';
+    case 'CONTRIBUTOR':
+    case 'TRUSTED_CONTRIBUTOR':
+      return '/contributor';
+    default:
+      return '/';
+  }
+}

@@ -49,7 +49,6 @@ const COURSES: Record<string, string> = {
   'logic-101': 'logic',
   thue: 'thue',
   'nguoi-la-biet-gi-ve-ban': 'riengtu',
-  'dan-chu-101': 'cuadan',
 };
 
 async function main() {

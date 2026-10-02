@@ -43,7 +43,7 @@ export async function POST(
     allowCustom: session.user.role === 'ADMIN',
   });
   if (!checked.ok) {
-    return NextResponse.json(contentErrorBody(checked.issues), { status: 400 });
+    return NextResponse.json(contentErrorBody(checked.issues, contribution.data), { status: 400 });
   }
 
   const updated = await prisma.contribution.update({
@@ -52,6 +52,9 @@ export async function POST(
       data: checked.value as object,
       status: 'PENDING_REVIEW',
       submittedAt: new Date(),
+      // A resubmission after "changes requested" is undecided again: drop the old
+      // decision date, or "Đã gửi" would show a stale "Duyệt: <date>".
+      resolvedAt: null,
     },
   });
 

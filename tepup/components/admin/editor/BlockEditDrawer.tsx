@@ -46,7 +46,7 @@ interface Props {
   onClose: () => void;
 }
 
-/** Right slide-over that edits a Tepup widget block's fields, with a bring-your-own-AI import panel. */
+/** Right slide-over that edits a Tepup widget block's fields, with an optional (collapsed) bring-your-own-AI import panel below. */
 export default function BlockEditDrawer({ block, onChange, onClose }: Props) {
   if (!block) return null;
 
@@ -77,14 +77,16 @@ export default function BlockEditDrawer({ block, onChange, onClose }: Props) {
         </header>
 
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          <AiImportPanel key={block.id} block={block} onApply={(b) => onChange({ ...b, id: block.id } as ContentBlock)} />
-
-          {/* Bespoke form */}
+          {/* Bespoke form first: these are the block's real fields. */}
           {Form ? (
             <Form block={block} onChange={(b: ContentBlock) => onChange({ ...b, id: block.id } as ContentBlock)} />
           ) : (
             <p className="text-sm text-gray-500">Block này chưa có form chỉnh sửa.</p>
           )}
+
+          {/* Optional and collapsed by default: its textareas used to sit on top and were
+              mistaken for the block's own fields. */}
+          <AiImportPanel key={block.id} block={block} onApply={(b) => onChange({ ...b, id: block.id } as ContentBlock)} />
         </div>
       </div>
     </>

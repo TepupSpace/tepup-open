@@ -50,7 +50,7 @@ Contributing under a pseudonym is normal here. To keep it that way:
 
 ## Content guidelines
 
-Lessons follow the Mở–Thân–Kết structure in [`docs/(key-doc)-cấu-trúc-một-bài-học.md`](<docs/(key-doc)-cấu-trúc-một-bài-học.md>). Keep a neutral tone, cite sources, and stay practical: civic knowledge as self-protection, not political commentary.
+Lessons follow the Mở–Thân–Kết structure in [`docs/(key-doc)-cấu-trúc-một-bài-học.md`](<docs/(key-doc)-cấu-trúc-một-bài-học.md>). Keep a neutral, factual tone, cite sources, and keep lessons practical and grounded in everyday life.
 
 ## Licence of contributions
 

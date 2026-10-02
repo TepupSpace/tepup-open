@@ -131,6 +131,6 @@ Danh sách sẽ được mở rộng dần. Khi cần một dạng tương tác 
 
 ## Ví dụ tham khảo
 
-- Script mẫu: `tepup/scripts/add-thue101v2-course.ts` (11 bài, đầy đủ Mở-Thân-Kết + interactive blocks)
+- Script mẫu: `tepup/scripts/add-block-test-course.ts` (bài thử các block tương tác)
 - Block demo: `/contributor-guide/block-demo` (xem tất cả interactive blocks)
 - Type definitions: `tepup/lib/types/content.ts`

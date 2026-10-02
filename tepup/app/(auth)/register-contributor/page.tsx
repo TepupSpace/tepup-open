@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import Link from '@/components/ui/AppLink';
 import { useRouter } from 'next/navigation';
-import { Eye, EyeOff, Lock, User, ArrowLeft, BookOpen } from 'lucide-react';
+import { Eye, EyeOff, Lock, User, ArrowLeft, BookOpen, KeyRound } from 'lucide-react';
+import { PASSWORD_MIN_LENGTH } from '@/lib/security/password-policy';
 
 export default function RegisterContributorPage() {
   const router = useRouter();
@@ -15,6 +16,12 @@ export default function RegisterContributorPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Editing any field clears a stale error such as "Mật khẩu xác nhận không khớp".
+  const edit = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setter(e.target.value);
+    if (error) setError('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,8 +34,8 @@ export default function RegisterContributorPage() {
       return;
     }
 
-    if (password.length < 10) {
-      setError('Mật khẩu phải có ít nhất 10 ký tự');
+    if (password.length < PASSWORD_MIN_LENGTH) {
+      setError(`Mật khẩu phải có ít nhất ${PASSWORD_MIN_LENGTH} ký tự`);
       setIsLoading(false);
       return;
     }
@@ -48,7 +55,8 @@ export default function RegisterContributorPage() {
       }
 
       const result = await signIn('credentials', {
-        identifier: username,
+        // The server stores the username lowercase; log in with exactly what it saved.
+        identifier: data.user?.username ?? username,
         password,
         redirect: false,
       });
@@ -97,7 +105,7 @@ export default function RegisterContributorPage() {
           {/* Form */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+              <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
                 {error}
               </div>
             )}
@@ -114,7 +122,11 @@ export default function RegisterContributorPage() {
                     id="username"
                     type="text"
                     value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    onChange={edit(setUsername)}
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
                     placeholder="vd: contributor_abc"
                     required
                     minLength={3}
@@ -124,7 +136,7 @@ export default function RegisterContributorPage() {
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   />
                 </div>
-                <p className="mt-1 text-xs text-gray-500">Chỉ chữ cái, số và dấu gạch dưới (3-20 ký tự)</p>
+                <p className="mt-1 text-xs text-gray-500">Chỉ chữ cái, số và dấu gạch dưới (3-20 ký tự). Không phân biệt hoa thường: tên được lưu bằng chữ thường.</p>
               </div>
 
               {/* Password */}
@@ -138,10 +150,11 @@ export default function RegisterContributorPage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Ít nhất 10 ký tự"
+                    onChange={edit(setPassword)}
+                    autoComplete="new-password"
+                    placeholder={`Ít nhất ${PASSWORD_MIN_LENGTH} ký tự`}
                     required
-                    minLength={10}
+                    minLength={PASSWORD_MIN_LENGTH}
                     className="w-full pl-10 pr-12 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   />
                   <button
@@ -165,12 +178,26 @@ export default function RegisterContributorPage() {
                     id="confirmPassword"
                     type={showPassword ? 'text' : 'password'}
                     value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onChange={edit(setConfirmPassword)}
+                    autoComplete="new-password"
                     placeholder="Nhập lại mật khẩu"
                     required
                     className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all"
                   />
                 </div>
+              </div>
+
+              {/* No recovery: there is no email to send a reset link to. */}
+              <div
+                id="no-recovery-note"
+                className="flex gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900"
+              >
+                <KeyRound className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                <p>
+                  <strong>Không có cách lấy lại mật khẩu.</strong> Tepup không thu email nên không thể gửi
+                  link đặt lại. Nếu quên mật khẩu, bạn sẽ mất tài khoản này. Hãy lưu tên tài khoản và mật
+                  khẩu ở nơi an toàn, ví dụ trình quản lý mật khẩu.
+                </p>
               </div>
 
               {/* Submit */}

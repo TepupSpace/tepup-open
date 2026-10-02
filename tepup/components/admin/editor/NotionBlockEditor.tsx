@@ -8,9 +8,11 @@ import {
   getDefaultReactSlashMenuItems,
 } from '@blocknote/react';
 import { filterSuggestionItems } from '@blocknote/core';
+import { vi as viDictionary } from '@blocknote/core/locales';
 import { tepupSchema } from './blocknote/schema';
 import { WidgetEditContext } from './blocknote/WidgetEditContext';
 import BlockEditDrawer from './BlockEditDrawer';
+import { EditorModeContext, CONTRIBUTOR_NO_UPLOAD_MESSAGE, type EditorMode } from './EditorModeContext';
 import {
   toBlockNote,
   toContentBlocks,
@@ -31,9 +33,9 @@ import {
 import type { ContentBlock } from '@/lib/types/content';
 import type { CustomBlockTypeFull } from './types';
 
-// Slash-menu group labels. The rest come from BlockNote's own English dictionary
-// (Headings / Basic blocks / Advanced / Media / Others).
-const GROUP_FREQUENT = 'Frequently used';
+// Slash-menu group labels. The rest come from BlockNote's Vietnamese dictionary
+// (`@blocknote/core/locales`), which also translates its toolbars and menus.
+const GROUP_FREQUENT = 'Hay dùng';
 const GROUP_QUESTION = BLOCK_GROUP_LABEL.question;
 const GROUP_EXPLAINER = BLOCK_GROUP_LABEL.explainer;
 const GROUP_CUSTOM = 'Block tùy chỉnh';
@@ -128,10 +130,31 @@ function numberingCss(scope: string, numbers: Map<string, number>): string {
 interface Props {
   blocks: ContentBlock[];
   onChange: (blocks: ContentBlock[]) => void;
+  /**
+   * `contributor`: never calls the admin-only APIs (custom block types, image upload,
+   * admin library), so contributors get no 401s. File upload is off: images are added
+   * by URL from the allowed hosts (see EditorModeContext). Default `admin`.
+   */
+  mode?: EditorMode;
 }
 
+/** BlockNote's Vietnamese UI, with the URL box saying which image URLs are accepted. */
+const DICTIONARY_ADMIN = viDictionary;
+const DICTIONARY_CONTRIBUTOR = {
+  ...viDictionary,
+  file_panel: {
+    ...viDictionary.file_panel,
+    embed: {
+      ...viDictionary.file_panel.embed,
+      title: 'Dán URL',
+      url_placeholder: 'https://upload.wikimedia.org/wikipedia/…',
+    },
+  },
+};
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export default function NotionBlockEditor({ blocks, onChange }: Props) {
+export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: Props) {
+  const isContributor = mode === 'contributor';
   const [customTypes, setCustomTypes] = useState<CustomBlockTypeFull[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBlock, setEditingBlock] = useState<ContentBlock | null>(null);
@@ -139,13 +162,15 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
-  // Load custom block types for the slash menu.
+  // Load custom block types for the slash menu (admin only: contributors can't use
+  // `custom` blocks, and the endpoint would answer 401).
   useEffect(() => {
+    if (isContributor) return;
     fetch('/api/admin/custom-block-types')
       .then((r) => (r.ok ? r.json() : { data: [] }))
       .then((d) => setCustomTypes(d.data ?? d.blockTypes ?? []))
       .catch(() => setCustomTypes([]));
-  }, []);
+  }, [isContributor]);
 
   // Build the editor once from the initial blocks (ContentBlock[] stays canonical).
   const initialContent = useMemo(() => {
@@ -163,7 +188,14 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
     return data.publicUrl as string;
   }, []);
 
-  const editor = useCreateBlockNote({ schema: tepupSchema, initialContent, uploadFile });
+  // Without `uploadFile` BlockNote hides its "Upload" tab and ignores pasted/dropped
+  // files, so contributors only see the URL tab.
+  const editor = useCreateBlockNote({
+    schema: tepupSchema,
+    initialContent,
+    uploadFile: isContributor ? undefined : uploadFile,
+    dictionary: isContributor ? DICTIONARY_CONTRIBUTOR : DICTIONARY_ADMIN,
+  });
 
   const emitChange = useCallback(() => {
     onChangeRef.current(toContentBlocks(editor.document as unknown as BNBlock[]));
@@ -296,11 +328,17 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
   );
 
   return (
+    <EditorModeContext.Provider value={mode}>
     <WidgetEditContext.Provider value={widgetCtx}>
       <p className="mb-2 text-xs text-gray-500">
         Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
         Dòng trống không có số và sẽ được bỏ khi lưu.
       </p>
+      {isContributor && (
+        <p className="mb-2 text-xs text-gray-500" data-testid="contributor-image-note">
+          <span className="font-medium text-gray-600">Ảnh:</span> {CONTRIBUTOR_NO_UPLOAD_MESSAGE}
+        </p>
+      )}
       <style ref={numberingStyleRef} />
       <div
         data-tepup-block-numbers={numberingScope}
@@ -325,5 +363,6 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
         }}
       />
     </WidgetEditContext.Provider>
+    </EditorModeContext.Provider>
   );
 }

@@ -7,9 +7,7 @@ The app lives in [`tepup/`](../tepup). Everything else in the repo root is suppo
 | Path | What it is |
 |---|---|
 | `tepup/` | The Next.js application (the only thing that is deployed) |
-| `docs/` | Course source material, lesson-structure guideline, content-authoring workflow |
-| `tepup-design-system/` | Design tokens, brand guide and UI-kit previews, packaged as a Claude skill. Not used by the build |
-| `_backups/` | Ad-hoc JSON snapshots of lesson content taken before bulk rewrites |
+| `docs/` | This overview and the lesson-structure guideline |
 
 ## Stack
 
@@ -39,7 +37,6 @@ All runtime content is stored in Postgres as JSON arrays of **blocks**. Block ty
 
 Per-block length limits live in [`tepup/lib/blockLimits.ts`](../tepup/lib/blockLimits.ts). Every lesson follows the Mở–Thân–Kết (open–body–close) structure described in [`docs/(key-doc)-cấu-trúc-một-bài-học.md`](<(key-doc)-cấu-trúc-một-bài-học.md>).
 
-`tepup/data/*.ts` holds legacy static content that is only read by migration/seed scripts.
 
 ## Learner experience
 
@@ -53,7 +50,7 @@ Per-block length limits live in [`tepup/lib/blockLimits.ts`](../tepup/lib/blockL
 
 Learners have **no accounts**. Progress is kept only in the browser (`localStorage` key `tepup_progress_v2`, see `lib/contexts/ProgressContext.tsx`) and is carried into the installed PWA via the manifest URL. (`UserProgress` table and `/api/progress` exist but are not wired to any client.)
 
-An AI chat panel (Groq) is available on every page, with a neutral assistant and several historical-figure personas (`lib/ai/personas.ts`). Learners can select lesson text and ask the AI to explain or fact-check it.
+An AI chat panel (Groq) is available on every page, with a neutral assistant (`lib/ai/personas.ts`). Learners can select lesson text and ask the AI to explain or fact-check it.
 
 ## Roles and contribution workflow
 
@@ -117,7 +114,7 @@ Environment variables are listed in [`tepup/.env.example`](../tepup/.env.example
 
 ### Scripts
 
-`tepup/scripts/` contains one-off seeding and maintenance scripts (≈50). Newer scripts require explicit `--env <staging|production>` and `--apply` flags and write a JSON snapshot to `_backups/` before modifying content. Course material and a Python authoring pipeline for Logic 101 live in `docs/content-course-Logic-101/`.
+`tepup/scripts/` contains seeding, maintenance and test scripts. Newer scripts require an explicit `--env=<path>` and `--apply` and write a JSON snapshot to `_backups/` before modifying content. Course content itself lives in the database; `scripts/docker-seed.ts` seeds a demo course for the local Docker stack.
 
 ## Deployment
 
