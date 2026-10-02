@@ -18,7 +18,7 @@ export default function LessonMetaPanel({ meta, onChange }: Props) {
     onChange({ ...meta, [key]: value });
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-6 space-y-4">
+    <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-20 space-y-4">
       <h2 className="text-sm font-semibold text-gray-900">Thông tin bài học</h2>
 
       <div>

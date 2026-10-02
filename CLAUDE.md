@@ -27,6 +27,7 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - `npx prisma studio`
 - `npx tsx scripts/<name>.ts` — seed, migration and audit scripts
 - `npx tsx scripts/test-safe-expr.ts` — the only automated check (no test framework). Run it after touching `lib/security/safe-expr.ts` or any block formula.
+- `docker compose up --build` — the full app against a **local, disposable** Postgres, production-like (`next build` + `next start`), on http://localhost:3000. See [Local Docker stack](#local-docker-stack). Use it to test anything that writes to the database, instead of staging.
 
 ## Environments & databases
 - `tepup/.env` → your development database (a Supabase project). `next dev` and the Prisma CLI read it.
@@ -59,7 +60,7 @@ app/
 components/
   learn/                LessonPlayer, BlockRenderer (the block → component map), core blocks
   blocks/               interactive block components
-  admin/editor/         BlockEditor, NotionBlockEditor (BlockNote), one *BlockEditor.tsx per type
+  admin/editor/         BlockEditor, NotionBlockEditor (BlockNote), one *BlockEditor.tsx per type, EditorSaveBar
   review/               ContributionPreview, SuggestionQueue
 lib/
   services/             content- (reads, cached), library-, contribution- (publish), promotion-service
@@ -138,6 +139,28 @@ Author content is untrusted: contributors self-register. Keep these rules:
 ## Git remotes & deployment
 - **IMPORTANT**: Only push or deploy to the remotes the user explicitly requests. Do NOT auto-push to all remotes; features may need testing on staging before going to production.
 - Vercel builds from `tepup/`; `.vercelignore` excludes `docs/`, `_workspace/` and env folders. Prisma and `pg` are `serverExternalPackages`.
+
+## Admin editors: drafts and publishing
+- The lesson and chapter editors (`app/admin/(restricted)/lessons/[id]/content`, `…/chapters/[chapterId]/content`) have two actions.
+  - **"Lưu nháp"** (also autosave, about 3s after typing stops, and Ctrl+S) writes a `ContentDraft` row via `PUT …/draft`. **Learners never see drafts.**
+  - **"Xuất bản"** (`PUT …/content`) validates and publishes to `LessonContent`/`ChapterContent`, then deletes the draft in the same transaction.
+  - "Bỏ nháp" (`DELETE …/draft`) returns to the live version.
+  - The sticky bar is `components/admin/editor/EditorSaveBar.tsx`. The hooks are `lib/hooks/useDraftAutosave.ts` and `lib/hooks/useUnsavedChangesGuard.ts` (a leave warning on link clicks and tab close; browser back/forward isn't blocked).
+- ⚠️ **Drafts are stored unvalidated on purpose**, so half-written blocks can autosave. Never render a `ContentDraft` to learners or copy it to live content without going through the publish route's validation (`prepareBlocksForSave` plus `sanitizeAdminBlocks`). Lesson settings (slug, visibility, order) are part of the draft and only apply on publish.
+- **Publishing checks for conflicts.** The client sends the live `updatedAt` it started from (`baseUpdatedAt`). If live content changed since then (another admin, or an approved contributor edit), the API returns 409 and the editor asks before overwriting (`force: true`). Anything else that writes `LessonContent`/`ChapterContent` should leave `updatedAt` to Prisma, so this check keeps working.
+- Shared types are in `lib/types/drafts.ts`, and server helpers in `lib/services/draft-service.ts`. The table comes from `prisma/sql/2026-10-02-content-drafts.sql`.
+
+## Local Docker stack
+- `tepup/compose.yaml` runs `db` (Postgres 16, data in a named volume) and `app` (`tepup/Dockerfile`, built on start by `docker/entrypoint.mjs`). The entrypoint does: wait for the database → `prisma db push` as the owner → `docker/after-push.sql` (RLS on every table plus grants, as in production) → `scripts/docker-seed.ts --apply` → `next build` → `next start`.
+  - `db push` is fine **only** here, because the database is disposable. Live databases still get reviewed SQL from `prisma/sql/`.
+- The app connects as `tepup_app`, which can read and write rows (bypassing RLS) but not change the schema, just like production (`docker/db-init/01-roles.sql`). Permission and RLS mistakes show up locally first.
+- Login is `admin` / `tepup-local-admin`; override it with `LOCAL_ADMIN_PASSWORD`. The seed creates `demo-101` (one visible and one hidden lesson) and the story `cau-chuyen-mau` (one chapter).
+  - The seed and the entrypoint refuse to run unless `TEPUP_LOCAL_DOCKER=1` and the database host is `db`, so they can't touch staging or production.
+- Ports are bound to 127.0.0.1. Use `TEPUP_PORT` and `TEPUP_DB_PORT` (default 3000 and 54322) to change them. Postgres is reachable at `postgresql://postgres:postgres@127.0.0.1:54322/postgres`.
+- `docker compose down -v` wipes the local database.
+  - No image uploads: Supabase Storage isn't part of the stack.
+  - No AI chat answers unless you pass `GROQ_API_KEY`; without it the chat fails gracefully.
+  - Not used by Vercel. `.dockerignore` keeps every `.env*` file and `tepup-(.env)/` out of the image.
 
 ## Deployment: every push to `main` goes to production
 - `.github/workflows/deploy-production.yml` runs on every push to `main` (and on **Actions → deploy-production → Run workflow**). It uploads the repo with the Vercel CLI and a token, Vercel builds it, and the result **replaces tepup.space**. There are no preview deployments, so **pushing to `main` is a production release**. Test locally against staging first.

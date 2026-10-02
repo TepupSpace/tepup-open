@@ -29,6 +29,7 @@ model User {
   customBlockTypes  CustomBlockType[]
   suggestionReviews Suggestion[]      @relation("SuggestionReviewer")
   createdCourses    Course[]          @relation("CourseCreator")
+  contentDrafts     ContentDraft[]    @relation("ContentDraftEditor")
 }
 
 model Account {
@@ -473,4 +474,33 @@ enum SuggestionStatus {
   ACCEPTED // valid, waiting for an editor to apply it
   APPLIED
   REJECTED
+}
+
+/// Server-side draft of a lesson's or chapter's content in the admin editor ("Lưu nháp"
+/// and autosave). One row per target; learners never see it. "Xuất bản" (the existing
+/// PUT .../content routes) validates the draft, writes LessonContent / ChapterContent and
+/// deletes the row. Blocks are stored as typed (half-written blocks included), so they are
+/// only ever loaded back into the admin editor, never rendered.
+model ContentDraft {
+  id            String             @id @default(cuid())
+  targetType    ContentDraftTarget
+  /// Lesson.id or Chapter.id, depending on targetType (polymorphic, so no FK)
+  targetId      String
+  title         String             @default("")
+  blocks        Json
+  /// Lesson settings (slug / isActive / sortOrder) for LESSON drafts; always null for chapters
+  meta          Json?
+  /// updatedAt of the live content when the draft was started (publish conflict check)
+  baseUpdatedAt DateTime?
+  updatedById   String?
+  updatedBy     User?              @relation("ContentDraftEditor", fields: [updatedById], references: [id], onDelete: SetNull)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@unique([targetType, targetId])
+}
+
+enum ContentDraftTarget {
+  LESSON
+  CHAPTER
 }

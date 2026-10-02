@@ -1,10 +1,13 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
-import Link from '@/components/ui/AppLink';
-import { ArrowLeft, Save, Eye } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, use } from 'react';
+import { Eye } from 'lucide-react';
 import NotionBlockEditor from '@/components/admin/editor/NotionBlockEditor';
+import EditorSaveBar from '@/components/admin/editor/EditorSaveBar';
+import { useDraftAutosave } from '@/lib/hooks/useDraftAutosave';
+import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard';
 import type { ContentBlock } from '@/lib/types/content';
+import type { DraftDTO } from '@/lib/types/drafts';
 import { isAllowedMediaUrl } from '@/lib/security/safe-url';
 
 interface ChapterInfo {
@@ -20,6 +23,21 @@ interface ChapterInfo {
   };
 }
 
+interface ContentResponse {
+  title: string;
+  blocks: ContentBlock[];
+  updatedAt: string | null;
+  draft: DraftDTO | null;
+}
+
+/** What autosave compares and what a draft stores. */
+interface EditorValue {
+  title: string;
+  blocks: ContentBlock[];
+}
+
+// "Lưu nháp" / autosave write a server-side draft that learners never see.
+// "Xuất bản" publishes it (PUT .../content) and the server deletes the draft.
 export default function ChapterContentPage({
   params,
 }: {
@@ -27,73 +45,136 @@ export default function ChapterContentPage({
 }) {
   const { chapterId } = use(params);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [chapter, setChapter] = useState<ChapterInfo | null>(null);
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [showPreview, setShowPreview] = useState(false);
+  // updatedAt of the live content this editing session is based on (publish conflict check).
+  const [baseUpdatedAt, setBaseUpdatedAt] = useState<string | null>(null);
+  const [hasDraft, setHasDraft] = useState(false);
+  const [draftInfo, setDraftInfo] = useState<{ updatedBy: string | null; updatedAt: string } | null>(null);
 
-  useEffect(() => {
-    fetchContent();
+  // The chapter title lives on the chapter itself; content keeps a copy of it.
+  const value: EditorValue = useMemo(() => ({ title: chapter?.title || '', blocks }), [chapter, blocks]);
+
+  const saveDraft = useCallback(
+    async (v: EditorValue) => {
+      const res = await fetch(`/api/admin/chapters/${chapterId}/draft`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...v, baseUpdatedAt }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Không thể lưu nháp');
+      setHasDraft(true);
+      setDraftInfo(null);
+    },
+    [chapterId, baseUpdatedAt]
+  );
+
+  const autosave = useDraftAutosave<EditorValue>({ value, enabled: loaded, save: saveDraft });
+  const { resetBaseline } = autosave; // stable for the hook's lifetime
+  useUnsavedChangesGuard(autosave.isDirty || publishing);
+
+  const applyLoaded = useCallback(
+    (info: ChapterInfo, data: ContentResponse | null, useDraft: boolean) => {
+      const draft = useDraft ? data?.draft ?? null : null;
+      const existing = data?.blocks ?? [];
+      const nextBlocks = draft ? draft.blocks ?? [] : Array.isArray(existing) ? existing : [];
+      setBlocks(nextBlocks);
+      // A resumed draft keeps the base it was started from, so publishing it still notices
+      // a live change made in between.
+      setBaseUpdatedAt(draft ? draft.baseUpdatedAt : data?.updatedAt ?? null);
+      setHasDraft(!!draft);
+      setDraftInfo(draft ? { updatedBy: draft.updatedBy, updatedAt: draft.updatedAt } : null);
+      resetBaseline({ title: info.title || '', blocks: nextBlocks });
+    },
+    [resetBaseline]
+  );
+
+  const fetchContent = useCallback(async (): Promise<ContentResponse | null> => {
+    const res = await fetch(`/api/admin/chapters/${chapterId}/content`);
+    const data = await res.json().catch(() => null);
+    return res.ok && data?.data ? (data.data as ContentResponse) : null;
   }, [chapterId]);
 
-  async function fetchContent() {
-    try {
-      // Fetch chapter info
-      const chapterRes = await fetch(`/api/admin/chapters/${chapterId}`);
-      const chapterData = await chapterRes.json();
-
-      if (!chapterRes.ok) {
-        setError('Không thể tải thông tin chương');
-        return;
+  useEffect(() => {
+    (async () => {
+      try {
+        const chapterRes = await fetch(`/api/admin/chapters/${chapterId}`);
+        const chapterData = await chapterRes.json();
+        if (!chapterRes.ok) {
+          setError('Không thể tải thông tin chương');
+          return;
+        }
+        const info: ChapterInfo = chapterData.data;
+        setChapter(info);
+        applyLoaded(info, await fetchContent(), true);
+        setLoaded(true);
+      } catch (err) {
+        console.error('Error fetching content:', err);
+        setError('Đã xảy ra lỗi');
+      } finally {
+        setLoading(false);
       }
+    })();
+  }, [chapterId, fetchContent, applyLoaded]);
 
-      setChapter(chapterData.data);
-
-      // Fetch content
-      const contentRes = await fetch(`/api/admin/chapters/${chapterId}/content`);
-      const contentData = await contentRes.json();
-
-      if (contentRes.ok && contentData.data) {
-        // blocks is stored as JSON in the database
-        const existingBlocks = contentData.data.blocks || [];
-        setBlocks(Array.isArray(existingBlocks) ? existingBlocks : []);
-      }
-    } catch (err) {
-      console.error('Error fetching content:', err);
-      setError('Đã xảy ra lỗi');
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleSave() {
-    setSaving(true);
+  async function publish(force = false) {
+    setPublishing(true);
     setError('');
-
+    setNotice('');
     try {
+      // Let an in-flight autosave finish first, so it can't recreate the draft after publishing.
+      await autosave.saveNow();
+      const snapshot = value;
       const res = await fetch(`/api/admin/chapters/${chapterId}/content`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: chapter?.title || '',
-          blocks,
-        }),
+        body: JSON.stringify({ ...snapshot, baseUpdatedAt, force }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error || 'Không thể lưu nội dung');
+      const data = await res.json().catch(() => null);
+      if (res.status === 409 && data?.conflict && !force) {
+        if (window.confirm(`${data.error}\n\nVẫn xuất bản bản của bạn?`)) {
+          return await publish(true);
+        }
         return;
       }
-
-      alert('Đã lưu nội dung!');
+      if (!res.ok) {
+        setError(data?.error || 'Không thể xuất bản');
+        return;
+      }
+      setBaseUpdatedAt(data?.data?.updatedAt ?? null);
+      setHasDraft(false);
+      setDraftInfo(null);
+      autosave.resetBaseline(snapshot);
+      setNotice('Đã xuất bản. Người học sẽ thấy nội dung mới trong vài phút.');
     } catch (err) {
-      console.error('Error saving content:', err);
-      setError('Đã xảy ra lỗi khi lưu');
+      console.error('Error publishing content:', err);
+      setError('Đã xảy ra lỗi khi xuất bản');
     } finally {
-      setSaving(false);
+      setPublishing(false);
+    }
+  }
+
+  async function discardDraft() {
+    if (!chapter) return;
+    if (!window.confirm('Bỏ bản nháp và quay về nội dung đang hiển thị cho người học?')) return;
+    setError('');
+    setNotice('');
+    try {
+      const res = await fetch(`/api/admin/chapters/${chapterId}/draft`, { method: 'DELETE' });
+      if (!res.ok) {
+        setError('Không thể bỏ bản nháp');
+        return;
+      }
+      applyLoaded(chapter, await fetchContent(), false);
+    } catch (err) {
+      console.error('Error discarding draft:', err);
+      setError('Đã xảy ra lỗi khi bỏ bản nháp');
     }
   }
 
@@ -106,27 +187,25 @@ export default function ChapterContentPage({
   }
 
   return (
-    <div className="max-w-4xl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Link
-            href={`/admin/stories/${chapter?.part.story.id}/parts`}
-            className="p-2 hover:bg-gray-100 rounded-xl transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Nội dung chương
-            </h1>
-            <p className="text-gray-600 mt-1">
-              {chapter?.part.story.title} &gt; {chapter?.part.name} &gt; {chapter?.title}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
+    <>
+      {/* First element on the page: the bar pulls itself up against the admin header. */}
+      <EditorSaveBar
+        backHref={chapter ? `/admin/stories/${chapter.part.story.id}/parts` : '/admin'}
+        title="Nội dung chương"
+        breadcrumb={chapter ? `${chapter.part.story.title} > ${chapter.part.name} > ${chapter.title}` : undefined}
+        status={autosave.status}
+        lastSavedAt={autosave.lastSavedAt}
+        error={autosave.error}
+        hasUnpublishedDraft={hasDraft || autosave.isDirty}
+        draftInfo={draftInfo}
+        onSaveDraft={() => void autosave.saveNow()}
+        onPublish={() => void publish()}
+        publishing={publishing}
+        publishDisabled={!loaded}
+        onDiscardDraft={hasDraft ? () => void discardDraft() : undefined}
+        extraActions={
           <button
+            type="button"
             onClick={() => setShowPreview(!showPreview)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-colors ${
               showPreview
@@ -137,21 +216,19 @@ export default function ChapterContentPage({
             <Eye className="w-4 h-4" />
             <span>{showPreview ? 'Ẩn preview' : 'Xem trước'}</span>
           </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 transition-colors"
-          >
-            <Save className="w-4 h-4" />
-            <span>{saving ? 'Đang lưu...' : 'Lưu'}</span>
-          </button>
-        </div>
-      </div>
+        }
+      />
 
+    <div className="max-w-4xl">
       {/* Error */}
       {error && (
         <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600">
           {error}
+        </div>
+      )}
+      {notice && (
+        <div className="mb-4 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm">
+          {notice}
         </div>
       )}
 
@@ -172,7 +249,7 @@ export default function ChapterContentPage({
         {/* Preview */}
         {showPreview && (
           <div>
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-6">
+            <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-20">
               <h3 className="text-sm font-medium text-gray-500 mb-4">
                 Xem trước
               </h3>
@@ -255,5 +332,6 @@ export default function ChapterContentPage({
         )}
       </div>
     </div>
+    </>
   );
 }

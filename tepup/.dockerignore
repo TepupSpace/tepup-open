@@ -1,0 +1,14 @@
+# Never send credentials into an image.
+.env
+.env.*
+!.env.example
+tepup-(.env)/
+.vercel/
+
+# Rebuilt inside the image.
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+*.log
