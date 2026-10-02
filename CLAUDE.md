@@ -13,9 +13,9 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - Prisma 7 on Supabase Postgres via `@prisma/adapter-pg` (pooler, see `lib/prisma.ts`)
 - NextAuth v5 beta: credentials provider (username + password, **no email, Google OAuth removed on purpose**), JWT sessions, bcryptjs
 - Supabase Storage for lesson images (`lib/supabase-storage.ts`, `app/api/admin/upload-image`)
-- Groq powers the learner AI chat (`app/api/ai/chat`, personas in `lib/ai/personas.ts`). Anthropic powers the admin-only block builder (`app/api/admin/ai/build-block`). Authors can also paste JSON produced by their own AI: `lib/ai-import/` normalises it, and `checkBlock` in `lib/schemas/blocks.ts` checks its structure.
+- Groq's **free tier** powers the learner AI chat (`app/api/ai/chat`, personas in `lib/ai/personas.ts`). See [AI chat](#ai-chat-low-priority-free-tier) before touching it. Anthropic powers the admin-only block builder (`app/api/admin/ai/build-block`). Authors can also paste JSON produced by their own AI: `lib/ai-import/` normalises it, and `checkBlock` in `lib/schemas/blocks.ts` checks its structure.
 - BlockNote (admin editor), Sandpack (admin-defined `custom` blocks), zod 4, isomorphic-dompurify
-- Vercel, region `sin1`. Installable as a PWA.
+- Vercel (Hobby plan), region `sin1`, deployed by GitHub Actions on every push to `main` (see [Deployment](#deployment-every-push-to-main-goes-to-production)). Cloudflare sits in front: DNS, plus a 5-minute edge cache for public pages (see [Edge caching](#edge-caching-cloudflare)). Installable as a PWA.
 
 ## Commands (from `tepup/`)
 - `npm run dev` — dev server on :3000
@@ -23,6 +23,7 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - `npm run lint` — ESLint (next core-web-vitals + typescript)
 - `npx tsc --noEmit` — type-check
 - ⚠️ **Prefer reviewed SQL over `npx prisma db push`.** There is no migrations folder, and `db push` applies whatever differs from the live DB, which has gone wrong before (drifted image columns nearly got dropped). Preview with `npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script`, apply the SQL deliberately (see `tepup/prisma/sql/`), and enable RLS on every new table.
+- ⚠️ **Schema changes reach the databases before the code does.** Merging to `main` deploys immediately, so code that needs a new column or table returns errors until the SQL is applied. Apply the SQL to staging, then production, then merge.
 - `npx prisma studio`
 - `npx tsx scripts/<name>.ts` — seed, migration and audit scripts
 - `npx tsx scripts/test-safe-expr.ts` — the only automated check (no test framework). Run it after touching `lib/security/safe-expr.ts` or any block formula.
@@ -99,7 +100,7 @@ Touch all of these, or the block breaks somewhere:
 4. Editor in `components/admin/editor/` + wiring in `BlockEditor`/`NotionBlockEditor`/`block-utils.ts`/`types.ts` + `lib/editor/blocknote-converter.ts`
 5. Length limits in `lib/blockLimits.ts` if layout depends on text length
 
-## Security invariants (branch `security/stage-1-hardening`)
+## Security invariants
 Author content is untrusted: contributors self-register. Keep these rules:
 - **Never `new Function`/`eval` author strings.** Calculator, slider and budget formulas and conditions go through `lib/security/safe-expr.ts` (`^` is rejected; use `**`).
 - **Every `dangerouslySetInnerHTML` must go through `sanitizeInlineHtml`** (`lib/security/sanitize-html.ts`). Rich text is inline HTML only.
@@ -137,6 +138,34 @@ Author content is untrusted: contributors self-register. Keep these rules:
 ## Git remotes & deployment
 - **IMPORTANT**: Only push or deploy to the remotes the user explicitly requests. Do NOT auto-push to all remotes; features may need testing on staging before going to production.
 - Vercel builds from `tepup/`; `.vercelignore` excludes `docs/`, `_workspace/` and env folders. Prisma and `pg` are `serverExternalPackages`.
+
+## Deployment: every push to `main` goes to production
+- `.github/workflows/deploy-production.yml` runs on every push to `main` (and on **Actions → deploy-production → Run workflow**). It uploads the repo with the Vercel CLI and a token, Vercel builds it, and the result **replaces tepup.space**. There are no preview deployments, so **pushing to `main` is a production release**. Test locally against staging first.
+- **Keep the `Drop Git metadata` step (`rm -rf .git`).** On Vercel's Hobby plan, a deployment that carries commit metadata is blocked unless the commit author is the Vercel account owner ("Deployment Blocked … commit email could not be matched"). The CLI then just hangs at `Building...` until the job times out. Without `.git` the token alone authorises the upload, so anyone's commits deploy.
+- **Don't use Vercel's *Redeploy* button.** It reuses the old commit metadata and gets blocked. Re-run the workflow instead. To undo a bad release: Vercel → Deployments → previous production deployment → **Instant Rollback**.
+- The run ends with a **smoke test** (`/`, `/courses`, `/api/library`, `/api/suggestions`). Red means the live site returned a wrong status: check it now. A yellow warning only means Cloudflare challenged GitHub's runner.
+- **The website's database role is restricted.** Production `DATABASE_URL` logs in as a role that can read and write rows (it bypasses RLS), but can't create, alter or drop anything. Schema SQL therefore runs from a developer machine with the owner connection, never from Vercel. **Don't put `DIRECT_URL` or any `postgres`-owner URL in Vercel.**
+- **Vercel environment variables:** add secrets as **Type: Secret** for **Production only**.
+  - Never use *All Environments*: Development values stay readable and `vercel env pull` copies them to laptops. Never point Development at the production database.
+  - Changing a variable only takes effect on the next deployment.
+  - Rotating `AUTH_SECRET` logs everyone out (JWT sessions).
+  - `SUPABASE_SERVICE_ROLE_KEY` holds a Supabase **secret key** (`sb_secret_…`). Supabase rejects it from browsers, so `lib/supabase-storage.ts` must stay server-only.
+
+## Edge caching (Cloudflare)
+- Cloudflare caches the public pages for 5 minutes. Two parts must agree: the `Cloudflare-CDN-Cache-Control` header in `tepup/next.config.ts` (`publicPages`), and the Cloudflare Cache Rule "Public pages, anonymous only" (dashboard). Browsers still get `max-age=0`.
+- ⚠️ **Pages in `publicPages` must render the same HTML for everyone.** Never read cookies, the session, request headers or `searchParams` on the server in those routes or their layouts. Per-user UI belongs in client components. A personalised server render there would be cached and **shown to every learner**.
+- ⚠️ **Signed-in requests are never cached, and that protects hidden content.** `tepup/proxy.ts` serves signed-in users the staff view, hidden lessons included, **at the public lesson URL**. Cloudflare's cache ignores cookies. Caching is only safe because both the app header (`anonymousPageLoad`: the session cookies and the `rsc` header) and the Cloudflare rule skip requests that carry the session cookie, the `RSC` header or `?_rsc`. If you rename the session cookie, change `proxy.ts`, or add another per-user view at a public URL, **update `anonymousPageLoad` and the Cloudflare rule together**.
+- To cache a new public route, add it to `publicPages` **and** the rule's path list; until then it's simply not cached. Never add `/api`, `/admin`, `/contributor`, `/staff-view` or auth pages.
+- Content edits show within about 10 minutes (5 minutes at Cloudflare plus `revalidate = 300`). **For an urgent takedown**, hide the content in the admin, then Cloudflare → Caching → Configuration → **Purge cache** (custom URLs, or Purge Everything).
+- **Don't return 502 or 504 from route handlers.** Cloudflare replaces an origin's 502/504 with its own `error code: 502` page, which hides your JSON error. Use 500 or 503.
+
+## AI chat (low priority, free tier)
+- Not a focus of the site. Keep it on free resources and make it **fail gracefully**; don't invest more without a decision.
+- It runs on **Groq's free plan**: `openai/gpt-oss-120b`, falling back to `openai/gpt-oss-20b` on 404/413/429 (`app/api/ai/chat/route.ts`). `llama-3.3-70b-versatile` became enterprise-only and returns 404. Mixtral, Llama 3 8B and Gemma 2 were retired.
+  - Each model's free quota is 8K tokens/minute and 200K tokens/day, **shared by every learner**. The request sizes in the route (`MAX_TOTAL_CHARS`, `MAX_REPLY_TOKENS`, `reasoning_effort: 'low'`) are tuned to fit. Don't raise them without checking Groq's current limits.
+  - Check Groq's model list before changing the models; free-plan models change without notice.
+- The browser shows the route's `{ error }` text **verbatim** (`ChatApiError` in `lib/contexts/AIChatContext.tsx`). So error strings must be short, Vietnamese and non-technical: no keys, model names or upstream messages. Groq SDK retries are off on purpose (`maxRetries: 0`).
+- Learner text goes to an external AI service. Keep the disclaimer under the chat input, and never send an IP, user id or other identity to the AI.
 
 ## Grill me
 - Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their design, or mentions "grill me".
