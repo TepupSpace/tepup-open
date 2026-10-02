@@ -111,7 +111,8 @@ export async function POST(request: Request) {
         );
       }
       console.error('Groq init error:', initError);
-      return NextResponse.json({ error: 'Không thể kết nối với AI' }, { status: 502 });
+      // Not 502: Cloudflare replaces an origin's 502/504 with its own page, hiding this message.
+      return NextResponse.json({ error: 'Không thể kết nối với AI' }, { status: 500 });
     }
 
     const readable = new ReadableStream({
