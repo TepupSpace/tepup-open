@@ -18,5 +18,6 @@ export const PERSONA_ORDER: PersonaId[] = [
 ];
 
 export const MODEL_OPTIONS: { id: string; label: string; description: string }[] = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', description: 'Tiếng Việt tốt' },
+  // The route falls back to openai/gpt-oss-20b by itself when this one is busy or unavailable.
+  { id: 'openai/gpt-oss-120b', label: 'GPT-OSS 120B', description: 'Tiếng Việt tốt' },
 ];

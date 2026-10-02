@@ -1,5 +1,6 @@
-// Groq retired mixtral-8x7b-32768, llama3-8b-8192 and gemma2-9b-it; only this one is still served.
-export type AIModel = 'llama-3.3-70b-versatile';
+// Groq free-plan chat models. Retired or enterprise-only: mixtral-8x7b-32768, llama3-8b-8192,
+// gemma2-9b-it, llama-3.3-70b-versatile.
+export type AIModel = 'openai/gpt-oss-120b' | 'openai/gpt-oss-20b';
 
 export type PersonaId = 'default';
 

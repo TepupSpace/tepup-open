@@ -26,7 +26,7 @@ const GENERIC_ERROR = 'Đã xảy ra lỗi. Vui lòng thử lại.';
 class ChatApiError extends Error {}
 
 const DEFAULT_SETTINGS: AISettings = {
-  model: 'llama-3.3-70b-versatile',
+  model: 'openai/gpt-oss-120b',
   personaId: 'default',
 };
 
