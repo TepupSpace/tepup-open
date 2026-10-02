@@ -18,8 +18,5 @@ export const PERSONA_ORDER: PersonaId[] = [
 ];
 
 export const MODEL_OPTIONS: { id: string; label: string; description: string }[] = [
-  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', description: 'Mạnh nhất · Tiếng Việt tốt' },
-  { id: 'mixtral-8x7b-32768',      label: 'Mixtral 8x7B',  description: 'Cân bằng · Context dài' },
-  { id: 'llama3-8b-8192',          label: 'Llama 3 8B',    description: 'Nhanh nhất' },
-  { id: 'gemma2-9b-it',            label: 'Gemma 2 9B',    description: 'Của Google · Nhẹ' },
+  { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B', description: 'Tiếng Việt tốt' },
 ];

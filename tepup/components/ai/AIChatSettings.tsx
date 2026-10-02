@@ -8,8 +8,8 @@ export default function AIChatSettings() {
 
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
-      {/* Model selection */}
-      <div>
+      {/* Model selection: hidden while there is only one model to choose */}
+      {MODEL_OPTIONS.length > 1 && <div>
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
           Model AI
         </h3>
@@ -33,7 +33,7 @@ export default function AIChatSettings() {
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Persona selection */}
       <div>

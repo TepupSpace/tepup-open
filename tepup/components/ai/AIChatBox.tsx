@@ -202,6 +202,11 @@ export default function AIChatBox() {
                     )}
                   </button>
                 </div>
+                {/* Learners chat anonymously: tell them where their words go before they type. */}
+                <p className="mt-2 px-1 text-[11px] leading-snug text-gray-400">
+                  AI có thể sai. Tin nhắn được gửi tới một dịch vụ AI bên ngoài để trả lời. Đừng nhập
+                  thông tin cá nhân như họ tên, số điện thoại hay địa chỉ.
+                </p>
               </div>
             </>
           )}

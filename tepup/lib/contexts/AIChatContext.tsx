@@ -17,8 +17,13 @@ import type {
   AIModel,
   PersonaId,
 } from '@/lib/types/ai-chat';
+import { MODEL_OPTIONS } from '@/lib/ai/personas';
 
 const SETTINGS_KEY = 'tepup_ai_settings';
+const GENERIC_ERROR = 'Đã xảy ra lỗi. Vui lòng thử lại.';
+
+/** An error whose message comes from our API and is safe to show the learner as is. */
+class ChatApiError extends Error {}
 
 const DEFAULT_SETTINGS: AISettings = {
   model: 'llama-3.3-70b-versatile',
@@ -29,7 +34,12 @@ function readSettings(): AISettings {
   if (typeof window === 'undefined') return DEFAULT_SETTINGS;
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+    if (raw) {
+      const saved = { ...DEFAULT_SETTINGS, ...JSON.parse(raw) };
+      // A model saved before it was retired would make every request fail.
+      if (!MODEL_OPTIONS.some((m) => m.id === saved.model)) saved.model = DEFAULT_SETTINGS.model;
+      return saved;
+    }
   } catch { /* ignore */ }
   return DEFAULT_SETTINGS;
 }
@@ -135,7 +145,9 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
       // Build history for API using the ref (current before this message)
       const historyForApi = [
-        ...messagesRef.current.map((m) => ({ role: m.role, content: m.content })),
+        ...messagesRef.current
+          .filter((m) => !m.isError)
+          .map((m) => ({ role: m.role, content: m.content })),
         { role: 'user' as const, content: apiContent },
       ];
 
@@ -154,6 +166,8 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
         });
 
         if (!res.ok || !res.body) {
+          const body = await res.json().catch(() => null);
+          if (typeof body?.error === 'string') throw new ChatApiError(body.error);
           throw new Error(`API error: ${res.status}`);
         }
 
@@ -184,7 +198,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
                     )
                   );
                 } else if (parsed.error) {
-                  throw new Error(parsed.error);
+                  throw new ChatApiError(parsed.error);
                 }
               } catch (parseErr) {
                 if ((parseErr as Error).message !== 'Unexpected end of JSON input') {
@@ -208,7 +222,15 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId
-                ? { ...m, content: '❌ Đã xảy ra lỗi. Vui lòng thử lại.', isStreaming: false }
+                ? {
+                    ...m,
+                    // Keep any text that already streamed in, then say what went wrong.
+                    content:
+                      (m.content ? `${m.content}\n\n` : '') +
+                      `❌ ${error instanceof ChatApiError ? error.message : GENERIC_ERROR}`,
+                    isStreaming: false,
+                    isError: true,
+                  }
                 : m
             )
           );

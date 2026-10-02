@@ -1,8 +1,5 @@
-export type AIModel =
-  | 'llama-3.3-70b-versatile'
-  | 'mixtral-8x7b-32768'
-  | 'llama3-8b-8192'
-  | 'gemma2-9b-it';
+// Groq retired mixtral-8x7b-32768, llama3-8b-8192 and gemma2-9b-it; only this one is still served.
+export type AIModel = 'llama-3.3-70b-versatile';
 
 export type PersonaId = 'default';
 
@@ -20,6 +17,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   isStreaming?: boolean;
+  /** The reply failed; shown to the learner but not sent back to the AI as history. */
+  isError?: boolean;
 }
 
 export interface SelectionContext {
