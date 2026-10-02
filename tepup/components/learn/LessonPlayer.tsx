@@ -12,6 +12,7 @@ import { useBottomChrome } from '@/lib/hooks/useBottomChrome';
 import TextSelectionPopover from '@/components/ai/TextSelectionPopover';
 import SuggestEditDialog from '@/components/learn/SuggestEditDialog';
 import { BlockRenderer, INTERACTIVE_BLOCK_TYPES, preloadBlockTypes } from '@/components/learn/BlockRenderer';
+import { isEmptyBlock } from '@/lib/editor/trim-empty-blocks';
 
 interface LessonPlayerProps {
   /** Stable database id — this is what progress is keyed by, never the slug. */
@@ -30,18 +31,22 @@ type RevealItem = { block: ContentBlock; index: number };
  * Split blocks into reveal groups. If any `step-break` marker is present, blocks
  * between markers form one group (revealed together). Otherwise falls back to the
  * legacy behavior: one block per group (revealed one-at-a-time).
+ *
+ * Empty blocks (blank lines saved before saves trimmed them) are skipped, so they
+ * never become a blank step. They keep their `index`, which question state is keyed by.
  */
 function computeGroups(blocks: ContentBlock[]): RevealItem[][] {
   const hasBreak = blocks.some((b) => b.type === 'step-break');
   const groups: RevealItem[][] = [];
   if (!hasBreak) {
     blocks.forEach((block, index) => {
-      if (block.type !== 'step-break') groups.push([{ block, index }]);
+      if (block.type !== 'step-break' && !isEmptyBlock(block)) groups.push([{ block, index }]);
     });
     return groups;
   }
   let cur: RevealItem[] = [];
   blocks.forEach((block, index) => {
+    if (isEmptyBlock(block)) return;
     if (block.type === 'step-break') {
       if (cur.length) groups.push(cur);
       cur = [];

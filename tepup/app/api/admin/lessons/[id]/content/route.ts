@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
 import { lessonSlugInCourse } from '@/lib/api-helpers';
 import { prepareBlocksForSave } from '@/lib/ai-import/normalize';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import { contentErrorBody, sanitizeAdminBlocks } from '@/lib/schemas/content-validation';
 import {
   deleteDraft,
@@ -107,7 +108,9 @@ export async function PUT(
     }
 
     // 1. Normalise AI-pasted JSON (lib/ai-import) and check block structure.
-    const prepared = prepareBlocksForSave(blocks);
+    // Empty lines would be blank steps in the player; the editor trims them too, so the
+    // "Block #N" in any error below matches the editor's numbering.
+    const prepared = prepareBlocksForSave(trimEmptyBlocks(blocks).blocks);
     if (prepared.errors.length) {
       return NextResponse.json(
         { error: 'Có block sai cấu trúc', details: prepared.errors },

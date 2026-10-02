@@ -6,6 +6,7 @@ import NotionBlockEditor from '@/components/admin/editor/NotionBlockEditor';
 import EditorSaveBar from '@/components/admin/editor/EditorSaveBar';
 import { useDraftAutosave } from '@/lib/hooks/useDraftAutosave';
 import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import type { ContentBlock } from '@/lib/types/content';
 import type { DraftDTO } from '@/lib/types/drafts';
 import { isAllowedMediaUrl } from '@/lib/security/safe-url';
@@ -56,9 +57,17 @@ export default function ChapterContentPage({
   const [baseUpdatedAt, setBaseUpdatedAt] = useState<string | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [draftInfo, setDraftInfo] = useState<{ updatedBy: string | null; updatedAt: string } | null>(null);
+  // NotionBlockEditor builds itself once from `blocks`; bumping the key rebuilds it
+  // (after discarding a draft, or to drop empty lines once published).
+  const [editorKey, setEditorKey] = useState(0);
 
   // The chapter title lives on the chapter itself; content keeps a copy of it.
-  const value: EditorValue = useMemo(() => ({ title: chapter?.title || '', blocks }), [chapter, blocks]);
+  // What gets saved never contains empty lines (blank steps for learners). The editor itself
+  // keeps them while you type, so the line you're on isn't deleted under you.
+  const value: EditorValue = useMemo(
+    () => ({ title: chapter?.title || '', blocks: trimEmptyBlocks(blocks).blocks }),
+    [chapter, blocks]
+  );
 
   const saveDraft = useCallback(
     async (v: EditorValue) => {
@@ -83,8 +92,10 @@ export default function ChapterContentPage({
     (info: ChapterInfo, data: ContentResponse | null, useDraft: boolean) => {
       const draft = useDraft ? data?.draft ?? null : null;
       const existing = data?.blocks ?? [];
-      const nextBlocks = draft ? draft.blocks ?? [] : Array.isArray(existing) ? existing : [];
+      // Old content may still hold empty lines: open it without them.
+      const nextBlocks = trimEmptyBlocks(draft ? draft.blocks ?? [] : Array.isArray(existing) ? existing : []).blocks;
       setBlocks(nextBlocks);
+      setEditorKey((k) => k + 1);
       // A resumed draft keeps the base it was started from, so publishing it still notices
       // a live change made in between.
       setBaseUpdatedAt(draft ? draft.baseUpdatedAt : data?.updatedAt ?? null);
@@ -131,6 +142,7 @@ export default function ChapterContentPage({
       // Let an in-flight autosave finish first, so it can't recreate the draft after publishing.
       await autosave.saveNow();
       const snapshot = value;
+      const removedEmpty = trimEmptyBlocks(blocks).removed;
       const res = await fetch(`/api/admin/chapters/${chapterId}/content`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -150,8 +162,16 @@ export default function ChapterContentPage({
       setBaseUpdatedAt(data?.data?.updatedAt ?? null);
       setHasDraft(false);
       setDraftInfo(null);
+      if (removedEmpty) {
+        // Show the editor without the empty lines that were just left out.
+        setBlocks(snapshot.blocks);
+        setEditorKey((k) => k + 1);
+      }
       autosave.resetBaseline(snapshot);
-      setNotice('Đã xuất bản. Người học sẽ thấy nội dung mới trong vài phút.');
+      setNotice(
+        'Đã xuất bản. Người học sẽ thấy nội dung mới trong vài phút.' +
+          (removedEmpty ? ` Đã bỏ ${removedEmpty} dòng trống.` : '')
+      );
     } catch (err) {
       console.error('Error publishing content:', err);
       setError('Đã xảy ra lỗi khi xuất bản');
@@ -241,7 +261,7 @@ export default function ChapterContentPage({
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Nội dung chương
               </label>
-              <NotionBlockEditor blocks={blocks} onChange={setBlocks} />
+              <NotionBlockEditor key={editorKey} blocks={blocks} onChange={setBlocks} />
             </div>
           </div>
         </div>

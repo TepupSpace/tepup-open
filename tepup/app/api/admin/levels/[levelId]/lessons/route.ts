@@ -50,6 +50,9 @@ export async function POST(
         levelId,
         courseId: level.courseId,
         sortOrder: (maxSortOrder._max.sortOrder || 0) + 1,
+        // New lessons start hidden. The first "Xuất bản" in the editor asks before it
+        // makes the lesson visible to learners.
+        isActive: false,
       },
     });
 

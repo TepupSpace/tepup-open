@@ -3,6 +3,7 @@ import { revalidateContent } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
 import { contentErrorBody, sanitizeAdminBlocks } from '@/lib/schemas/content-validation';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import {
   deleteDraft,
   getDraft,
@@ -71,7 +72,8 @@ export async function PUT(
     const force = body.force === true;
 
     // Same defence in depth as lesson content: sanitise HTML, refuse off-list media.
-    const cleaned = sanitizeAdminBlocks(blocks);
+    // Empty lines would be blank steps in the player (see lib/editor/trim-empty-blocks.ts).
+    const cleaned = sanitizeAdminBlocks(trimEmptyBlocks(blocks).blocks);
     if (!cleaned.ok) {
       return NextResponse.json(contentErrorBody(cleaned.issues), { status: 400 });
     }

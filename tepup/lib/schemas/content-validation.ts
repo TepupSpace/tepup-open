@@ -17,6 +17,8 @@ import { STRICT_BLOCK_SCHEMAS, isStrictBlockType, CONTENT_LIMITS } from './block
 import { sanitizeInlineHtml } from '@/lib/security/sanitize-html';
 import { isAllowedMediaUrl, ALLOWED_MEDIA_HOSTS_LABEL } from '@/lib/security/safe-url';
 import { checkExpr } from '@/lib/security/safe-expr';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
+import type { ContentBlock } from '@/lib/types/content';
 
 export interface ContentIssue {
   path: string;
@@ -164,6 +166,10 @@ function validateBlockList(
     issues.add(path, 'Phải là danh sách block / must be an array of blocks');
     return [];
   }
+  // Drop empty lines first (they'd be blank steps in the player; trimEmptyBlocks also
+  // handles toggle children), so "Block #N" in issues matches the editor's numbering.
+  if (depth === 0) blocks = trimEmptyBlocks(blocks as ContentBlock[]).blocks;
+  if (!Array.isArray(blocks)) return [];
   if (blocks.length > CONTENT_LIMITS.blocksPerLesson) {
     issues.add(path, `Tối đa ${CONTENT_LIMITS.blocksPerLesson} block / too many blocks`);
     return [];
@@ -340,14 +346,26 @@ export function sanitizeAdminBlocks(blocks: unknown, path = 'blocks'): ContentRe
 // --- response helper -------------------------------------------------------
 
 /**
+ * `blocks[6].options[1]` → `Block #7 › options[1]`: the same 1-based number the editor
+ * shows in its gutter (and that `prepareBlocksForSave` errors use), so authors can find
+ * the block. Only the top-level block index is renumbered.
+ */
+export function describeContentPath(path: string): string {
+  return path.replace(/(^|\.)blocks\[(\d+)\]\.?/, (_m, sep: string, i: string) =>
+    `${sep ? ' › ' : ''}Block #${Number(i) + 1}${_m.endsWith('.') ? ' › ' : ''}`
+  );
+}
+
+/**
  * Body JSON cho phản hồi 400. `error` chứa luôn lỗi đầu tiên vì giao diện hiện chỉ
  * hiển thị `data.error`; `details` liệt kê đủ để debug.
  */
 export function contentErrorBody(issues: ContentIssue[]) {
-  const first = issues[0];
-  const more = issues.length > 1 ? ` (+${issues.length - 1} lỗi khác / more)` : '';
+  const readable = issues.map((iss) => ({ ...iss, path: describeContentPath(iss.path) }));
+  const first = readable[0];
+  const more = readable.length > 1 ? ` (+${readable.length - 1} lỗi khác / more)` : '';
   return {
     error: `Nội dung không hợp lệ / Invalid content — ${first ? `${first.path}: ${first.message}` : ''}${more}`,
-    details: issues,
+    details: readable,
   };
 }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import type { ContentBlock } from '@/components/admin/editor/BlockEditor';
 import { slugifyUnique } from '@/lib/utils/slug';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import { isSupportedContributionType, validateContributionData } from '@/lib/schemas/content-validation';
 
 interface CourseContributionData {
@@ -157,7 +158,7 @@ async function publishNewCourse(data: CourseContributionData, contributorId: str
             data: {
               lessonId: newLesson.id,
               title: lesson.content.title || lesson.name,
-              blocks: JSON.parse(JSON.stringify(lesson.content.blocks)),
+              blocks: JSON.parse(JSON.stringify(trimEmptyBlocks(lesson.content.blocks).blocks)),
             },
           });
         }
@@ -170,7 +171,8 @@ async function publishEditLessonContent(lessonId: string, data: { blocks: Conten
   await prisma.lessonContent.update({
     where: { lessonId },
     data: {
-      blocks: JSON.parse(JSON.stringify(data.blocks)),
+      // Empty lines would be blank steps in the player (lib/editor/trim-empty-blocks.ts).
+      blocks: JSON.parse(JSON.stringify(trimEmptyBlocks(data.blocks).blocks)),
     },
   });
 }

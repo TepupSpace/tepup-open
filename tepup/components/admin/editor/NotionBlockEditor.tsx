@@ -1,6 +1,6 @@
 'use client';
 import '@blocknote/mantine/style.css';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { BlockNoteView } from '@blocknote/mantine';
 import {
   useCreateBlockNote,
@@ -16,6 +16,7 @@ import {
   toContentBlocks,
   type BNBlock,
 } from '@/lib/editor/blocknote-converter';
+import { numberTopLevelBlocks } from '@/lib/editor/block-numbering';
 import {
   blockTypes,
   blockTypesInGroup,
@@ -57,6 +58,71 @@ function WidgetIcon({ icon: Icon, color }: { icon: React.ElementType; color: str
       <Icon size={13} strokeWidth={2.25} />
     </span>
   );
+}
+
+/** Escapes a value for use inside a quoted CSS attribute selector. */
+function cssEscape(value: string): string {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(value);
+  return value.replace(/[^a-zA-Z0-9_-]/gu, (c) => `\\${c.codePointAt(0)!.toString(16)} `);
+}
+
+/*
+ * Block numbers in the left gutter ("Block #7" in publish errors = the 7 here).
+ *
+ * Drawn as `::before` of the top-level `.bn-block-outer[data-id]` (BlockNote's DOM:
+ * `.bn-editor > .bn-block-group > .bn-block-outer > .bn-block > .bn-block-content`),
+ * from a <style> element this component owns: one rule per numbered block id. Nothing
+ * in BlockNote's DOM is touched, so the numbers survive BlockNote's re-renders, and
+ * generated content is never selected or copied with the text.
+ *
+ * BlockNote's side menu (+ and drag handle, about 48px) sits in the editor's 54px left
+ * padding, right next to the block. The numbers go further left, in an extra gutter
+ * added to that padding, so the two never overlap. The number box has a fixed width,
+ * so going from 9 to 10 doesn't move anything.
+ *
+ * Vertical alignment: `--tepup-num-top` is the block's top padding (globals.css sets
+ * paragraph 0.5rem and heading 2rem; BlockNote's default is 3px) and `--tepup-num-line`
+ * the height of its first line (font size x line-height 1.625), so the number sits in
+ * the middle of the block's first line.
+ */
+const GUTTER_PX = 30; // number box (28px) + 2px from the editor edge
+const SIDE_MENU_PX = 52; // BlockNote's side menu is ~48px wide, inside 54px of padding
+
+function numberingCss(scope: string, numbers: Map<string, number>): string {
+  const top = `${scope} .bn-editor > .bn-block-group > .bn-block-outer`;
+  const has = (sel: string) => `${top}:has(> .bn-block > .bn-block-content${sel})`;
+  const rules = [
+    `${scope} .bn-editor { padding-left: ${54 + GUTTER_PX}px; }`,
+    `${top} { position: relative; --tepup-num-top: 3px; --tepup-num-line: calc(1.125rem * 1.625); }`,
+    `${has('[data-content-type="paragraph"]')} { --tepup-num-top: 0.5rem; }`,
+    `${has('[data-content-type="heading"]')} { --tepup-num-top: 2rem; --tepup-num-line: calc(1.5rem * 1.625); }`,
+    `${has('[data-content-type="heading"][data-level="1"]')} { --tepup-num-line: calc(1.875rem * 1.625); }`,
+    `${has('[data-content-type="codeBlock"]')} { --tepup-num-top: 27px; }`,
+    `${has('[data-content-type="table"]')} { --tepup-num-top: 18px; }`,
+    `${top}::before {` +
+      ' position: absolute;' +
+      ' top: var(--tepup-num-top);' +
+      ` right: calc(100% + ${SIDE_MENU_PX}px);` +
+      ' width: 28px;' +
+      ' text-align: right;' +
+      ' font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;' +
+      ' font-size: 12px;' +
+      ' font-weight: 400;' +
+      ' font-style: normal;' +
+      ' font-variant-numeric: tabular-nums;' +
+      ' line-height: var(--tepup-num-line);' +
+      ' letter-spacing: 0;' +
+      ' white-space: nowrap;' +
+      ' color: #6b7280;' + // text-gray-500: readable when matching an error's "Block #N"
+      ' -webkit-user-select: none;' +
+      ' user-select: none;' +
+      ' pointer-events: none;' +
+      ' }',
+  ];
+  for (const [id, n] of numbers) {
+    rules.push(`${top}[data-id="${cssEscape(id)}"]::before { content: "${n}"; }`);
+  }
+  return rules.join('\n');
 }
 
 interface Props {
@@ -102,6 +168,23 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
   const emitChange = useCallback(() => {
     onChangeRef.current(toContentBlocks(editor.document as unknown as BNBlock[]));
   }, [editor]);
+
+  // Gutter block numbers: rewrite this editor's <style> on mount and on every change
+  // (its own subscription, so what `onChange` emits is untouched). Written straight to
+  // the element, so typing doesn't re-render this component.
+  const numberingScope = useId();
+  const numberingStyleRef = useRef<HTMLStyleElement>(null);
+  useLayoutEffect(() => {
+    const scope = `[data-tepup-block-numbers="${cssEscape(numberingScope)}"]`;
+    const update = () => {
+      const el = numberingStyleRef.current;
+      if (!el) return;
+      const css = numberingCss(scope, numberTopLevelBlocks(editor.document as unknown as BNBlock[]));
+      if (el.textContent !== css) el.textContent = css;
+    };
+    update();
+    return editor.onChange(update);
+  }, [editor, numberingScope]);
 
   const openEditor = useCallback(
     (blockId: string) => {
@@ -214,7 +297,15 @@ export default function NotionBlockEditor({ blocks, onChange }: Props) {
 
   return (
     <WidgetEditContext.Provider value={widgetCtx}>
-      <div className="tepup-lesson-editor bg-white rounded-2xl border border-gray-100 p-2 sm:p-4 min-h-[400px]">
+      <p className="mb-2 text-xs text-gray-500">
+        Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
+        Dòng trống không có số và sẽ được bỏ khi lưu.
+      </p>
+      <style ref={numberingStyleRef} />
+      <div
+        data-tepup-block-numbers={numberingScope}
+        className="tepup-lesson-editor bg-white rounded-2xl border border-gray-100 p-2 sm:p-4 min-h-[400px]"
+      >
         <BlockNoteView
           editor={editor as any}
           theme="light"

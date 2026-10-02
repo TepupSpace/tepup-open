@@ -35,6 +35,10 @@ export interface EditorSaveBarProps {
   onPublish: () => void;
   publishing: boolean;
   publishDisabled?: boolean;
+  /** Chú thích khi rê chuột / focus vào "Xuất bản" (mặc định: giải thích chung) */
+  publishHint?: string;
+  /** Chú thích khi rê chuột / focus vào "Lưu nháp" */
+  saveDraftHint?: string;
   /** Chỉ hiện (nút chữ "Bỏ nháp") khi hasUnpublishedDraft */
   onDiscardDraft?: () => void;
   /** VD: nút "Xem trước" của trình soạn chương, hiển thị trước các nút lưu */
@@ -56,6 +60,31 @@ function formatDateTime(iso: string): string {
     month: '2-digit',
     year: 'numeric',
   });
+}
+
+const DEFAULT_PUBLISH_HINT =
+  'Xuất bản: đưa nội dung đang soạn lên cho người học xem (trang cập nhật trong vài phút).';
+const DEFAULT_SAVE_HINT =
+  'Lưu nháp: chỉ người quản trị thấy, người học không thấy. Nháp cũng tự lưu vài giây sau khi bạn ngừng gõ. Phím tắt: Ctrl+S.';
+
+/**
+ * Chú thích hiện ngay khi rê chuột hoặc focus bằng bàn phím (thuộc tính `title` của
+ * trình duyệt hiện chậm và không hiện khi focus). Nút bên trong trỏ tới nó bằng
+ * aria-describedby.
+ */
+function HoverTip({ id, text, children }: { id: string; text: string; children: ReactNode }) {
+  return (
+    <span className="relative inline-flex shrink-0 group/tip">
+      {children}
+      <span
+        id={id}
+        role="tooltip"
+        className="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity duration-150 absolute right-0 top-full mt-2 z-40 w-72 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs font-normal leading-snug text-white shadow-lg whitespace-normal"
+      >
+        {text}
+      </span>
+    </span>
+  );
 }
 
 function StatusText({
@@ -120,6 +149,8 @@ export default function EditorSaveBar({
   onPublish,
   publishing,
   publishDisabled = false,
+  publishHint = DEFAULT_PUBLISH_HINT,
+  saveDraftHint = DEFAULT_SAVE_HINT,
   onDiscardDraft,
   extraActions,
 }: EditorSaveBarProps) {
@@ -220,29 +251,34 @@ export default function EditorSaveBar({
 
         {extraActions}
 
-        <button
-          type="button"
-          onClick={onSaveDraft}
-          disabled={saveDisabled}
-          title="Lưu nháp (Ctrl+S)"
-          className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
-        >
-          <Save className="w-4 h-4" />
-          <span>Lưu nháp</span>
-        </button>
-        <button
-          type="button"
-          onClick={onPublish}
-          disabled={publishing || publishDisabled}
-          className="flex items-center gap-2 px-4 py-2 shrink-0 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors whitespace-nowrap"
-        >
-          {publishing ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Upload className="w-4 h-4" />
-          )}
-          <span>{publishing ? 'Đang xuất bản…' : 'Xuất bản'}</span>
-        </button>
+        <HoverTip id="editor-save-draft-hint" text={saveDraftHint}>
+          <button
+            type="button"
+            onClick={onSaveDraft}
+            disabled={saveDisabled}
+            aria-describedby="editor-save-draft-hint"
+            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            <Save className="w-4 h-4" />
+            <span>Lưu nháp</span>
+          </button>
+        </HoverTip>
+        <HoverTip id="editor-publish-hint" text={publishHint}>
+          <button
+            type="button"
+            onClick={onPublish}
+            disabled={publishing || publishDisabled}
+            aria-describedby="editor-publish-hint"
+            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors whitespace-nowrap"
+          >
+            {publishing ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            <span>{publishing ? 'Đang xuất bản…' : 'Xuất bản'}</span>
+          </button>
+        </HoverTip>
       </div>
     </div>
   );
