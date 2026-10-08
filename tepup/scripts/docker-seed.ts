@@ -40,6 +40,15 @@ async function main() {
     update: { role: 'ADMIN', isBanned: false, password: await bcrypt.hash(password, 10) },
   });
 
+  // Real content was imported (scripts/docker-import-content.sh): keep the admin account
+  // but don't mix the demo course and story into it.
+  const otherCourses = await prisma.course.count({ where: { slug: { not: 'demo-101' } } });
+  const demoExists = (await prisma.course.count({ where: { slug: 'demo-101' } })) > 0;
+  if (otherCourses > 0 && !demoExists) {
+    console.log('Seeded: admin. Skipped demo content: the database already holds imported courses.');
+    return;
+  }
+
   const category = await prisma.category.upsert({
     where: { slug: 'demo' },
     create: { slug: 'demo', name: 'Demo', description: 'Nội dung mẫu cho local' },

@@ -53,7 +53,7 @@ export default function MarketingHeader() {
           <div className="flex items-center gap-2">
             <Link
               href="/courses"
-              className="hidden sm:inline-flex items-center gap-2 px-5 py-2 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors"
+              className="hidden sm:inline-flex items-center gap-2 px-5 py-2 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors"
             >
               Bắt đầu học
               <ArrowRight className="w-4 h-4" />
@@ -91,7 +91,7 @@ export default function MarketingHeader() {
             ))}
             <Link
               href="/courses"
-              className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-500 text-white font-semibold rounded-xl hover:bg-blue-600 transition-colors sm:hidden"
+              className="mt-2 inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition-colors sm:hidden"
             >
               Bắt đầu học
               <ArrowRight className="w-4 h-4" />

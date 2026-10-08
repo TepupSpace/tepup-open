@@ -4,6 +4,8 @@ import { FolderTree, BookOpen, GraduationCap, Users, BookMarked, Hourglass } fro
 import Link from '@/components/ui/AppLink';
 import { getCoursesForContributions } from '@/lib/services/contribution-service';
 
+export const metadata = { title: 'Bảng điều khiển' };
+
 /**
  * Courses created by approved contributions that are still hidden (`isActive: false`).
  * Approval never makes a course public; an admin activates it, so list them here.
@@ -100,7 +102,7 @@ export default async function AdminDashboard() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Bảng điều khiển</h1>
         <p className="text-gray-600 mt-1">
           Chào mừng đến với trang quản trị Tepup
         </p>

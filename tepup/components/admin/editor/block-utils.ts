@@ -39,41 +39,77 @@ export const blockTypes: { type: string; label: string; icon: React.ElementType;
 
 export const blockTypesInGroup = (group: BlockGroup) => blockTypes.filter((b) => b.group === group);
 
-export const BLOCK_BORDER_COLOR: Record<string, string> = {
-  'text':               '#60a5fa',
-  'image':              '#c084fc',
-  'callout':            '#fbbf24',
-  'question':           '#34d399',
-  'library-document':   '#818cf8',
-  'pair-match':         '#38bdf8',
-  'flip-card':          '#f472b6',
-  'sort-bucket':        '#4ade80',
-  'calculator':         '#fb923c',
-  'slider-simulator':   '#22d3ee',
-  'budget-allocator':   '#fb7185',
-  'bias-detector':      '#f87171',
-  'perspective-switch': '#a78bfa',
-  'hot-cold-guess':     '#2dd4bf',
-  'custom':             '#a78bfa',
-  'step-break':         '#0ea5e9',
+/**
+ * Signature colour of each block type, as a Tailwind hue. Colours are Tailwind classes (not
+ * hex values) so they follow the reader dark theme, which re-points the palette variables.
+ */
+type BlockHue =
+  | 'blue' | 'purple' | 'amber' | 'emerald' | 'indigo' | 'sky' | 'pink' | 'green' | 'orange'
+  | 'cyan' | 'rose' | 'red' | 'violet' | 'teal' | 'gray';
+
+const BLOCK_HUE: Record<string, BlockHue> = {
+  'text':               'blue',
+  'image':              'purple',
+  'callout':            'amber',
+  'question':           'emerald',
+  'library-document':   'indigo',
+  'pair-match':         'sky',
+  'flip-card':          'pink',
+  'sort-bucket':        'green',
+  'calculator':         'orange',
+  'slider-simulator':   'cyan',
+  'budget-allocator':   'rose',
+  'bias-detector':      'red',
+  'perspective-switch': 'violet',
+  'hot-cold-guess':     'teal',
+  'custom':             'violet',
+  'step-break':         'sky',
+};
+
+export interface BlockColorClasses {
+  /** Tinted chip behind a block icon (slash menu). */
+  chip: string;
+  /** Left accent bar of a block card. */
+  bar: string;
+  /** Icon colour on white. */
+  icon: string;
+}
+
+// Full class strings, written out so Tailwind's scanner sees every one of them.
+const HUE_CLASSES: Record<BlockHue, BlockColorClasses> = {
+  blue:    { chip: 'bg-blue-100 text-blue-700 ring-1 ring-inset ring-blue-300',          bar: 'border-l-blue-400',    icon: 'text-blue-600' },
+  purple:  { chip: 'bg-purple-100 text-purple-700 ring-1 ring-inset ring-purple-300',    bar: 'border-l-purple-400',  icon: 'text-purple-600' },
+  amber:   { chip: 'bg-amber-100 text-amber-700 ring-1 ring-inset ring-amber-300',       bar: 'border-l-amber-400',   icon: 'text-amber-700' },
+  emerald: { chip: 'bg-emerald-100 text-emerald-700 ring-1 ring-inset ring-emerald-300', bar: 'border-l-emerald-400', icon: 'text-emerald-700' },
+  indigo:  { chip: 'bg-indigo-100 text-indigo-700 ring-1 ring-inset ring-indigo-300',    bar: 'border-l-indigo-400',  icon: 'text-indigo-600' },
+  sky:     { chip: 'bg-sky-100 text-sky-700 ring-1 ring-inset ring-sky-300',             bar: 'border-l-sky-400',     icon: 'text-sky-700' },
+  pink:    { chip: 'bg-pink-100 text-pink-700 ring-1 ring-inset ring-pink-300',          bar: 'border-l-pink-400',    icon: 'text-pink-600' },
+  green:   { chip: 'bg-green-100 text-green-700 ring-1 ring-inset ring-green-300',       bar: 'border-l-green-400',   icon: 'text-green-700' },
+  orange:  { chip: 'bg-orange-100 text-orange-700 ring-1 ring-inset ring-orange-300',    bar: 'border-l-orange-400',  icon: 'text-orange-700' },
+  cyan:    { chip: 'bg-cyan-100 text-cyan-700 ring-1 ring-inset ring-cyan-300',          bar: 'border-l-cyan-400',    icon: 'text-cyan-700' },
+  rose:    { chip: 'bg-rose-100 text-rose-700 ring-1 ring-inset ring-rose-300',          bar: 'border-l-rose-400',    icon: 'text-rose-600' },
+  red:     { chip: 'bg-red-100 text-red-700 ring-1 ring-inset ring-red-300',             bar: 'border-l-red-400',     icon: 'text-red-600' },
+  violet:  { chip: 'bg-violet-100 text-violet-700 ring-1 ring-inset ring-violet-300',    bar: 'border-l-violet-400',  icon: 'text-violet-600' },
+  teal:    { chip: 'bg-teal-100 text-teal-700 ring-1 ring-inset ring-teal-300',          bar: 'border-l-teal-400',    icon: 'text-teal-700' },
+  gray:    { chip: 'bg-gray-100 text-gray-700 ring-1 ring-inset ring-gray-300',          bar: 'border-l-gray-400',    icon: 'text-gray-600' },
 };
 
 /** Icon for the "Ngắt bước" separator — not a ContentBlock, so it lives outside blockTypes. */
 export const STEP_BREAK_ICON = Milestone;
 
-/** Custom block types store accentColor as a Tailwind colour name, not a hex value. */
-const ACCENT_HEX: Record<string, string> = {
-  cyan: '#22d3ee',
-  blue: '#60a5fa',
-  emerald: '#34d399',
-  amber: '#fbbf24',
-  rose: '#fb7185',
-  violet: '#a78bfa',
-  orange: '#fb923c',
+/** Custom block types store accentColor as a Tailwind colour name. */
+const ACCENT_HUE: Record<string, BlockHue> = {
+  cyan: 'cyan',
+  blue: 'blue',
+  emerald: 'emerald',
+  amber: 'amber',
+  rose: 'rose',
+  violet: 'violet',
+  orange: 'orange',
 };
 
-export function getAccentHex(accentColor?: string): string {
-  return ACCENT_HEX[accentColor ?? ''] ?? BLOCK_BORDER_COLOR.custom;
+export function getAccentColorClasses(accentColor?: string): BlockColorClasses {
+  return HUE_CLASSES[ACCENT_HUE[accentColor ?? ''] ?? BLOCK_HUE.custom];
 }
 
 const CUSTOM_ICON_MAP: Record<string, React.ElementType> = {
@@ -90,8 +126,8 @@ export function getCustomIcon(iconName: string): React.ElementType {
   return CUSTOM_ICON_MAP[iconName] ?? Puzzle;
 }
 
-export function getBlockBorderColor(type: string): string {
-  return BLOCK_BORDER_COLOR[type] ?? '#9ca3af';
+export function getBlockColorClasses(type: string): BlockColorClasses {
+  return HUE_CLASSES[BLOCK_HUE[type] ?? 'gray'];
 }
 
 export function getBlockIcon(type: string) {

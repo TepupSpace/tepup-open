@@ -116,7 +116,7 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
 
       if (selectionContext) {
         if (selectionContext.mode === 'factcheck') {
-          apiContent = `Hãy fact-check nội dung sau đây với các nguồn học thuật uy tín:\n\n"${selectionContext.selectedText}"`;
+          apiContent = `Hãy kiểm chứng (fact-check) nội dung sau đây với các nguồn học thuật uy tín:\n\n"${selectionContext.selectedText}"`;
           displayContent = apiContent;
         } else {
           apiContent = `Về đoạn văn sau:\n"${selectionContext.selectedText}"\n\nCâu hỏi của tôi: ${userText}`;

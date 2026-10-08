@@ -51,6 +51,11 @@ export default function ChapterPath({ parts, characterSlug, storySlug, colorClas
 
   // Extract color name for styling
   const colorName = colorClass.replace('text-', '').replace('-600', '');
+  // Chữ nhỏ cần 4.5:1: sắc -500 không đạt trên nền trắng. Viết đủ tên lớp để
+  // Tailwind quét được, thay cho lớp ghép chuỗi + style inline trước đây.
+  const partLabelColor =
+    ({ teal: 'text-teal-700', blue: 'text-blue-700', orange: 'text-orange-700' } as Record<string, string>)[colorName] ??
+    'text-blue-700';
 
   return (
     <div className="relative">
@@ -58,13 +63,11 @@ export default function ChapterPath({ parts, characterSlug, storySlug, colorClas
         <div key={part.id} className="mb-12">
           {/* Part Header */}
           <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 text-center shadow-sm">
-            <span
-              className={`text-${colorName}-500 text-sm font-semibold uppercase tracking-wide`}
-              style={{ color: `var(--color-${colorName}-500, #3b82f6)` }}
-            >
+            <span className={`${partLabelColor} text-sm font-semibold uppercase tracking-wide`}>
               Phần {partIndex + 1}
             </span>
-            <h3 className="text-lg font-bold text-gray-900 mt-1">{part.name}</h3>
+            {/* h2: ngay dưới h1 tên truyện, không nhảy cấp */}
+            <h2 className="text-lg font-bold text-gray-900 mt-1">{part.name}</h2>
           </div>
 
           {/* Chapters Path */}
@@ -97,6 +100,7 @@ export default function ChapterPath({ parts, characterSlug, storySlug, colorClas
                       isActive={chapter.id === activeChapterId}
                       isCurrent={state.isCurrent}
                       isSkippingAhead={state.isSkippingAhead}
+                      isOpen={selectedChapter?.chapter.id === chapter.id}
                       onClick={() => setSelectedChapter({ chapter: chapterWithState, isSkippingAhead: state.isSkippingAhead })}
                       colorClass={colorClass}
                     />

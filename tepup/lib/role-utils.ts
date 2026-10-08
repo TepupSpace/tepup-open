@@ -31,10 +31,10 @@ export function getRoleLevelNumber(role: UserRole): number {
 export function getRoleDisplayName(role: UserRole): string {
   const names: Record<UserRole, string> = {
     USER: 'Người dùng',
-    CONTRIBUTOR: 'Contributor',
-    TRUSTED_CONTRIBUTOR: 'Trusted Contributor',
-    REVIEWER: 'Reviewer',
-    ADMIN: 'Admin',
+    CONTRIBUTOR: 'Cộng tác viên',
+    TRUSTED_CONTRIBUTOR: 'Cộng tác viên tin cậy',
+    REVIEWER: 'Người duyệt',
+    ADMIN: 'Quản trị viên',
   };
   return names[role];
 }

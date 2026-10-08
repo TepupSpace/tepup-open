@@ -17,11 +17,11 @@ export const StepBreakBlock = createReactBlockSpec(
       const label = ((block.props as { label?: string }).label || 'Ngắt bước').toUpperCase();
       return (
         <div contentEditable={false} className="my-3 flex items-center gap-3 select-none">
-          <div className="flex-1 border-t-2 border-dashed border-blue-300" />
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-blue-500 whitespace-nowrap">
+          <div aria-hidden="true" className="flex-1 border-t-2 border-dashed border-blue-300" />
+          <span className="text-xs font-semibold uppercase tracking-wide text-blue-700 whitespace-nowrap">
             {label}
           </span>
-          <div className="flex-1 border-t-2 border-dashed border-blue-300" />
+          <div aria-hidden="true" className="flex-1 border-t-2 border-dashed border-blue-300" />
         </div>
       );
     },

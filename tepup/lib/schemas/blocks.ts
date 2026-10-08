@@ -56,6 +56,7 @@ export const imageBlockSchema = z.object({
   src: z.string(),
   alt: z.string(),
   caption: z.string().optional(),
+  decorative: z.boolean().optional(),
 });
 
 export const videoBlockSchema = z.object({
@@ -63,6 +64,8 @@ export const videoBlockSchema = z.object({
   type: z.literal('video'),
   url: z.string(),
   caption: z.string().optional(),
+  captionsUrl: z.string().optional(),
+  transcript: z.string().optional(),
 });
 
 export const audioBlockSchema = z.object({
@@ -70,6 +73,8 @@ export const audioBlockSchema = z.object({
   type: z.literal('audio'),
   url: z.string(),
   caption: z.string().optional(),
+  captionsUrl: z.string().optional(),
+  transcript: z.string().optional(),
 });
 
 export const fileBlockSchema = z.object({
@@ -744,9 +749,24 @@ export const STRICT_BLOCK_SCHEMAS = {
     src: urlStr,
     alt: shortStr,
     caption: textStr.optional(),
+    decorative: z.boolean().optional(),
   }),
-  video: z.object({ ...idField, type: z.literal('video'), url: urlStr, caption: textStr.optional() }),
-  audio: z.object({ ...idField, type: z.literal('audio'), url: urlStr, caption: textStr.optional() }),
+  video: z.object({
+    ...idField,
+    type: z.literal('video'),
+    url: urlStr,
+    caption: textStr.optional(),
+    captionsUrl: urlStr.optional(),
+    transcript: str(L.long).optional(),
+  }),
+  audio: z.object({
+    ...idField,
+    type: z.literal('audio'),
+    url: urlStr,
+    caption: textStr.optional(),
+    captionsUrl: urlStr.optional(),
+    transcript: str(L.long).optional(),
+  }),
   file: z.object({
     ...idField,
     type: z.literal('file'),

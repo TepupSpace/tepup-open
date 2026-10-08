@@ -96,6 +96,9 @@ function checkMediaFields(block: Obj, path: string, issues: Issues) {
       break;
     case 'video':
     case 'audio':
+      checkMedia(block.url, `${path}.url`, issues);
+      checkMedia(block.captionsUrl, `${path}.captionsUrl`, issues);
+      break;
     case 'file':
       checkMedia(block.url, `${path}.url`, issues);
       break;

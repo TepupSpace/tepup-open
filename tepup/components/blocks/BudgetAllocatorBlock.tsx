@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import type { BudgetAllocatorBlock as BudgetAllocatorBlockType } from '@/lib/types/content';
 import { PieChart, Minus, Plus, BarChart3, ArrowRight } from 'lucide-react';
 import { useBlockInteraction } from '@/lib/hooks/useBlockInteraction';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { evaluateCondition } from '@/lib/security/safe-expr';
 import BlockShell from './BlockShell';
+import { useAnnouncer, useFocusAfterRender } from './useAnnouncer';
 
 interface Props {
   block: BudgetAllocatorBlockType;
@@ -44,6 +45,10 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
   });
   const [submitted, setSubmitted] = useState(false);
   const { markInteracted } = useBlockInteraction(onComplete);
+  const [message, announce] = useAnnouncer();
+  const focusAfterRender = useFocusAfterRender();
+  const resultHeadingRef = useRef<HTMLHeadingElement>(null);
+  const submitRef = useRef<HTMLButtonElement>(null);
 
   const totalAllocated = Object.values(allocations).reduce((sum, v) => sum + v, 0);
   const remaining = block.totalBudget - totalAllocated;
@@ -53,14 +58,19 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
   const step = block.totalBudget >= 100 ? Math.round(block.totalBudget / 100) : 1;
 
   const handleChange = (catId: string, delta: number) => {
-    setAllocations(prev => {
-      const newVal = Math.max(
-        block.categories.find(c => c.id === catId)?.minValue || 0,
-        (prev[catId] || 0) + delta
-      );
-      return { ...prev, [catId]: newVal };
-    });
+    const cat = block.categories.find(c => c.id === catId);
+    const newVal = Math.max(cat?.minValue || 0, (allocations[catId] || 0) + delta);
+    setAllocations(prev => ({ ...prev, [catId]: newVal }));
     markInteracted();
+    // Nút +/− chỉ có nhãn "Tăng/Giảm …"; con số mới và phần còn lại phải đọc lên.
+    const left = remaining - (newVal - (allocations[catId] || 0));
+    const unit = block.unit ? ` ${block.unit}` : '';
+    announce(
+      `${cat?.label}: ${newVal.toLocaleString('vi-VN')}${unit}. ` +
+        (left < 0
+          ? `Vượt ngân sách ${(-left).toLocaleString('vi-VN')}${unit}.`
+          : `Còn lại: ${left.toLocaleString('vi-VN')}${unit}.`)
+    );
   };
 
   const activeOutcomes = useMemo(() => {
@@ -68,9 +78,19 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
     return block.outcomes.filter(o => safeBoolEval(o.condition, allocations));
   }, [submitted, allocations, block.outcomes]);
 
+  // Nút "Xem kết quả" và "Thử lại" thay chỗ cho nhau; mỗi lần bấm, focus đi theo
+  // phần tử mới thay vì rơi về <body>.
   const handleSubmit = () => {
     setSubmitted(true);
     onComplete?.();
+    // Focus đặt lên tiêu đề kết quả (tự được đọc), nên vùng live chỉ đọc phần tiêu đề không có.
+    focusAfterRender(() => resultHeadingRef.current);
+    const hits = block.outcomes.filter(o => safeBoolEval(o.condition, allocations));
+    announce(
+      hits.length > 0
+        ? hits.map(o => `${o.title}. ${o.description}`).join(' ')
+        : 'Phân bổ này khá cân bằng.'
+    );
   };
 
   const handleReset = () => {
@@ -80,6 +100,8 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
       initial[cat.id] = cat.defaultValue;
     });
     setAllocations(initial);
+    focusAfterRender(() => submitRef.current);
+    announce('Đã đặt lại về phân bổ ban đầu.');
   };
 
   return (
@@ -87,7 +109,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <PieChart className="w-6 h-6 text-lime-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Phân bổ ngân sách'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Phân bổ ngân sách'}</h2>
       </div>
 
       {block.description && (
@@ -98,7 +120,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
       <div className="mb-5">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-gray-700">Tổng ngân sách</span>
-          <span className={`text-sm font-bold ${isOverBudget ? 'text-red-600' : isExact ? 'text-green-600' : 'text-gray-600'}`}>
+          <span className={`text-sm font-bold ${isOverBudget ? 'text-red-600' : isExact ? 'text-green-700' : 'text-gray-600'}`}>
             Còn lại: {remaining.toLocaleString('vi-VN')} {block.unit || ''}
           </span>
         </div>
@@ -131,7 +153,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
                   {cat.icon && <span className="text-lg">{cat.icon}</span>}
                   <span className={`font-medium text-sm ${colors.text}`}>{cat.label}</span>
                 </div>
-                <span className="text-xs text-gray-500">{pct}%</span>
+                <span className="text-xs text-gray-600">{pct}%</span>
               </div>
 
               <div className="flex items-center gap-2">
@@ -166,7 +188,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
               </div>
 
               {cat.description && (
-                <p className="text-xs text-gray-500 mt-1">{cat.description}</p>
+                <p className="text-xs text-gray-600 mt-1">{cat.description}</p>
               )}
             </div>
           );
@@ -176,13 +198,15 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
       {/* Submit button */}
       {!submitted && (
         <button
+          ref={submitRef}
+          type="button"
           onClick={handleSubmit}
           disabled={isOverBudget}
           className={`
             w-full py-3 font-semibold rounded-xl transition-colors flex items-center justify-center gap-2
             ${isOverBudget
-              ? 'bg-red-100 text-red-500 cursor-not-allowed'
-              : 'bg-lime-600 text-white hover:bg-lime-700'
+              ? 'bg-red-100 text-red-700 cursor-not-allowed'
+              : 'bg-lime-700 text-white hover:bg-lime-800'
             }
           `}
         >
@@ -190,10 +214,15 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
         </button>
       )}
 
+      {/* Vùng live luôn có mặt; khối kết quả bên dưới chỉ hiện sau khi bấm. */}
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       {/* Outcomes */}
       {submitted && (
-        <div className="space-y-3" aria-live="polite">
-          <h4 className="font-semibold text-gray-800">Kết quả phân bổ:</h4>
+        <div className="space-y-3">
+          <h3 ref={resultHeadingRef} tabIndex={-1} className="font-semibold text-gray-800">
+            Kết quả phân bổ:
+          </h3>
 
           {activeOutcomes.map((outcome, i) => {
             const style = outcomeStyles[outcome.variant];
@@ -218,7 +247,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
             <div className="p-4 bg-white/80 rounded-xl border border-lime-200">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-5 h-5 text-lime-600" aria-hidden="true" />
-                <h5 className="font-semibold text-gray-800">So sánh: {block.comparison.label}</h5>
+                <h4 className="font-semibold text-gray-800">So sánh: {block.comparison.label}</h4>
               </div>
               <div className="space-y-2">
                 {block.categories.map(cat => {
@@ -232,7 +261,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
                         <span className="text-gray-600">{cat.label}</span>
                         <div className="flex gap-3 text-xs tabular-nums">
                           <span className="text-gray-700">Bạn: {yours.toLocaleString('vi-VN')}</span>
-                          <span className="text-gray-400">|</span>
+                          <span className="text-gray-500" aria-hidden="true">|</span>
                           <span className="text-gray-500">Thực tế: {theirs.toLocaleString('vi-VN')}</span>
                         </div>
                       </div>
@@ -248,6 +277,7 @@ export default function BudgetAllocatorBlockComponent({ block, onComplete }: Pro
           )}
 
           <button
+            type="button"
             onClick={handleReset}
             className="w-full py-2.5 bg-gray-100 text-gray-600 font-medium rounded-xl hover:bg-gray-200 transition-colors text-sm"
           >

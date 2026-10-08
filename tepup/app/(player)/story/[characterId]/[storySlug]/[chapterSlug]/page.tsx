@@ -1,7 +1,9 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { getChapterPage } from '@/lib/services/content-service';
 import LessonPlayer from '@/components/learn/LessonPlayer';
+import { itemAfter } from '@/lib/utils/next-item';
 
 // ISR. Trước đây `.next/prerender-manifest.json` có `dynamicRoutes: {}` — nghĩa là
 // mọi route nội dung đều SSR lại từ đầu ở mỗi lượt xem, không hề có cache CDN.
@@ -28,6 +30,14 @@ interface ChapterPageProps {
   params: Promise<{ characterId: string; storySlug: string; chapterSlug: string }>;
 }
 
+// Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
+// document.title đổi. Hàm lấy dữ liệu đã được cache nên không tốn thêm query.
+export async function generateMetadata({ params }: ChapterPageProps): Promise<Metadata> {
+  const { characterId, storySlug, chapterSlug } = await params;
+  const data = await getChapterPage(characterId, storySlug, chapterSlug);
+  return data ? { title: `${data.chapter.title} — ${data.story.title} | Tepup` } : {};
+}
+
 export default async function ChapterRoute({ params }: ChapterPageProps) {
   const { characterId, storySlug, chapterSlug } = await params;
 
@@ -38,7 +48,8 @@ export default async function ChapterRoute({ params }: ChapterPageProps) {
 
   if (!data.content || data.content.blocks.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      // <main id="main-content">: đích của link "bỏ qua tới nội dung".
+      <main id="main-content" className="reader min-h-screen bg-white flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.chapter.title}</h1>
           <p className="text-gray-500 mb-6">Chương này chưa có nội dung.</p>
@@ -49,9 +60,12 @@ export default async function ChapterRoute({ params }: ChapterPageProps) {
             Quay lại câu chuyện
           </Link>
         </div>
-      </div>
+      </main>
     );
   }
+
+  // Chương kế tiếp, kể cả sang phần sau; trang đã có đủ thứ tự các phần và chương.
+  const nextChapter = itemAfter(data.story.parts.flatMap((p) => p.chapters), data.chapter.id);
 
   return (
     <LessonPlayer
@@ -60,6 +74,7 @@ export default async function ChapterRoute({ params }: ChapterPageProps) {
       title={data.content.title || data.chapter.title}
       blocks={data.content.blocks}
       exitHref={exitHref}
+      next={nextChapter ? { href: `${exitHref}/${nextChapter.slug}`, title: nextChapter.title } : null}
     />
   );
 }

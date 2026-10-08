@@ -1,8 +1,13 @@
 'use client';
 
-import React from 'react';
+import React, { useId, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
+
+/** Plain text for the live region: drop markdown marks and keep only link text (a link inside sr-only text would be an invisible Tab stop). */
+function plainText(s: string) {
+  return s.replace(/\[([^\]\n]+)\]\([^\s)]+\)/g, '$1').replace(/[*`]/g, '');
+}
 
 /**
  * Quiz block. Two modes: 'single' (one right answer, radio) and 'multiple'
@@ -36,16 +41,41 @@ export function QuestionBlockComponent({
   explanationRef?: React.RefObject<HTMLDivElement | null>;
 }) {
   const isMultiple = block.mode === 'multiple';
+  const questionId = useId();
+  const hintId = useId();
+
+  // Announce only when the learner presses check here. Review mode passes
+  // `isChecked` from the start, and reading every verdict out on open is noise.
+  const [prevChecked, setPrevChecked] = useState(isChecked);
+  const [checkedHere, setCheckedHere] = useState(false);
+  if (isChecked !== prevChecked) {
+    setPrevChecked(isChecked);
+    setCheckedHere(isChecked);
+  }
+
+  let announcement = '';
+  if (checkedHere) {
+    const correctTexts = block.options.filter((o) => o.isCorrect).map((o) => plainText(o.text).replace(/[.!?…]+$/, ''));
+    announcement = isCorrect
+      ? 'Chính xác!'
+      : `Chưa đúng. Đáp án đúng: ${correctTexts.join('; ')}.`;
+    if (block.explanation) announcement += ` ${plainText(block.explanation)}`;
+  }
 
   return (
     <div className="mb-6">
-      <p className="text-lg text-gray-900 mb-2 font-medium whitespace-pre-line">{renderInlineMarkdown(block.question)}</p>
+      <p id={questionId} className="text-lg text-gray-900 mb-2 font-medium whitespace-pre-line">{renderInlineMarkdown(block.question)}</p>
 
       {isMultiple && (
-        <p className="text-sm text-gray-500 mb-4">Chọn tất cả đáp án đúng.</p>
+        <p id={hintId} className="text-sm text-gray-500 mb-4">Chọn tất cả đáp án đúng.</p>
       )}
 
-      <div className={isMultiple ? 'space-y-3 mt-2' : 'space-y-3 mt-4'}>
+      <div
+        role="group"
+        aria-labelledby={questionId}
+        aria-describedby={isMultiple ? hintId : undefined}
+        className={isMultiple ? 'space-y-3 mt-2' : 'space-y-3 mt-4'}
+      >
         {block.options.map((option, idx) => {
           const optionId = option.id ?? String(idx);
           const isSelected = selectedAnswer.includes(optionId);
@@ -57,11 +87,25 @@ export function QuestionBlockComponent({
           const showWrong = isChecked && isSelected && !option.isCorrect;
           const showMissed = isChecked && isMultiple && option.isCorrect && !isSelected;
 
+          // Colour and icons don't reach screen readers: put the result in the button's name.
+          let status = '';
+          if (isChecked && option.isCorrect) {
+            status = !isSelected
+              ? '— đáp án đúng bạn chưa chọn'
+              : checkedHere
+              ? '— đáp án đúng, bạn đã chọn'
+              : '— đáp án đúng';
+          } else if (showWrong) {
+            status = '— bạn chọn, chưa đúng';
+          }
+
           return (
             <button
               key={optionId}
+              type="button"
               onClick={() => !isChecked && onSelect(optionId)}
-              disabled={isChecked}
+              // aria-disabled, not disabled: after checking, options stay reachable by Tab so each result can be heard.
+              aria-disabled={isChecked || undefined}
               aria-pressed={isSelected}
               className={`
                 w-full p-4 text-left rounded-xl border-2 transition-all
@@ -108,9 +152,11 @@ export function QuestionBlockComponent({
                 </div>
                 <span className={`${showCorrect ? 'text-green-700 font-medium' : showMissed ? 'text-green-700' : showWrong ? 'text-red-700' : isSelected ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
                   {renderInlineMarkdown(option.text)}
+                  {status && <span className="sr-only"> {status}</span>}
                 </span>
                 {showMissed && (
-                  <span className="ml-auto flex-shrink-0 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
+                  // Screen readers already get "đáp án đúng bạn chưa chọn" from the sr-only status.
+                  <span aria-hidden="true" className="ml-auto flex-shrink-0 text-xs font-medium text-green-700 bg-green-100 px-2 py-0.5 rounded-full">
                     Còn thiếu
                   </span>
                 )}
@@ -120,20 +166,21 @@ export function QuestionBlockComponent({
         })}
       </div>
 
+      {/* Always mounted, only the text changes: a live region mounted with its content is often not read. */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</p>
+
       {/* Explanation after checking */}
-      <div aria-live="polite" aria-atomic="true">
-        {isChecked && block.explanation && (
-          <div
-            ref={explanationRef}
-            className={`mt-4 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}
-          >
-            <p className={`${isCorrect ? 'text-green-700' : 'text-blue-700'} whitespace-pre-line`}>
-              <span className="font-semibold">{isCorrect ? 'Chính xác! ' : 'Giải thích: '}</span>
-              {renderInlineMarkdown(block.explanation)}
-            </p>
-          </div>
-        )}
-      </div>
+      {isChecked && block.explanation && (
+        <div
+          ref={explanationRef}
+          className={`mt-4 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}
+        >
+          <p className={`${isCorrect ? 'text-green-700' : 'text-blue-700'} whitespace-pre-line`}>
+            <span className="font-semibold">{isCorrect ? 'Chính xác! ' : 'Giải thích: '}</span>
+            {renderInlineMarkdown(block.explanation)}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

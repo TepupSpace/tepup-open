@@ -17,6 +17,8 @@
   --purple: #aa76cf;
   --green: #2cab8b;
   --page: #e8e8e8;
+  /* nền nhãn nhóm trên kệ; chế độ tối chỉ cần đổi token này */
+  --label-bg: rgb(255 255 255 / 55%);
   --shell: 1040px;
   --serif: var(--font-fraunces), var(--font-be-vietnam), Georgia, serif;
   --sans: var(--font-be-vietnam), system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -179,14 +181,20 @@
   flex-direction: column;
   gap: 6px;
 }
-.ch-story__head h2 {
+/* Tiêu đề "Học qua …" của cả hai khối dùng chung một kiểu, chỉ khác màu chữ nhấn. */
+.ch-story__head h2,
+.ch-shelf__head h2 {
   font-size: 36px;
   line-height: normal;
 }
 .ch-story__head h2 em {
   color: var(--pink);
 }
-.ch-story__head p {
+.ch-shelf__head h2 em {
+  color: rgb(var(--tone));
+}
+.ch-story__head p,
+.ch-shelf__head p {
   font-size: 16px;
   line-height: 28px;
 }
@@ -427,24 +435,60 @@
 .ch-shelf--pink {
   --tone: 230 89 131;
 }
+/* Canh trái như tiêu đề khối Câu chuyện; cỡ chữ dùng chung kiểu ở phần trên. */
 .ch-shelf__head {
-  width: 648px;
-  max-width: 100%;
-  text-align: center;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
   gap: 6px;
 }
-.ch-shelf__head h2 {
-  font-size: 36px;
-  line-height: normal;
+
+/* Mỗi danh mục là một nhóm trong khối: nhãn nhỏ rồi dải thẻ. */
+.ch-shelf__group {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
-.ch-shelf__head h2 em {
-  color: rgb(var(--tone));
+.ch-shelf__group + .ch-shelf__group {
+  margin-top: 12px;
 }
-.ch-shelf__head p {
-  font-size: 16px;
-  line-height: 24px;
+/* Nhãn dán trên kệ: tên nhóm rồi một dòng mô tả. Khiêm tốn hơn hẳn tiêu đề khối,
+   chỉ mượn màu nhóm ở chấm tròn và viền. */
+.ch-shelf__label {
+  align-self: flex-start;
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 16px 9px 12px;
+  border-radius: 14px;
+  background: var(--label-bg);
+  box-shadow: inset 0 0 0 1px rgb(var(--tone) / 0.35);
+}
+.ch-shelf__label h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+}
+.ch-shelf__label h3::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgb(var(--tone));
+  flex: none;
+}
+/* Thụt vào bằng chấm + khe (16px) để thẳng hàng với tên nhóm. */
+.ch-shelf__label p {
+  padding-left: 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
 }
 
 /* Thẻ nhô 73px lên trên dải nền loang (dải cao 240px dưới hàng thẻ 280px). */
@@ -602,7 +646,8 @@
   .ch-quote {
     position: static;
   }
-  .ch-story__head h2 {
+  .ch-story__head h2,
+  .ch-shelf__head h2 {
     font-size: 28px;
   }
   .ch-story__panel {
@@ -642,9 +687,6 @@
     font-size: 24px;
   }
 
-  .ch-shelf__head h2 {
-    font-size: 28px;
-  }
   .ch-shelf__stage {
     padding: 0;
   }

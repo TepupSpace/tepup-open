@@ -2,7 +2,7 @@ import { Bot, Download, FileJson, FileText } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { BLOCK_SPECS, SPEC_TYPES } from '@/lib/ai-import/block-specs';
 
-export const metadata = { title: 'Dùng AI của bạn - Tepup' };
+export const metadata = { title: 'Dùng AI của bạn' };
 
 const STEPS = [
   {
@@ -19,7 +19,8 @@ const STEPS = [
   },
 ];
 
-function DownloadLinks({ query }: { query: string }) {
+/** `label` names the block type for screen readers: a list of bare ".md" links is ambiguous. */
+function DownloadLinks({ query, label }: { query: string; label: string }) {
   const sep = query ? '&' : '';
   return (
     <div className="flex items-center gap-3 shrink-0">
@@ -28,14 +29,16 @@ function DownloadLinks({ query }: { query: string }) {
         download
         className="inline-flex items-center gap-1 text-sm text-teal-700 hover:underline"
       >
-        <FileText className="w-4 h-4" /> .md
+        <FileText className="w-4 h-4" aria-hidden="true" /> .md
+        <span className="sr-only">: đặc tả {label}</span>
       </a>
       <a
         href={`/api/block-schemas?${query}${sep}format=json`}
         download
-        className="inline-flex items-center gap-1 text-sm text-gray-500 hover:underline"
+        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:underline"
       >
-        <FileJson className="w-4 h-4" /> .json
+        <FileJson className="w-4 h-4" aria-hidden="true" /> .json
+        <span className="sr-only">: đặc tả {label}</span>
       </a>
     </div>
   );
@@ -52,7 +55,7 @@ export default async function AiGuidePage() {
     <div className="max-w-3xl mx-auto space-y-8">
       <header className="space-y-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-gray-900">
-          <Bot className="w-7 h-7 text-violet-600" /> Dùng AI của bạn để điền block
+          <Bot className="w-7 h-7 text-violet-600" aria-hidden="true" /> Dùng AI của bạn để điền block
         </h1>
         <p className="text-gray-600">
           Tepup không gọi AI thay bạn. Bạn dùng AI quen thuộc của mình, Tepup cung cấp đặc tả để AI điền đúng cấu trúc
@@ -74,7 +77,7 @@ export default async function AiGuidePage() {
       <section className="rounded-xl border border-violet-200 bg-violet-50 p-5 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h2 className="font-semibold text-gray-900">Bộ đặc tả đầy đủ</h2>
-          <p className="text-sm text-gray-600">Tất cả {SPEC_TYPES.length} loại block trong một file — khuyên dùng .md cho AI.</p>
+          <p className="text-sm text-gray-700">Tất cả {SPEC_TYPES.length} loại block trong một file — khuyên dùng .md cho AI.</p>
         </div>
         <div className="flex items-center gap-2">
           <a
@@ -82,10 +85,10 @@ export default async function AiGuidePage() {
             download
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-violet-600 text-white text-sm font-medium hover:bg-violet-700"
           >
-            <Download className="w-4 h-4" /> Tải bộ đầy đủ (.md)
+            <Download className="w-4 h-4" aria-hidden="true" /> Tải bộ đầy đủ (.md)
           </a>
           <a href="/api/block-schemas?format=json" download className="text-sm text-violet-700 hover:underline">
-            .json
+            .json<span className="sr-only">: bộ đặc tả đầy đủ</span>
           </a>
         </div>
       </section>
@@ -101,7 +104,7 @@ export default async function AiGuidePage() {
                 </p>
                 <p className="text-sm text-gray-600">{BLOCK_SPECS[type].purpose}</p>
               </div>
-              <DownloadLinks query={`type=${type}`} />
+              <DownloadLinks query={`type=${type}`} label={BLOCK_SPECS[type].label} />
             </li>
           ))}
         </ul>
@@ -117,7 +120,7 @@ export default async function AiGuidePage() {
                   <p className="font-medium text-gray-900">{bt.name}</p>
                   {bt.description && <p className="text-sm text-gray-600">{bt.description}</p>}
                 </div>
-                <DownloadLinks query={`type=custom&customBlockTypeId=${bt.id}`} />
+                <DownloadLinks query={`type=custom&customBlockTypeId=${bt.id}`} label={bt.name} />
               </li>
             ))}
           </ul>

@@ -4,9 +4,11 @@ import Link from '@/components/ui/AppLink';
 import { Send, CheckCircle, XCircle, Clock, MessageSquare, Eye, Hourglass, ExternalLink } from 'lucide-react';
 import { getCoursesForContributions } from '@/lib/services/contribution-service';
 
+export const metadata = { title: 'Đã gửi duyệt' };
+
 const TYPE_LABELS: Record<string, string> = {
   NEW_COURSE: 'Khóa học mới',
-  NEW_LEVEL: 'Level mới',
+  NEW_LEVEL: 'Cấp độ mới',
   NEW_LESSON: 'Bài học mới',
   EDIT_LESSON_CONTENT: 'Chỉnh sửa bài học',
   EDIT_COURSE: 'Chỉnh sửa khóa học',
@@ -49,7 +51,7 @@ export default async function SubmissionsPage() {
 
       {contributions.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <Send className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <Send className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
           <p className="text-gray-500">Chưa có đóng góp nào được gửi duyệt.</p>
         </div>
       ) : (
@@ -86,24 +88,24 @@ export default async function SubmissionsPage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${statusStyle?.className || ''}`}>
-                        <StatusIcon className="w-3 h-3" />
+                        <StatusIcon className="w-3 h-3" aria-hidden="true" />
                         {statusStyle?.label || contribution.status}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {TYPE_LABELS[contribution.type] || contribution.type}
                       </span>
                     </div>
-                    <h3 className="font-semibold text-gray-900">{courseName}</h3>
+                    <h2 className="font-semibold text-gray-900">{courseName}</h2>
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
                       {contribution.submittedAt && (
                         <span className="flex items-center gap-1">
-                          <Send className="w-3 h-3" />
+                          <Send className="w-3 h-3" aria-hidden="true" />
                           Gửi: {contribution.submittedAt.toLocaleDateString('vi-VN')}
                         </span>
                       )}
                       {contribution.resolvedAt && contribution.status !== 'PENDING_REVIEW' && (
                         <span className="flex items-center gap-1">
-                          {contribution.status === 'REJECTED' ? <XCircle className="w-3 h-3" /> : <CheckCircle className="w-3 h-3" />}
+                          {contribution.status === 'REJECTED' ? <XCircle className="w-3 h-3" aria-hidden="true" /> : <CheckCircle className="w-3 h-3" aria-hidden="true" />}
                           {contribution.status === 'REJECTED' ? 'Từ chối' : 'Duyệt'}: {contribution.resolvedAt.toLocaleDateString('vi-VN')}
                         </span>
                       )}
@@ -119,10 +121,11 @@ export default async function SubmissionsPage() {
                       <Link
                         href={`/courses/${course.slug}`}
                         target="_blank"
-                        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-600 hover:underline"
+                        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-teal-700 hover:underline"
                       >
-                        <ExternalLink className="w-3.5 h-3.5" />
+                        <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
                         Xem khóa học trên Tépup
+                        <span className="sr-only">(mở trong thẻ mới)</span>
                       </Link>
                     )}
 
@@ -136,7 +139,7 @@ export default async function SubmissionsPage() {
                         <div className={`flex items-center gap-1 text-xs font-medium mb-1 ${
                           contribution.status === 'REJECTED' ? 'text-red-700' : 'text-green-700'
                         }`}>
-                          <MessageSquare className="w-3 h-3" />
+                          <MessageSquare className="w-3 h-3" aria-hidden="true" />
                           Góp ý từ {latestReview.reviewer.username || latestReview.reviewer.name || 'người duyệt'}
                         </div>
                         <p className={`text-sm whitespace-pre-line ${
@@ -149,7 +152,7 @@ export default async function SubmissionsPage() {
                     {previousFeedback && (
                       <div className="mt-3 p-3 rounded-lg border bg-gray-50 border-gray-200">
                         <div className="flex items-center gap-1 text-xs font-medium mb-1 text-gray-600">
-                          <MessageSquare className="w-3 h-3" />
+                          <MessageSquare className="w-3 h-3" aria-hidden="true" />
                           Góp ý lần trước (bạn đã sửa và gửi lại)
                         </div>
                         <p className="text-sm text-gray-700 whitespace-pre-line">{previousFeedback}</p>
@@ -159,8 +162,8 @@ export default async function SubmissionsPage() {
 
                   {contribution.status === 'PENDING_REVIEW' && (
                     <div className="ml-4">
-                      <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-500 bg-gray-50 rounded-lg">
-                        <Eye className="w-3.5 h-3.5" />
+                      <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg">
+                        <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                         Đang chờ
                       </span>
                     </div>

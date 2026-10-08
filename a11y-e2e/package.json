@@ -1,0 +1,10 @@
+{
+  "name": "tepup-a11y-e2e",
+  "private": true,
+  "description": "Browser accessibility checks (Playwright + axe-core) against the local Docker stack. Run with ./run.sh; see README.md.",
+  "type": "module",
+  "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0"
+  }
+}

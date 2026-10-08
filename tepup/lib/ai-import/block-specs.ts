@@ -46,8 +46,9 @@ export const BLOCK_SPECS: Record<string, BlockSpec> = {
     purpose: 'Một hình minh hoạ.',
     fields: [
       '`src`: URL ảnh. Để chuỗi rỗng nếu chưa có — người soạn sẽ tự upload.',
-      '`alt`: mô tả ảnh cho người khiếm thị (bắt buộc).',
+      '`alt`: mô tả ảnh cho người khiếm thị (bắt buộc): điều ảnh muốn truyền đạt, không phải tên tệp. Biểu đồ: nêu số liệu chính.',
       '`caption` (tuỳ chọn): chú thích hiển thị dưới ảnh.',
+      '`decorative` (tuỳ chọn): `true` nếu ảnh chỉ để trang trí; khi đó `alt` để chuỗi rỗng.',
     ],
     rules: ['Không bịa URL. Nếu không có URL thật, để `src: ""` và mô tả kỹ ảnh cần có trong `alt`.'],
     example: {

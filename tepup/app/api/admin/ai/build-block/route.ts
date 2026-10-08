@@ -15,10 +15,24 @@ Mỗi block là một React component chạy trong sandbox (Sandpack). Block đ�
 4. KHÔNG dùng Tailwind — chỉ dùng inline styles hoặc CSS-in-JS
 5. Có thể dùng useState, useEffect, useMemo từ React (đã có sẵn trong sandbox)
 6. Có thể import thư viện npm nếu cần (recharts, d3, chart.js, framer-motion, etc.)
-7. Font mặc định: system-ui, sans-serif
-8. Màu chính của Tepup: #3b82f6 (blue-500)
-9. Component phải responsive (dùng % hoặc maxWidth thay vì px cứng)
+7. Font mặc định: system-ui, sans-serif; cỡ chữ bằng rem, tối thiểu 0.875rem
+8. Màu chính của Tepup: #2563eb (blue-600) cho nút có chữ trắng; chữ thường #111827/#374151, chữ phụ không nhạt hơn #6b7280
+9. Component phải responsive (dùng % hoặc maxWidth thay vì px cứng), không cuộn ngang ở bề rộng 320px
 10. Xử lý edge case — đừng để component crash khi fields trống
+
+## TRỢ NĂNG (bắt buộc, chuẩn WCAG 2.2 AA — người học dùng bàn phím, trình đọc màn hình, điện thoại):
+
+11. Mọi thao tác dùng phần tử gốc: <button> cho hành động, <input>/<select> cho nhập liệu, <a href> cho liên kết. KHÔNG gắn onClick vào <div>/<span>.
+12. Làm được hoàn toàn bằng bàn phím (Tab, Enter, Space, phím mũi tên). Kéo-thả phải có cách khác: bấm chọn rồi bấm đích.
+13. Mỗi ô nhập có <label htmlFor> nối với id; nút chỉ có biểu tượng phải có aria-label tiếng Việt.
+14. Không bỏ viền focus (không outline: none). Nếu đổi, dùng outline 2px màu #1d4ed8 có outlineOffset.
+15. Độ tương phản: chữ ≥ 4.5:1 với nền, viền/biểu tượng quan trọng ≥ 3:1. Không dùng #3b82f6, #22c55e hay #9ca3af cho chữ trên nền trắng.
+16. Không chỉ dùng màu để báo đúng/sai: luôn kèm chữ ("Đúng", "Chưa đúng").
+17. Kết quả và phản hồi viết vào một vùng luôn có sẵn: <p aria-live="polite">…</p> (render vùng này ngay từ đầu, chỉ đổi nội dung).
+18. Trạng thái chọn dùng aria-pressed / aria-checked / aria-selected; nhóm lựa chọn có tiêu đề (role="group" + aria-labelledby).
+19. Vùng bấm tối thiểu 44×44px trên điện thoại.
+20. Tôn trọng prefers-reduced-motion: tắt hoặc rút ngắn animation khi người dùng yêu cầu.
+21. Có tiêu đề <h2> cho bài tập; ảnh có alt; biểu đồ kèm số liệu bằng chữ (bảng hoặc câu tóm tắt).
 
 ## OUTPUT FORMAT (JSON thuần, KHÔNG markdown, KHÔNG giải thích):
 
@@ -45,7 +59,7 @@ Mỗi block là một React component chạy trong sandbox (Sandpack). Block đ�
   { "key": "maxRate", "label": "Tỉ lệ lạm phát tối đa (%)", "type": "number", "defaultValue": 30, "min": 5, "max": 100 }
 ]
 
-Nhớ: export default App, đọc fields từ window.__BLOCK_FIELDS, gọi postMessage khi hoàn thành.`;
+Nhớ: export default App, đọc fields từ window.__BLOCK_FIELDS, gọi postMessage khi hoàn thành, và làm đúng mục TRỢ NĂNG (bàn phím, nhãn, tương phản, aria-live).`;
 
 const STEP2_PROMPT = `Dựa trên React component trong config hiện tại, hãy xác định những gì admin nên tuỳ chỉnh khi dùng block này trong từng bài học khác nhau.
 

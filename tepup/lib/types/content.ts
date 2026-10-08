@@ -13,8 +13,12 @@ export interface TextBlock {
 export interface ImageBlock {
   type: 'image';
   src: string;
+  /** Mô tả ảnh cho trình đọc màn hình. Rỗng (và không `decorative`) = chưa viết:
+   *  khi hiển thị sẽ dùng `caption`, không bao giờ dùng tên tệp. */
   alt: string;
   caption?: string;
+  /** Tác giả chủ động đánh dấu ảnh trang trí: hiển thị `alt=""` và không cảnh báo. */
+  decorative?: boolean;
 }
 
 export interface CalloutBlock {
@@ -307,12 +311,20 @@ export interface VideoBlock {
   type: 'video';
   url: string;
   caption?: string;
+  /** Phụ đề WebVTT (.vtt), cùng allowlist với `url`. */
+  captionsUrl?: string;
+  /** Bản ghi lời (văn bản thuần), hiện dưới trình phát. */
+  transcript?: string;
 }
 
 export interface AudioBlock {
   type: 'audio';
   url: string;
   caption?: string;
+  /** Phụ đề WebVTT (.vtt), cùng allowlist với `url`. */
+  captionsUrl?: string;
+  /** Bản ghi lời (văn bản thuần), hiện dưới trình phát. */
+  transcript?: string;
 }
 
 export interface FileBlock {

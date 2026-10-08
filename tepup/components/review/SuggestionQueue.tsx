@@ -89,7 +89,7 @@ export default function SuggestionQueue({ canEdit }: { canEdit: boolean }) {
       {error && <p className="text-sm text-red-600 mb-3">{error}</p>}
 
       {items === null ? (
-        <p className="text-sm text-gray-400">Đang tải…</p>
+        <p className="text-sm text-gray-500">Đang tải…</p>
       ) : items.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-500">
           Không có góp ý nào đang chờ.
@@ -102,10 +102,10 @@ export default function SuggestionQueue({ canEdit }: { canEdit: boolean }) {
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[s.status]}`}>
                   {SUGGESTION_STATUS_LABELS[s.status]}
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   {s.targetType === 'LESSON' ? 'Bài học' : 'Chương truyện'} · {s.target.context}
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-gray-500">
                   · {new Date(s.createdAt).toLocaleDateString('vi-VN')}
                 </span>
               </div>
@@ -155,31 +155,32 @@ export default function SuggestionQueue({ canEdit }: { canEdit: boolean }) {
                   value={notes[s.id] ?? ''}
                   onChange={(e) => setNotes((n) => ({ ...n, [s.id]: e.target.value }))}
                   maxLength={SUGGESTION_LIMITS.reviewNote}
+                  aria-label="Ghi chú cho góp ý này (không bắt buộc)"
                   placeholder="Ghi chú (không bắt buộc)"
-                  className="flex-1 min-w-[10rem] text-xs rounded-lg border border-gray-200 px-3 py-1.5 outline-none focus:border-teal-500"
+                  className="flex-1 min-w-[10rem] text-xs rounded-lg border border-gray-500 px-3 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
                 />
                 {s.status === 'PENDING' && (
                   <button
-                    disabled={busyId === s.id}
-                    onClick={() => decide(s.id, 'ACCEPTED')}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+                    aria-disabled={busyId === s.id}
+                    onClick={() => busyId !== s.id && decide(s.id, 'ACCEPTED')}
+                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-amber-700 text-white hover:bg-amber-800 aria-disabled:opacity-50"
                   >
                     <Check className="w-3.5 h-3.5" /> Chấp nhận
                   </button>
                 )}
                 {canEdit && (
                   <button
-                    disabled={busyId === s.id}
-                    onClick={() => decide(s.id, 'APPLIED')}
-                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                    aria-disabled={busyId === s.id}
+                    onClick={() => busyId !== s.id && decide(s.id, 'APPLIED')}
+                    className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg bg-green-700 text-white hover:bg-green-800 aria-disabled:opacity-50"
                   >
                     <CheckCheck className="w-3.5 h-3.5" /> Đã áp dụng
                   </button>
                 )}
                 <button
-                  disabled={busyId === s.id}
-                  onClick={() => decide(s.id, 'REJECTED')}
-                  className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                  aria-disabled={busyId === s.id}
+                  onClick={() => busyId !== s.id && decide(s.id, 'REJECTED')}
+                  className="inline-flex items-center gap-1 text-xs px-3 py-1.5 rounded-lg border border-gray-500 text-gray-700 hover:bg-gray-50 aria-disabled:opacity-50"
                 >
                   <X className="w-3.5 h-3.5" /> Không áp dụng
                 </button>

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 
@@ -38,6 +39,8 @@ export function LibraryDocumentBlockComponent({
   const [libraryDocument, setLibraryDocument] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(mode === 'reference' && !!documentRef);
   const [error, setError] = useState('');
+  const openerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   // Fetch document if reference mode
   useEffect(() => {
@@ -93,16 +96,6 @@ export function LibraryDocumentBlockComponent({
         documentContent: block.documentContent || { sections: [] },
       };
 
-  // Handle ESC key to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-    window.document.addEventListener('keydown', handleEscape);
-    return () => window.document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
-
   // Show error state
   if (mode === 'reference' && error) {
     return (
@@ -150,6 +143,8 @@ export function LibraryDocumentBlockComponent({
 
         <div className="flex items-center justify-between mt-4">
           <button
+            ref={openerRef}
+            type="button"
             onClick={() => setIsOpen(true)}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
           >
@@ -176,7 +171,18 @@ export function LibraryDocumentBlockComponent({
       )}
 
       {/* Side Panel (Desktop) or Modal (Mobile) */}
+      {/* Bẫy focus: vào thẳng nút đóng, Tab không lọt ra trang phía sau, Esc
+          đóng (focus-trap tự xử lý) và trả focus về nút "Xem tài liệu" — kể cả
+          trên Safari, nơi bấm chuột không đặt focus lên nút. */}
       {isOpen && (
+        <FocusTrap
+          focusTrapOptions={{
+            allowOutsideClick: true,
+            initialFocus: () => closeRef.current ?? undefined,
+            setReturnFocus: () => openerRef.current ?? false,
+            onDeactivate: () => setIsOpen(false),
+          }}
+        >
         <div
           className="fixed inset-0 sm:inset-auto sm:top-0 sm:right-0 sm:bottom-0 sm:w-[600px] z-[61] bg-white shadow-2xl animate-scale-in sm:animate-slide-in-right rounded-none sm:rounded-none"
           role="dialog"
@@ -191,6 +197,8 @@ export function LibraryDocumentBlockComponent({
                 <span className="font-semibold text-gray-700">Tài liệu</span>
               </div>
               <button
+                ref={closeRef}
+                type="button"
                 onClick={() => setIsOpen(false)}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 aria-label="Đóng tài liệu"
@@ -284,6 +292,7 @@ export function LibraryDocumentBlockComponent({
             </div>
           </div>
         </div>
+        </FocusTrap>
       )}
     </>
   );

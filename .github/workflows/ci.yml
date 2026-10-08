@@ -30,6 +30,8 @@ jobs:
       - run: npx prisma generate
       - name: Type-check
         run: npx tsc --noEmit
+      - name: Accessibility lint (learner pages, see docs/accessibility.md)
+        run: npm run lint:a11y
       - name: Formula evaluator tests
         run: npx tsx scripts/test-safe-expr.ts
       - name: Image sanitiser tests

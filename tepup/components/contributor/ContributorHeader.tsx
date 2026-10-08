@@ -1,29 +1,29 @@
 'use client';
 
 import { signOut, useSession } from 'next-auth/react';
-import { LogOut, User } from 'lucide-react';
+import { ExternalLink, LogOut, User } from 'lucide-react';
 import Link from '@/components/ui/AppLink';
+import ReaderSettings from '@/components/reader/ReaderSettings';
 import { getRoleDisplayName } from '@/lib/role-utils';
 import type { UserRole } from '@prisma/client';
 
 const ROLE_BADGE_COLORS: Record<string, string> = {
   CONTRIBUTOR: 'bg-gray-100 text-gray-700',
-  TRUSTED_CONTRIBUTOR: 'bg-teal-100 text-teal-700',
+  TRUSTED_CONTRIBUTOR: 'bg-teal-100 text-teal-800',
   REVIEWER: 'bg-blue-100 text-blue-700',
-  ADMIN: 'bg-amber-100 text-amber-700',
+  ADMIN: 'bg-amber-100 text-amber-800',
 };
 
 export default function ContributorHeader() {
   const { data: session } = useSession();
   const role = (session?.user?.role || 'CONTRIBUTOR') as UserRole;
-  const displayName = session?.user?.username || session?.user?.name || 'Contributor';
+  const displayName = session?.user?.username || session?.user?.name || 'Cộng tác viên';
 
   return (
     <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 pl-16 pr-4 sm:pr-6 lg:px-6">
       <div className="min-w-0">
-        <h1 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
-          Khu vực Contributor
-        </h1>
+        {/* Not a heading: each page has its own single <h1>. */}
+        <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">Khu vực cộng tác viên</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-3 sm:gap-4">
@@ -31,16 +31,21 @@ export default function ContributorHeader() {
         <Link
           href="/"
           target="_blank"
-          className="hidden sm:inline text-sm text-gray-600 hover:text-gray-900 transition-colors"
+          className="hidden sm:inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
         >
           Xem trang chủ
+          <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
+          <span className="sr-only">(mở trong thẻ mới)</span>
         </Link>
+
+        {/* Reading settings: light/dark, font, text size */}
+        <ReaderSettings />
 
         {/* User info */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-teal-100 rounded-full flex items-center justify-center">
-              <User className="w-4 h-4 text-teal-600" />
+              <User className="w-4 h-4 text-teal-700" aria-hidden="true" />
             </div>
             <div className="hidden sm:block">
               <p className="text-sm font-medium text-gray-900">{displayName}</p>
@@ -51,11 +56,13 @@ export default function ContributorHeader() {
           </div>
 
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: '/' })}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+            aria-label="Đăng xuất"
             title="Đăng xuất"
+            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
           >
-            <LogOut className="w-5 h-5" />
+            <LogOut className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
       </div>

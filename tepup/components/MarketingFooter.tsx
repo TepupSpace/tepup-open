@@ -34,7 +34,7 @@ export default function MarketingFooter() {
           </nav>
         </div>
 
-        <p className="mt-8 text-xs text-gray-400">
+        <p className="mt-8 text-xs text-gray-500">
           © {new Date().getFullYear()} Tepup. Kiến thức công dân thực dụng bằng
           tiếng Việt.
         </p>

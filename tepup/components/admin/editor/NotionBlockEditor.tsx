@@ -5,12 +5,14 @@ import { BlockNoteView } from '@blocknote/mantine';
 import {
   useCreateBlockNote,
   SuggestionMenuController,
+  FormattingToolbarController,
   getDefaultReactSlashMenuItems,
 } from '@blocknote/react';
 import { filterSuggestionItems } from '@blocknote/core';
 import { vi as viDictionary } from '@blocknote/core/locales';
 import { tepupSchema } from './blocknote/schema';
 import { WidgetEditContext } from './blocknote/WidgetEditContext';
+import { TepupFormattingToolbar } from './blocknote/MediaAccessibilityButton';
 import BlockEditDrawer from './BlockEditDrawer';
 import { EditorModeContext, CONTRIBUTOR_NO_UPLOAD_MESSAGE, type EditorMode } from './EditorModeContext';
 import {
@@ -19,14 +21,17 @@ import {
   type BNBlock,
 } from '@/lib/editor/blocknote-converter';
 import { numberTopLevelBlocks } from '@/lib/editor/block-numbering';
+import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
+import { accessibilityWarnings } from '@/lib/a11y/content-warnings';
+import { useReaderTheme } from './useReaderTheme';
 import {
   blockTypes,
   blockTypesInGroup,
   BLOCK_GROUP_LABEL,
   createEmptyBlock,
   createCustomBlockInstance,
-  getAccentHex,
-  getBlockBorderColor,
+  getAccentColorClasses,
+  getBlockColorClasses,
   getCustomIcon,
   STEP_BREAK_ICON,
 } from './block-utils';
@@ -49,13 +54,14 @@ const EXPLAINER_WIDGETS = blockTypesInGroup('explainer');
 /**
  * Slash-menu icon for a Tepup block: the block's own lucide glyph inside a
  * tinted chip in that block's signature colour, so Tepup entries read as a
- * distinct family next to BlockNote's plain monochrome icons.
+ * distinct family next to BlockNote's plain monochrome icons. Palette classes,
+ * so the chip follows the reader dark theme. Decorative: the item title names it.
  */
-function WidgetIcon({ icon: Icon, color }: { icon: React.ElementType; color: string }) {
+function WidgetIcon({ icon: Icon, className }: { icon: React.ElementType; className: string }) {
   return (
     <span
-      className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md"
-      style={{ backgroundColor: `${color}26`, color, boxShadow: `inset 0 0 0 1px ${color}59` }}
+      aria-hidden="true"
+      className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-md ${className}`}
     >
       <Icon size={13} strokeWidth={2.25} />
     </span>
@@ -115,7 +121,8 @@ function numberingCss(scope: string, numbers: Map<string, number>): string {
       ' line-height: var(--tepup-num-line);' +
       ' letter-spacing: 0;' +
       ' white-space: nowrap;' +
-      ' color: #6b7280;' + // text-gray-500: readable when matching an error's "Block #N"
+      // text-gray-500's variable, so the numbers follow the reader dark theme too.
+      ' color: var(--color-gray-500);' +
       ' -webkit-user-select: none;' +
       ' user-select: none;' +
       ' pointer-events: none;' +
@@ -159,6 +166,9 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingBlock, setEditingBlock] = useState<ContentBlock | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [a11yWarnings, setA11yWarnings] = useState<string[]>(() =>
+    accessibilityWarnings(trimEmptyBlocks(blocks).blocks)
+  );
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
 
@@ -188,6 +198,12 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
     return data.publicUrl as string;
   }, []);
 
+  // The editable area gets a name and the keyboard help as its description.
+  const helpId = useId();
+  // BlockNote's menus and toolbars use Mantine colours, not Tailwind's, so they need
+  // the theme passed explicitly.
+  const readerTheme = useReaderTheme();
+
   // Without `uploadFile` BlockNote hides its "Upload" tab and ignores pasted/dropped
   // files, so contributors only see the URL tab.
   const editor = useCreateBlockNote({
@@ -195,6 +211,9 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
     initialContent,
     uploadFile: isContributor ? undefined : uploadFile,
     dictionary: isContributor ? DICTIONARY_CONTRIBUTOR : DICTIONARY_ADMIN,
+    domAttributes: {
+      editor: { 'aria-label': 'Nội dung bài học', 'aria-describedby': helpId },
+    },
   });
 
   const emitChange = useCallback(() => {
@@ -218,6 +237,19 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
     return editor.onChange(update);
   }, [editor, numberingScope]);
 
+  // Accessibility warnings (never block saving). Counted over the trimmed blocks, like
+  // the gutter numbers. Same list -> same state, so typing doesn't re-render.
+  useEffect(
+    () =>
+      editor.onChange(() => {
+        const next = accessibilityWarnings(
+          trimEmptyBlocks(toContentBlocks(editor.document as unknown as BNBlock[])).blocks
+        );
+        setA11yWarnings((prev) => (prev.join('\n') === next.join('\n') ? prev : next));
+      }),
+    [editor]
+  );
+
   const openEditor = useCallback(
     (blockId: string) => {
       const b = editor.getBlock(blockId) as any;
@@ -231,6 +263,28 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
     },
     [editor]
   );
+
+  // Keyboard route to a widget's edit form: arrow keys select a widget block (BlockNote
+  // selects the whole block), then Enter opens the drawer. The "Sửa" button is mouse-first,
+  // because Tab inside the editor indents blocks rather than moving focus.
+  const editorWrapRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const wrap = editorWrapRef.current;
+    if (!wrap) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || e.shiftKey || e.altKey || e.ctrlKey || e.metaKey || e.isComposing) return;
+      const target = e.target as HTMLElement | null;
+      // Only from the editable area itself, not from inputs inside a widget preview.
+      if (!target?.classList.contains('bn-editor')) return;
+      const selected = editor.getSelection()?.blocks;
+      if (selected?.length !== 1 || selected[0].type !== 'tepup-widget') return;
+      e.preventDefault();
+      e.stopPropagation();
+      openEditor(selected[0].id);
+    };
+    wrap.addEventListener('keydown', onKeyDown, true);
+    return () => wrap.removeEventListener('keydown', onKeyDown, true);
+  }, [editor, openEditor]);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -271,7 +325,7 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
     (w: (typeof blockTypes)[number], group: string) => ({
       title: w.label,
       group,
-      icon: <WidgetIcon icon={w.icon} color={getBlockBorderColor(w.type)} />,
+      icon: <WidgetIcon icon={w.icon} className={getBlockColorClasses(w.type).chip} />,
       onItemClick: () => insertWidget(createEmptyBlock(w.type) as unknown as ContentBlock),
     }),
     [insertWidget]
@@ -286,7 +340,7 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
           title: 'Ngắt bước',
           subtext: 'Ranh giới nhóm reveal cho học viên',
           group: GROUP_FREQUENT,
-          icon: <WidgetIcon icon={STEP_BREAK_ICON} color={getBlockBorderColor('step-break')} />,
+          icon: <WidgetIcon icon={STEP_BREAK_ICON} className={getBlockColorClasses('step-break').chip} />,
           onItemClick: () => {
             const cur = editor.getTextCursorPosition().block;
             editor.insertBlocks([{ type: 'step-break', props: {} } as any], cur, 'after');
@@ -303,7 +357,7 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
         subtext: bt.description || undefined,
         group: GROUP_CUSTOM,
         icon: (
-          <WidgetIcon icon={getCustomIcon(bt.icon)} color={getAccentHex(bt.accentColor)} />
+          <WidgetIcon icon={getCustomIcon(bt.icon)} className={getAccentColorClasses(bt.accentColor).chip} />
         ),
         onItemClick: () => insertWidget(createCustomBlockInstance(bt) as unknown as ContentBlock),
       }));
@@ -330,10 +384,19 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
   return (
     <EditorModeContext.Provider value={mode}>
     <WidgetEditContext.Provider value={widgetCtx}>
-      <p className="mb-2 text-xs text-gray-500">
-        Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
-        Dòng trống không có số và sẽ được bỏ khi lưu.
-      </p>
+      <div id={helpId} className="mb-2 space-y-1 text-xs text-gray-500">
+        <p>
+          Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
+          Dòng trống không có số và sẽ được bỏ khi lưu.
+        </p>
+        <p>
+          Bàn phím: gõ <kbd className="font-mono">/</kbd> để chèn block; dùng phím mũi tên để chọn
+          một block tương tác rồi <kbd className="font-mono">Enter</kbd> để mở form sửa; chọn ảnh
+          hoặc video rồi <kbd className="font-mono">Tab</kbd> để vào thanh công cụ;{' '}
+          <kbd className="font-mono">Esc</kbd> để rời trình soạn (trong trình soạn,{' '}
+          <kbd className="font-mono">Tab</kbd> thụt lề block).
+        </p>
+      </div>
       {isContributor && (
         <p className="mb-2 text-xs text-gray-500" data-testid="contributor-image-note">
           <span className="font-medium text-gray-600">Ảnh:</span> {CONTRIBUTOR_NO_UPLOAD_MESSAGE}
@@ -341,18 +404,43 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
       )}
       <style ref={numberingStyleRef} />
       <div
+        ref={editorWrapRef}
         data-tepup-block-numbers={numberingScope}
         className="tepup-lesson-editor bg-white rounded-2xl border border-gray-100 p-2 sm:p-4 min-h-[400px]"
       >
         <BlockNoteView
           editor={editor as any}
-          theme="light"
+          // Follows the page's reading theme ("Aa": Sáng / Tối / Theo máy).
+          theme={readerTheme}
           slashMenu={false}
+          formattingToolbar={false}
           onChange={emitChange}
         >
           <SuggestionMenuController triggerCharacter="/" getItems={getSlashItems} />
+          <FormattingToolbarController formattingToolbar={TepupFormattingToolbar} />
         </BlockNoteView>
       </div>
+
+      {/* Always mounted: says when the number of warnings changes while authoring. */}
+      <p className="sr-only" aria-live="polite">
+        {a11yWarnings.length > 0
+          ? `Trợ năng: ${a11yWarnings.length} cảnh báo nên sửa trước khi xuất bản.`
+          : 'Trợ năng: không còn cảnh báo.'}
+      </p>
+      {a11yWarnings.length > 0 && (
+        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          <p className="font-medium">Trợ năng: nên sửa trước khi xuất bản (vẫn lưu được)</p>
+          <p className="mt-0.5 text-xs text-amber-800">
+            Bấm vào ảnh, video hoặc âm thanh (hoặc chọn bằng phím mũi tên) rồi chọn nút
+            &ldquo;Trợ năng&rdquo; trên thanh công cụ.
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pl-5">
+            {a11yWarnings.map((w, i) => (
+              <li key={i}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <BlockEditDrawer
         block={editingBlock}

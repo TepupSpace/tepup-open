@@ -166,7 +166,7 @@ export function BlockRenderer({
         onSelect={(optionId) => onSelectAnswer(index, optionId)}
         isChecked={questionState?.checked || false}
         selectedAnswer={questionState?.selected ?? []}
-        isCorrect={questionState?.correct || null}
+        isCorrect={questionState?.correct ?? null}
         explanationRef={isCurrentBlock ? explanationRef : undefined}
       />
     );

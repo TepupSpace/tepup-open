@@ -6,6 +6,7 @@ import { useWidgetEdit } from './WidgetEditContext';
 import { BlockRenderer } from '@/components/learn/BlockRenderer';
 import type { ContentBlock } from '@/lib/types/content';
 import { toggleAnswer } from '@/lib/utils/quiz';
+import { getBlockLabel } from '../block-utils';
 
 /**
  * A Tepup widget carried opaquely inside the BlockNote document. In the editor it
@@ -14,6 +15,10 @@ import { toggleAnswer } from '@/lib/utils/quiz';
  * it appears on hover, and stays pinned once the block is clicked (BlockNote's own
  * text cursor never lands here, since the block is `content: 'none'`).
  * The widget config lives in `props.payload` (JSON of the ContentBlock).
+ *
+ * Keyboard: Tab inside the editor indents blocks, so the "Sửa" button is mouse-first. Arrow
+ * keys select the whole block (BlockNote adds `.ProseMirror-selectednode` above it, which
+ * pins the button and the ring here) and Enter opens the drawer (NotionBlockEditor).
  */
 function WidgetPreview({ blockId, payload }: { blockId: string; payload: string }) {
   const ctx = useWidgetEdit();
@@ -31,26 +36,34 @@ function WidgetPreview({ blockId, payload }: { blockId: string; payload: string 
   }
 
   const isSelected = ctx?.selectedId === blockId;
+  const label =
+    cb?.type === 'custom'
+      ? (cb as { configSnapshot?: { name?: string } }).configSnapshot?.name || getBlockLabel('custom')
+      : getBlockLabel(cb?.type ?? '');
 
   return (
+    // Mouse convenience only (pins the "Sửa" button after a click); keyboard users select
+    // the block with the arrow keys and press Enter, see the comment above.
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions -- mouse-only pinning, keyboard route above
     <div
       contentEditable={false}
       data-widget-block={blockId}
       onMouseDown={() => ctx?.setSelectedId(blockId)}
-      className={`group relative my-2 rounded-xl transition-all p-3 ${
-        isSelected ? 'ring-2 ring-blue-400' : 'ring-1 ring-gray-100 hover:ring-blue-200'
+      className={`group relative my-2 rounded-xl transition-all p-3 in-[.ProseMirror-selectednode]:ring-2 in-[.ProseMirror-selectednode]:ring-blue-600 ${
+        isSelected ? 'ring-2 ring-blue-600' : 'ring-1 ring-gray-200 hover:ring-blue-300'
       }`}
     >
       <button
         type="button"
         onClick={() => ctx?.openEditor(blockId)}
-        className={`absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2.5 py-1 bg-white border shadow-sm rounded-lg text-xs font-medium transition-all hover:text-blue-600 hover:border-blue-300 ${
+        aria-label={cb ? `Sửa block ${label}` : 'Sửa block chưa cấu hình'}
+        className={`absolute top-2 right-2 z-10 inline-flex items-center gap-1 px-2.5 py-1 bg-white border shadow-sm rounded-lg text-xs font-medium transition-all hover:text-blue-700 hover:border-blue-300 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 in-[.ProseMirror-selectednode]:opacity-100 ${
           isSelected
-            ? 'opacity-100 text-blue-600 border-blue-300'
+            ? 'opacity-100 text-blue-700 border-blue-300'
             : 'opacity-0 group-hover:opacity-100 text-gray-600 border-gray-200'
         }`}
       >
-        <Pencil className="w-3.5 h-3.5" /> Sửa
+        <Pencil className="w-3.5 h-3.5" aria-hidden="true" /> Sửa
       </button>
 
       {cb ? (
@@ -82,7 +95,7 @@ function WidgetPreview({ blockId, payload }: { blockId: string; payload: string 
           isCurrentBlock={false}
         />
       ) : (
-        <p className="text-sm text-gray-400">Block chưa cấu hình — bấm Sửa.</p>
+        <p className="text-sm text-gray-500">Block chưa cấu hình — bấm Sửa.</p>
       )}
     </div>
   );

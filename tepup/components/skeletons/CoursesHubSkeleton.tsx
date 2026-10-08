@@ -1,8 +1,8 @@
 import { Skeleton, SkeletonCircle } from '@/components/ui/Skeleton';
 
 /**
- * Khung trang `/courses` theo bố cục giấy: tiêu đề giữa, khối nhân vật, rồi các
- * kệ thẻ khoá học. Dùng lại class của courses-hub.css để khớp kích thước thật.
+ * Khung trang `/courses` theo bố cục giấy: tiêu đề giữa, khối nhân vật, rồi khối
+ * "Học qua Chuyên đề" với từng nhóm (nhãn nhỏ + dải thẻ). Dùng lại class của courses-hub.css để khớp kích thước thật.
  */
 export default function CoursesHubSkeleton() {
   return (
@@ -31,17 +31,22 @@ export default function CoursesHubSkeleton() {
           </div>
         </div>
 
-        {Array.from({ length: 2 }).map((_, s) => (
-          <div key={s} className="flex flex-col items-center gap-7">
-            <Skeleton className="h-10 w-72" />
-            <Skeleton className="h-5 w-[32rem] max-w-full" />
-            <div className="flex flex-wrap justify-center gap-9">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="w-[220px] h-[280px] rounded-[20px]!" />
-              ))}
-            </div>
+        <div className="flex flex-col gap-7">
+          <div>
+            <Skeleton className="h-10 w-80 mb-2" />
+            <Skeleton className="h-5 w-96 max-w-full" />
           </div>
-        ))}
+          {Array.from({ length: 2 }).map((_, g) => (
+            <div key={g} className="flex flex-col gap-3.5">
+              <Skeleton className="h-[55px] w-80 max-w-full rounded-[14px]!" />
+              <div className="flex flex-wrap justify-center gap-9">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Skeleton key={i} className="w-[220px] h-[280px] rounded-[20px]!" />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </main>
   );

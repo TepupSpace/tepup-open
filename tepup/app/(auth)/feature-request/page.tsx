@@ -3,7 +3,7 @@ import { isContributorOrAbove } from '@/lib/role-utils';
 import type { UserRole } from '@prisma/client';
 import FeatureRequestForm, { type SignedInUser } from './FeatureRequestForm';
 
-export const metadata = { title: 'Đề xuất tính năng - Tepup' };
+export const metadata = { title: 'Đề xuất tính năng | Tepup' };
 
 // Reads the session to tell signed-in senders that their account is attached (the API
 // attaches it). Not in `publicPages`, so this per-user render is never edge-cached.

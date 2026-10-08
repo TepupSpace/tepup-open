@@ -25,7 +25,7 @@ export default function StoryCard({ story }: StoryCardProps) {
   const colorClasses: Record<string, { bg: string; text: string; border: string; iconBg: string }> = {
     'student': {
       bg: 'bg-teal-50',
-      text: 'text-teal-600',
+      text: 'text-teal-700',
       border: 'border-teal-200 hover:border-teal-300',
       iconBg: 'bg-teal-100',
     },
@@ -37,7 +37,7 @@ export default function StoryCard({ story }: StoryCardProps) {
     },
     'street-vendor': {
       bg: 'bg-orange-50',
-      text: 'text-orange-600',
+      text: 'text-orange-700',
       border: 'border-orange-200 hover:border-orange-300',
       iconBg: 'bg-orange-100',
     },
@@ -74,7 +74,7 @@ export default function StoryCard({ story }: StoryCardProps) {
 
         {/* Teaser */}
         <p className="text-gray-600 text-sm leading-relaxed mb-4 line-clamp-2">
-          "{story.teaser}"
+          “{story.teaser}”
         </p>
 
         {/* Meta */}

@@ -4,6 +4,7 @@ import Link from '@/components/ui/AppLink';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { BookOpen, Library } from 'lucide-react';
+import ReaderSettings from '@/components/reader/ReaderSettings';
 
 const navItems = [
   { href: '/courses', label: 'Khóa học', icon: BookOpen },
@@ -28,6 +29,7 @@ export default function LearnHeader() {
             <span className="text-xl font-bold text-gray-900">Tepup</span>
           </Link>
 
+          <div className="flex items-center gap-1">
           <nav
             className="hidden md:flex items-center gap-1"
             aria-label="Điều hướng khu học tập"
@@ -52,6 +54,8 @@ export default function LearnHeader() {
               );
             })}
           </nav>
+          <ReaderSettings />
+          </div>
 
           {/* Trên mobile, điều hướng nằm ở BottomTabBar — trước đây chỗ này là nút
               hamburger không gắn xử lý sự kiện, bấm vào không có gì xảy ra. */}

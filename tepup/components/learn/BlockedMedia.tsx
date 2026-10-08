@@ -30,7 +30,7 @@ export function BlockedMedia({
       className="mb-6 flex items-center gap-3 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500"
       role="note"
     >
-      <ShieldAlert className="w-5 h-5 flex-shrink-0 text-gray-400" aria-hidden="true" />
+      <ShieldAlert className="w-5 h-5 flex-shrink-0 text-gray-500" aria-hidden="true" />
       <span>
         {noun} này bị ẩn vì nguồn không nằm trong danh sách được phép
         {label ? `: ${label}` : ''}.

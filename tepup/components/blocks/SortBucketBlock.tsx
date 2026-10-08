@@ -6,6 +6,7 @@ import type { SortBucketBlock as SortBucketBlockType } from '@/lib/types/content
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { seededShuffle } from '@/lib/utils/seededShuffle';
 import BlockShell from './BlockShell';
+import { toPlainText, useAnnouncer } from './useAnnouncer';
 
 interface Props {
   block: SortBucketBlockType;
@@ -39,6 +40,11 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
   /** A drag ends with a synthetic click on the shared ancestor; this swallows it.
    *  A ref, not `drag` state, because the click fires before React re-renders. */
   const justDragged = useRef(false);
+  const [message, announce] = useAnnouncer();
+  /** Nút thẻ trong khay, để trả focus về sau khi chọn rổ bằng bàn phím. */
+  const itemRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  /** Thẻ cần nhận focus ở lần render tới (thẻ vừa xếp đã biến mất khỏi khay). */
+  const focusAfterRender = useRef<string | null>(null);
 
   // An author can point an item at a bucket they later deleted; those items would
   // be unplaceable and the block could never complete, so they are dropped here.
@@ -62,25 +68,42 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
-  /** Grading, shared by tap-to-place and drag-to-drop so both behave identically. */
+  useEffect(() => {
+    const id = focusAfterRender.current;
+    if (!id) return;
+    focusAfterRender.current = null;
+    itemRefs.current[id]?.focus();
+  });
+
+  /** Grading, shared by tap-to-place and drag-to-drop so both behave identically.
+   *  Trả về true khi xếp đúng rổ. */
   const place = useCallback(
-    (itemId: string, bucketId: string) => {
+    (itemId: string, bucketId: string): boolean => {
       const item = validItems.find((it) => it.id === itemId);
-      if (!item || placed[itemId]) return;
+      if (!item || placed[itemId]) return false;
 
       if (item.bucketId === bucketId) {
         setPlaced((prev) => ({ ...prev, [itemId]: true }));
         setSelectedItem(null);
         setWrongBucket(null);
-        return;
+        const bucket = block.buckets.find((b) => b.id === bucketId);
+        const left = validItems.filter((it) => !placed[it.id] && it.id !== itemId).length;
+        announce(
+          `Đã xếp "${toPlainText(item.text)}" vào "${toPlainText(bucket?.label)}". ` +
+            (left === 0 ? 'Đã phân loại đúng tất cả!' : `Còn ${left} thẻ.`)
+        );
+        return true;
       }
 
       // Wrong bucket: flash it and drop the selection; the item stays in the tray.
+      // Chỉ chớp đỏ thì trình đọc màn hình không biết gì — báo bằng lời nữa.
       setWrongBucket(bucketId);
       setSelectedItem(null);
       window.setTimeout(() => setWrongBucket(null), 600);
+      announce('Sai rổ, thử lại.');
+      return false;
     },
-    [validItems, placed]
+    [validItems, placed, block.buckets, announce]
   );
 
   // ── drag ───────────────────────────────────────────────────────────────────
@@ -196,7 +219,13 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
 
   const handleBucketClick = (bucketId: string) => {
     if (justDragged.current || !selectedItem) return;
-    place(selectedItem, bucketId);
+    // Sau khi chọn, mọi rổ bị tắt (không còn thẻ nào được chọn) nên focus sẽ rơi mất.
+    // Trả nó về khay: thẻ vừa thử nếu sai, thẻ kế tiếp nếu đúng.
+    const idx = pending.findIndex((it) => it.id === selectedItem);
+    const correct = place(selectedItem, bucketId);
+    focusAfterRender.current = correct
+      ? (pending[idx + 1] ?? pending[idx - 1])?.id ?? null
+      : selectedItem;
   };
 
   const draggedItem = drag ? validItems.find((it) => it.id === drag.itemId) : null;
@@ -204,8 +233,8 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
   return (
     <BlockShell>
       <div className="flex items-center gap-2 mb-1">
-        <Boxes className="w-5 h-5 text-green-500" />
-        <h3 className="font-semibold text-gray-900">{block.title || 'Phân loại vào rổ'}</h3>
+        <Boxes className="w-5 h-5 text-green-500" aria-hidden="true" />
+        <h2 className="font-semibold text-gray-900">{block.title || 'Phân loại vào rổ'}</h2>
       </div>
       <p className="text-sm text-gray-500 mb-4">
         {block.instruction || 'Kéo thẻ vào rổ, hoặc chạm chọn thẻ rồi chạm vào rổ.'}
@@ -214,7 +243,7 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
       {/* Tray of items still to be sorted. */}
       <div className="min-h-[56px] rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 p-3 mb-4">
         {pending.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-1">Đã xếp xong tất cả thẻ.</p>
+          <p className="text-sm text-gray-500 text-center py-1">Đã xếp xong tất cả thẻ.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {pending.map((item) => {
@@ -222,6 +251,9 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
               return (
                 <button
                   key={item.id}
+                  ref={(el) => {
+                    itemRefs.current[item.id] = el;
+                  }}
                   type="button"
                   onPointerDown={(e) => handlePointerDown(e, item.id)}
                   onClick={() => handleItemClick(item.id)}
@@ -294,10 +326,12 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
         </div>
       )}
 
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       <div className="mt-4 text-sm">
         {finished ? (
-          <span className="flex items-center gap-1.5 font-medium text-green-600">
-            <Check className="w-4 h-4" />
+          <span className="flex items-center gap-1.5 font-medium text-green-700">
+            <Check className="w-4 h-4" aria-hidden="true" />
             Đã phân loại đúng tất cả!
           </span>
         ) : (

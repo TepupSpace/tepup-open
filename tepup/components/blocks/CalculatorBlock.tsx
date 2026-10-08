@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import type { CalculatorBlock as CalculatorBlockType } from '@/lib/types/content';
 import { Calculator, Lightbulb, Zap } from 'lucide-react';
 import { useBlockInteraction } from '@/lib/hooks/useBlockInteraction';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { evaluateExpr } from '@/lib/security/safe-expr';
 import BlockShell from './BlockShell';
+import { toPlainText } from './useAnnouncer';
 
 interface Props {
   block: CalculatorBlockType;
@@ -33,6 +34,8 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
     return initial;
   });
   const { hasInteracted, markInteracted } = useBlockInteraction(onComplete);
+  /** Gốc id để nối từng <label> với ô nhập của nó (htmlFor/id). */
+  const fieldId = useId();
 
   const outputs = useMemo(() => {
     return block.outputs.map(output => ({
@@ -56,7 +59,7 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Calculator className="w-6 h-6 text-cyan-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Máy tính'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Máy tính'}</h2>
       </div>
 
       {block.description && (
@@ -70,6 +73,7 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
           {block.presets.map((preset, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => handlePreset(preset.values)}
               className="px-3 py-1.5 bg-white border border-cyan-200 text-cyan-700 rounded-lg text-sm font-medium hover:bg-cyan-50 transition-colors"
             >
@@ -83,18 +87,20 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
       <div className="grid gap-4 md:grid-cols-2">
         {/* Inputs */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Nhập liệu</h4>
-          {block.inputs.map(input => (
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Nhập liệu</h3>
+          {block.inputs.map((input, i) => (
             <div key={input.id}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              {/* Đơn vị nằm trong label nên cũng là một phần tên đọc ra của ô. */}
+              <label htmlFor={`${fieldId}-${i}`} className="block text-sm font-medium text-gray-700 mb-1">
                 {input.label}
-                {input.unit && <span className="text-gray-400 ml-1">({input.unit})</span>}
+                {input.unit && <span className="text-gray-500 ml-1">({input.unit})</span>}
               </label>
               {input.type === 'select' && input.options ? (
                 <select
+                  id={`${fieldId}-${i}`}
                   value={values[input.id]}
                   onChange={e => handleChange(input.id, parseFloat(e.target.value))}
-                  className="w-full p-2.5 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:outline-none bg-white"
+                  className="w-full p-2.5 border-2 border-gray-500 rounded-xl focus:border-cyan-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-700 focus-visible:ring-offset-2 bg-white"
                 >
                   {input.options.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -102,13 +108,14 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
                 </select>
               ) : (
                 <input
+                  id={`${fieldId}-${i}`}
                   type="number"
                   value={values[input.id]}
                   onChange={e => handleChange(input.id, parseFloat(e.target.value) || 0)}
                   min={input.min}
                   max={input.max}
                   step={input.step}
-                  className="w-full p-2.5 border-2 border-gray-200 rounded-xl focus:border-cyan-400 focus:outline-none tabular-nums"
+                  className="w-full p-2.5 border-2 border-gray-500 rounded-xl focus:border-cyan-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-700 focus-visible:ring-offset-2 tabular-nums"
                 />
               )}
             </div>
@@ -117,7 +124,7 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
 
         {/* Outputs */}
         <div className="space-y-3">
-          <h4 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Kết quả</h4>
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide">Kết quả</h3>
           {outputs.map(output => (
             <div
               key={output.id}
@@ -127,7 +134,7 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
                   : 'bg-white/80 border border-gray-200'
               }`}
             >
-              <p className="text-sm text-gray-600">{output.label}</p>
+              <p className="text-sm text-gray-700">{output.label}</p>
               <p className={`font-bold tabular-nums ${output.highlight ? 'text-2xl text-cyan-800' : 'text-xl text-gray-900'}`}>
                 {formatValue(output.computedValue, output.unit)}
               </p>
@@ -136,9 +143,14 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
         </div>
       </div>
 
+      {/* Vùng live luôn có mặt; chỉ chữ bên trong đổi khi nhận định hiện ra. */}
+      <p className="sr-only" aria-live="polite">
+        {block.insight && hasInteracted ? toPlainText(block.insight) : ''}
+      </p>
+
       {/* Insight */}
       {block.insight && hasInteracted && (
-        <div className="mt-4 p-4 bg-cyan-50 border border-cyan-200 rounded-xl" aria-live="polite">
+        <div className="mt-4 p-4 bg-cyan-50 border border-cyan-200 rounded-xl">
           <div className="flex items-start gap-2">
             <Lightbulb className="w-5 h-5 text-cyan-600 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <p className="text-cyan-800 text-sm leading-relaxed">{renderInlineMarkdown(block.insight)}</p>

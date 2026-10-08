@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type MouseEvent } from 'react';
+import Link from 'next/link';
 import FocusTrap from 'focus-trap-react';
 import type { ChapterDisplay } from '@/lib/types/content';
 import { useNavigate } from '@/lib/hooks/useNavigate';
@@ -27,17 +28,23 @@ export default function ChapterPopup({ chapter, href, isSkippingAhead, onClose, 
   // Extract color for button
   const colorName = colorClass.replace('text-', '').replace('-600', '');
 
+  // Chữ trắng cần nền đủ đậm (4.5:1): blue từ -600, teal/orange từ -700.
   const buttonColors: Record<string, string> = {
-    teal: 'bg-teal-500 hover:bg-teal-600',
-    blue: 'bg-blue-500 hover:bg-blue-600',
-    orange: 'bg-orange-500 hover:bg-orange-600',
+    teal: 'bg-teal-700 hover:bg-teal-800',
+    blue: 'bg-blue-600 hover:bg-blue-700',
+    orange: 'bg-orange-700 hover:bg-orange-800',
   };
 
   const buttonColor = isSkippingAhead
-    ? 'bg-orange-500 hover:bg-orange-600'
-    : buttonColors[colorName] || 'bg-blue-500 hover:bg-blue-600';
+    ? 'bg-orange-700 hover:bg-orange-800'
+    : buttonColors[colorName] || 'bg-blue-600 hover:bg-blue-700';
 
-  const handleStart = () => {
+  // Nút chính là link thật để mở được trong tab mới. Ctrl/⌘/Shift-click (và
+  // chuột giữa, vốn không gọi onClick) để trình duyệt tự lo; click thường thì
+  // đi qua navigate() để còn trạng thái "Đang mở…".
+  const handleStart = (e: MouseEvent<HTMLAnchorElement>) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
     if (isPending) return;
     navigate(href);
   };
@@ -51,9 +58,9 @@ export default function ChapterPopup({ chapter, href, isSkippingAhead, onClose, 
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop — giống LessonPopup: phải nằm trên cả thanh tab lẫn nút chat. */}
       <div
-        className="fixed inset-0 bg-black/20 z-40"
+        className="fixed inset-0 bg-black/20 z-[60]"
         onClick={handleClose}
         aria-hidden="true"
       />
@@ -61,21 +68,24 @@ export default function ChapterPopup({ chapter, href, isSkippingAhead, onClose, 
       {/* Popup */}
       <FocusTrap focusTrapOptions={{ allowOutsideClick: true, onDeactivate: handleClose }}>
         <div
-          className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-slide-up"
+          className="above-bottom-chrome fixed left-1/2 -translate-x-1/2 z-[61] w-[calc(100vw-2rem)] max-w-sm animate-slide-up"
           role="dialog"
           aria-modal="true"
           aria-labelledby="chapter-popup-title"
         >
-          <div className="bg-white rounded-2xl shadow-2xl p-6 min-w-[280px]">
+          <div className="bg-white rounded-2xl shadow-2xl p-6">
             <h3 id="chapter-popup-title" className="text-lg font-bold text-gray-900 text-center mb-4">
               {chapter.title}
             </h3>
 
-            <button
+            {/* prefetch đã làm ở effect phía trên */}
+            <Link
+              href={href}
+              prefetch={false}
               onClick={handleStart}
-              disabled={isPending}
+              aria-disabled={isPending || undefined}
               aria-busy={isPending}
-              className={`w-full py-3 px-6 ${buttonColor} text-white font-semibold rounded-xl transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-wait flex items-center justify-center gap-2`}
+              className={`w-full py-3 px-6 ${buttonColor} text-white font-semibold rounded-xl transition-all active:scale-[0.98] aria-disabled:opacity-70 aria-disabled:cursor-wait flex items-center justify-center gap-2`}
             >
               {isPending ? (
                 <>
@@ -85,6 +95,16 @@ export default function ChapterPopup({ chapter, href, isSkippingAhead, onClose, 
               ) : (
                 isSkippingAhead ? 'Nhảy cóc' : 'Bắt đầu'
               )}
+            </Link>
+
+            {/* Nút đóng nhìn thấy được: trước đây chỉ có nền mờ (ẩn với trình
+                đọc màn hình) và phím Esc. */}
+            <button
+              type="button"
+              onClick={handleClose}
+              className="mt-2 w-full min-h-11 py-2 px-6 font-medium text-gray-700 rounded-xl hover:bg-gray-100 transition-colors"
+            >
+              Đóng
             </button>
           </div>
         </div>

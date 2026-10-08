@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { BookOpen, Search, Filter, Clock, ChevronRight, X } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { useIsMobile } from '@/lib/hooks/useMediaQuery';
@@ -130,23 +131,25 @@ export default function LibraryBrowser({ documents, categories }: LibraryBrowser
         {/* Filters */}
         <div className="mb-6 flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
             <input
-              type="text"
+              type="search"
+              aria-label="Tìm kiếm tài liệu"
               placeholder="Tìm kiếm tài liệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-500 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
             />
           </div>
 
           {categories.length > 0 && (
             <div className="relative sm:w-48">
-              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
               <select
+                aria-label="Lọc theo danh mục"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none bg-white cursor-pointer"
+                className="w-full pl-10 pr-4 py-2 border border-gray-500 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 appearance-none bg-white cursor-pointer"
               >
                 <option value="">Tất cả danh mục</option>
                 {categories.map((cat) => (
@@ -184,9 +187,9 @@ export default function LibraryBrowser({ documents, categories }: LibraryBrowser
                         {doc.category}
                       </span>
                     )}
-                    <h3 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
+                    <h2 className="text-lg font-bold text-gray-900 mb-1 line-clamp-2">
                       {doc.title}
-                    </h3>
+                    </h2>
                     <p className="text-sm text-gray-600 line-clamp-2">
                       {doc.description}
                     </p>
@@ -209,12 +212,19 @@ export default function LibraryBrowser({ documents, categories }: LibraryBrowser
       {/* Document Side Panel / Modal */}
       {selected && (
         <>
+          {/* Bấm nền để đóng chỉ là lối tắt cho chuột; bàn phím dùng Esc hoặc nút Đóng. */}
           <div
             className="fixed inset-0 bg-black/50 z-[60] animate-fade-in"
             onClick={closeDocument}
+            aria-hidden="true"
           />
 
+          {/* Bảng là hộp thoại: focus vào trong khi mở, bị giữ trong bảng, trả về thẻ đã bấm khi đóng. */}
+          <FocusTrap focusTrapOptions={{ allowOutsideClick: true, onDeactivate: closeDocument }}>
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="library-doc-title"
             className={`
               fixed z-[61] bg-white shadow-2xl
               ${
@@ -244,7 +254,7 @@ export default function LibraryBrowser({ documents, categories }: LibraryBrowser
               <div className="flex-1 overflow-y-auto px-6 py-6">
                 <div className="mb-6">
                   <div className="flex items-start justify-between mb-2">
-                    <h2 className="text-3xl font-bold text-gray-900 flex-1">
+                    <h2 id="library-doc-title" className="text-3xl font-bold text-gray-900 flex-1">
                       {selected.title}
                     </h2>
                     <span className="flex items-center gap-1 text-sm text-gray-500 flex-shrink-0 ml-4">
@@ -337,6 +347,7 @@ export default function LibraryBrowser({ documents, categories }: LibraryBrowser
               </div>
             </div>
           </div>
+          </FocusTrap>
         </>
       )}
     </>

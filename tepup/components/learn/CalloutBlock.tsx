@@ -39,15 +39,18 @@ export function CalloutBlockComponent({ block }: { block: { type: 'callout'; ico
 
   const IconComponent = iconMap[block.icon || 'lightbulb'] || Lightbulb;
 
+  // Cảnh báo cũng là "note": "alert" cắt ngang trình đọc màn hình mỗi khi block hiện ra.
   return (
-    <div className={`${variant.bg} ${variant.border} border-2 rounded-2xl p-5 mb-6`} role={block.variant === 'warning' ? 'alert' : 'note'}>
+    <div className={`${variant.bg} ${variant.border} border-2 rounded-2xl p-5 mb-6`} role="note">
       <div className="flex items-start gap-3">
         <div className={`flex-shrink-0 mt-0.5`}>
           <IconComponent className={`w-6 h-6 ${variant.icon}`} aria-hidden="true" />
         </div>
         <div>
+          {/* Chữ đậm, không phải tiêu đề: ghi chú là phần phụ, không phải một mục của bài
+              (làm tiêu đề thì bài nhảy từ h1 sang h3 khi ghi chú đứng đầu). */}
           {block.title && (
-            <h3 className={`font-semibold ${variant.title} mb-1`}>{renderInlineMarkdown(block.title)}</h3>
+            <p className={`font-semibold ${variant.title} mb-1`}>{renderInlineMarkdown(block.title)}</p>
           )}
           <p className={`${variant.text} leading-relaxed whitespace-pre-line`}>{renderInlineMarkdown(block.text)}</p>
         </div>

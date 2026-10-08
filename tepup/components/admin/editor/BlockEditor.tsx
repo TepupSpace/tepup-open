@@ -28,7 +28,7 @@ import CustomBlockEditor from './CustomBlockEditor';
 import BlockPickerModal from './BlockPickerModal';
 import BlockSeparator from './BlockSeparator';
 import {
-  getBlockBorderColor,
+  getBlockColorClasses,
   getBlockIcon,
   getBlockLabel,
   getBlockPreview,
@@ -141,12 +141,14 @@ export default function BlockEditor({ blocks, onChange }: BlockEditorProps) {
       {blocks.length === 0 ? (
         <div className="relative">
           <button
+            type="button"
             onClick={() => setShowAddMenu(showAddMenu === 0 ? null : 0)}
-            className="w-full py-8 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 hover:border-blue-300 hover:text-blue-500 transition-colors flex flex-col items-center justify-center gap-2"
+            aria-expanded={showAddMenu === 0}
+            className="w-full py-8 border-2 border-dashed border-gray-500 rounded-xl text-gray-600 hover:border-blue-600 hover:text-blue-700 transition-colors flex flex-col items-center justify-center gap-2"
           >
-            <Plus className="w-5 h-5" />
+            <Plus className="w-5 h-5" aria-hidden="true" />
             <span className="text-sm font-medium">Thêm block mới</span>
-            <span className="text-xs text-gray-300">Bài học chưa có nội dung</span>
+            <span className="text-xs text-gray-500">Bài học chưa có nội dung</span>
           </button>
           {showAddMenu === 0 && (
             <BlockPickerModal
@@ -170,38 +172,37 @@ export default function BlockEditor({ blocks, onChange }: BlockEditorProps) {
           />
           {blocks.map((block, index) => {
             const isCollapsed = collapsedBlocks.has(index);
-            const borderColor = getBlockBorderColor(block.type);
+            const color = getBlockColorClasses(block.type);
             const BlockIcon = getBlockIcon(block.type);
             const preview = getBlockPreview(block);
 
             return (
               <div key={index}>
                 <div
-                  className="bg-white border border-gray-200 shadow-sm rounded-xl overflow-hidden"
-                  style={{ borderLeft: `4px solid ${borderColor}` }}
+                  className={`bg-white border border-gray-200 border-l-4 shadow-sm rounded-xl overflow-hidden ${color.bar}`}
                 >
                   {/* Block header */}
                   <div className="flex items-center justify-between px-3 py-2 bg-gray-50 border-b border-gray-200">
                     <div className="flex items-center gap-2 min-w-0">
-                      <GripVertical className="w-4 h-4 text-gray-300 cursor-move shrink-0" />
-                      <span className="text-xs font-mono text-gray-400 tabular-nums shrink-0 w-6">#{index + 1}</span>
-                      <BlockIcon className="w-4 h-4 shrink-0" style={{ color: borderColor }} />
+                      <GripVertical className="w-4 h-4 text-gray-500 shrink-0" aria-hidden="true" />
+                      <span className="text-xs font-mono text-gray-600 tabular-nums shrink-0 w-6">#{index + 1}</span>
+                      <BlockIcon className={`w-4 h-4 shrink-0 ${color.icon}`} aria-hidden="true" />
                       <span className="text-sm font-medium text-gray-600 shrink-0">{getBlockLabel(block.type)}</span>
-                      {isCollapsed && <span className="text-sm text-gray-400 truncate">— {preview}</span>}
+                      {isCollapsed && <span className="text-sm text-gray-600 truncate">— {preview}</span>}
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <button onClick={() => toggleCollapse(index)} className="p-1 text-gray-400 hover:text-gray-600 transition-colors" title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}>
-                        {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                      <button type="button" onClick={() => toggleCollapse(index)} aria-expanded={!isCollapsed} aria-label={`${isCollapsed ? 'Mở rộng' : 'Thu gọn'} block ${index + 1}`} className="p-1 text-gray-500 hover:text-gray-700 transition-colors" title={isCollapsed ? 'Mở rộng' : 'Thu gọn'}>
+                        {isCollapsed ? <ChevronDown className="w-4 h-4" aria-hidden="true" /> : <ChevronUp className="w-4 h-4" aria-hidden="true" />}
                       </button>
-                      <div className="w-px h-4 bg-gray-200 mx-0.5" />
-                      <button onClick={() => moveBlock(index, 'up')} disabled={index === 0} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" title="Di chuyển lên">
-                        <ArrowUp className="w-4 h-4" />
+                      <div aria-hidden="true" className="w-px h-4 bg-gray-200 mx-0.5" />
+                      <button type="button" onClick={() => moveBlock(index, 'up')} aria-disabled={index === 0} aria-label={`Di chuyển block ${index + 1} lên`} className="p-1 text-gray-500 hover:text-gray-700 aria-disabled:opacity-30 aria-disabled:cursor-not-allowed transition-colors" title="Di chuyển lên">
+                        <ArrowUp className="w-4 h-4" aria-hidden="true" />
                       </button>
-                      <button onClick={() => moveBlock(index, 'down')} disabled={index === blocks.length - 1} className="p-1 text-gray-400 hover:text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed transition-colors" title="Di chuyển xuống">
-                        <ArrowDown className="w-4 h-4" />
+                      <button type="button" onClick={() => moveBlock(index, 'down')} aria-disabled={index === blocks.length - 1} aria-label={`Di chuyển block ${index + 1} xuống`} className="p-1 text-gray-500 hover:text-gray-700 aria-disabled:opacity-30 aria-disabled:cursor-not-allowed transition-colors" title="Di chuyển xuống">
+                        <ArrowDown className="w-4 h-4" aria-hidden="true" />
                       </button>
-                      <button onClick={() => removeBlock(index)} className="p-1 text-gray-400 hover:text-red-500 transition-colors" title="Xóa block">
-                        <Trash2 className="w-4 h-4" />
+                      <button type="button" onClick={() => removeBlock(index)} aria-label={`Xóa block ${index + 1}`} className="p-1 text-gray-500 hover:text-red-600 transition-colors" title="Xóa block">
+                        <Trash2 className="w-4 h-4" aria-hidden="true" />
                       </button>
                     </div>
                   </div>

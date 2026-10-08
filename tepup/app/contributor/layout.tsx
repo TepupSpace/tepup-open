@@ -5,7 +5,9 @@ import DesktopOnlyNotice from '@/components/mobile/DesktopOnlyNotice';
 import { SessionProvider } from 'next-auth/react';
 
 export const metadata = {
-  title: 'Contributor - Tepup',
+  // Trang con đặt `metadata.title` riêng ("Khoá học", "Bản nháp"…): mỗi trang một tiêu đề, để
+  // trình đọc màn hình đọc được khi chuyển trang (Next chỉ thông báo khi tiêu đề đổi).
+  title: { default: 'Cộng tác viên | Tepup', template: '%s — Cộng tác viên | Tepup' },
   description: 'Đóng góp nội dung cho Tepup',
 };
 
@@ -19,11 +21,12 @@ export default async function ContributorLayout({
   return (
     <SessionProvider>
       <DesktopOnlyNotice area="contributor" />
-      <div className="min-h-screen bg-gray-50">
+      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học. */}
+      <div className="reader min-h-screen bg-gray-50">
         <ContributorSidebar />
         <div className="lg:pl-64 transition-all duration-300">
           <ContributorHeader />
-          <main className="p-6">{children}</main>
+          <main id="main-content" className="p-6">{children}</main>
         </div>
       </div>
     </SessionProvider>

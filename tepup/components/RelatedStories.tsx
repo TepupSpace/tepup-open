@@ -17,18 +17,19 @@ const characterIconMap: Record<string, React.ComponentType<{ className?: string 
 };
 
 const colorClasses: Record<string, { bg: string; text: string; border: string }> = {
-  'text-teal-600': { bg: 'bg-teal-50', text: 'text-teal-600', border: 'hover:border-teal-300' },
+  'text-teal-600': { bg: 'bg-teal-50', text: 'text-teal-700', border: 'hover:border-teal-300' },
   'text-blue-600': { bg: 'bg-blue-50', text: 'text-blue-600', border: 'hover:border-blue-300' },
-  'text-orange-600': { bg: 'bg-orange-50', text: 'text-orange-600', border: 'hover:border-orange-300' },
+  'text-orange-600': { bg: 'bg-orange-50', text: 'text-orange-700', border: 'hover:border-orange-300' },
 };
 
 function SectionHeading() {
   return (
     <div className="flex items-center gap-2 mb-3">
       <Headphones className="w-4 h-4 text-purple-500" />
-      <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+      {/* h2: cùng cấp với các cấp độ của lộ trình học, đều ngay dưới h1 tên khoá */}
+      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
         Câu chuyện liên quan
-      </h3>
+      </h2>
     </div>
   );
 }

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { BiasDetectorBlock as BiasDetectorBlockType } from '@/lib/types/content';
 import { AlertTriangle, Check, X, ChevronDown } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import BlockShell from './BlockShell';
+import { useAnnouncer, useFocusAfterRender } from './useAnnouncer';
 
 interface Props {
   block: BiasDetectorBlockType;
@@ -21,23 +22,35 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
   const [segmentStates, setSegmentStates] = useState<Record<string, SegmentState>>({});
   const [allChecked, setAllChecked] = useState(false);
   const [activeSegment, setActiveSegment] = useState<string | null>(null);
+  const [message, announce] = useAnnouncer();
+  /** Nút cụm từ — chọn xong thì danh sách đóng lại, focus phải quay về đây thay vì rơi mất. */
+  const segmentRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const summaryRef = useRef<HTMLDivElement>(null);
+  const focusAfterRender = useFocusAfterRender();
+
+  const closeList = (segmentId: string) => {
+    setActiveSegment(null);
+    segmentRefs.current[segmentId]?.focus();
+  };
 
   const handleSelectBias = (segmentId: string, biasId: string) => {
     setSegmentStates(prev => ({
       ...prev,
       [segmentId]: { selectedBias: biasId, checked: false, correct: false },
     }));
-    setActiveSegment(null);
+    closeList(segmentId);
+    const seg = block.segments.find(s => s.id === segmentId);
+    const label = block.biasOptions.find(o => o.id === biasId)?.label;
+    const answered = block.segments.filter(s => s.id === segmentId || segmentStates[s.id]?.selectedBias).length;
+    announce(`Đã chọn "${label}" cho "${seg?.text}". Đã phân loại ${answered}/${block.segments.length} cụm từ.`);
   };
 
   const handleCheckAll = () => {
     const newStates: Record<string, SegmentState> = {};
-    let allCorrect = true;
 
     block.segments.forEach(seg => {
       const state = segmentStates[seg.id];
       const correct = state?.selectedBias === seg.biasType;
-      if (!correct) allCorrect = false;
       newStates[seg.id] = {
         selectedBias: state?.selectedBias || null,
         checked: true,
@@ -48,6 +61,9 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
     setSegmentStates(newStates);
     setAllChecked(true);
     onComplete?.();
+    // Nút này biến mất khi bấm; focus sang ô tổng kết thay chỗ nó. Ô đó tự được đọc
+    // lên nên không đẩy cùng câu vào vùng live.
+    focusAfterRender(() => summaryRef.current);
   };
 
   const allSegmentsAnswered = block.segments.every(seg => segmentStates[seg.id]?.selectedBias);
@@ -84,8 +100,13 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
       parts.push(
         <span key={`seg-${seg.id}`} className="relative inline">
           <button
+            ref={el => {
+              segmentRefs.current[seg.id] = el;
+            }}
+            type="button"
             onClick={() => !allChecked && setActiveSegment(isActive ? null : seg.id)}
             disabled={allChecked}
+            aria-expanded={allChecked ? undefined : isActive}
             className={`
               inline px-1 py-0.5 rounded transition-all underline decoration-2 decoration-wavy
               ${isChecked
@@ -105,7 +126,7 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
           {/* Bias label tag */}
           {hasAnswer && (
             <span className={`
-              inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide
+              inline-flex items-center gap-0.5 ml-1 px-1.5 py-0.5 rounded text-xs font-bold uppercase tracking-wide
               ${isChecked
                 ? isCorrect ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'
                 : 'bg-amber-200 text-amber-800'
@@ -113,18 +134,25 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
             `}>
               {isChecked && (isCorrect ? <Check className="w-2.5 h-2.5" aria-hidden="true" /> : <X className="w-2.5 h-2.5" aria-hidden="true" />)}
               {biasLabel}
+              {isChecked && <span className="sr-only">{isCorrect ? ' (đúng)' : ' (sai)'}</span>}
             </span>
           )}
           {/* Dropdown — neo theo đoạn văn thì trên màn hẹp danh sách tràn khỏi mép
               phải khi đoạn được bôi nằm cuối dòng. Ở mobile nó chuyển thành phiếu
               nổi bám đáy màn hình: luôn vừa khung và nằm trong tầm ngón cái. */}
           {isActive && !allChecked && (
-            <div className="fixed inset-x-3 bottom-[calc(0.75rem+var(--bottom-chrome,0px)+var(--safe-bottom))] z-[58] max-h-[55dvh] overflow-y-auto bg-white border-2 border-yellow-300 rounded-xl shadow-2xl p-2 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-1 sm:z-10 sm:max-h-none sm:w-max sm:min-w-[200px] sm:shadow-lg">
-              <p className="text-xs text-gray-500 px-2 mb-1 font-medium">Chọn loại bias:</p>
+            <div
+              className="fixed inset-x-3 bottom-[calc(0.75rem+var(--bottom-chrome,0px)+var(--safe-bottom))] z-[58] max-h-[55dvh] overflow-y-auto bg-white border-2 border-yellow-300 rounded-xl shadow-2xl p-2 sm:absolute sm:inset-x-auto sm:bottom-auto sm:left-0 sm:top-full sm:mt-1 sm:z-10 sm:max-h-none sm:w-max sm:min-w-[200px] sm:shadow-lg">
+              <p className="text-xs text-gray-500 px-2 mb-1 font-medium">Chọn loại thiên lệch:</p>
               {block.biasOptions.map(option => (
                 <button
                   key={option.id}
+                  type="button"
+                  aria-pressed={state?.selectedBias === option.id}
                   onClick={() => handleSelectBias(seg.id, option.id)}
+                  onKeyDown={e => {
+                    if (e.key === 'Escape') closeList(seg.id);
+                  }}
                   className={`
                     w-full text-left px-3 py-2 rounded-lg text-sm transition-colors
                     ${state?.selectedBias === option.id
@@ -157,7 +185,7 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle className="w-6 h-6 text-yellow-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Phát hiện thiên lệch'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Phát hiện thiên lệch'}</h2>
       </div>
 
       <p className="text-gray-600 text-sm mb-4">{block.instruction}</p>
@@ -168,7 +196,7 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
           {renderArticle()}
         </div>
         {block.article.source && (
-          <p className="mt-3 text-xs text-gray-400 italic">— {block.article.source}</p>
+          <p className="mt-3 text-xs text-gray-500 italic">— {block.article.source}</p>
         )}
       </div>
 
@@ -176,12 +204,12 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
       {!allChecked && (
         <div className="flex items-center gap-4 mb-4 text-xs text-gray-500">
           <span className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 bg-yellow-50 border border-yellow-300 rounded" />
-            Click vào cụm từ highlight
+            <span className="inline-block w-3 h-3 bg-yellow-50 border border-yellow-300 rounded" aria-hidden="true" />
+            Bấm vào cụm từ được tô
           </span>
           <span className="flex items-center gap-1">
             <ChevronDown className="w-3 h-3" aria-hidden="true" />
-            Chọn loại bias
+            Chọn loại thiên lệch
           </span>
         </div>
       )}
@@ -189,25 +217,34 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
       {/* Check button */}
       {!allChecked && allSegmentsAnswered && (
         <button
+          type="button"
           onClick={handleCheckAll}
-          className="w-full py-3 bg-yellow-500 text-white font-semibold rounded-xl hover:bg-yellow-600 transition-colors"
+          className="w-full py-3 bg-yellow-700 text-white font-semibold rounded-xl hover:bg-yellow-800 transition-colors"
         >
           Kiểm tra tất cả ({block.segments.length} cụm từ)
         </button>
       )}
 
       {!allChecked && !allSegmentsAnswered && (
-        <p className="text-sm text-gray-400 text-center">
+        <p className="text-sm text-gray-500 text-center">
           Đã phân loại {Object.keys(segmentStates).filter(k => segmentStates[k].selectedBias).length}/{block.segments.length} cụm từ
         </p>
       )}
 
+      {/* Vùng live luôn có mặt; kết quả chi tiết bên dưới chỉ hiện sau khi kiểm tra. */}
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       {/* Results */}
       {allChecked && (
-        <div className="space-y-3" aria-live="polite">
-          <div className={`p-4 rounded-xl ${correctCount === block.segments.length ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}>
+        <div className="space-y-3">
+          <div
+            ref={summaryRef}
+            tabIndex={-1}
+            className={`p-4 rounded-xl ${correctCount === block.segments.length ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}
+          >
             <p className={`font-semibold ${correctCount === block.segments.length ? 'text-green-700' : 'text-blue-700'}`}>
               Kết quả: {correctCount}/{block.segments.length} đúng
+              <span className="sr-only">. Giải thích từng cụm từ ở bên dưới.</span>
             </p>
           </div>
 
@@ -215,7 +252,7 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
           {block.segments.filter(seg => !segmentStates[seg.id]?.correct).map(seg => (
             <div key={seg.id} className="p-3 bg-red-50 border border-red-200 rounded-xl">
               <p className="text-sm">
-                <span className="font-semibold text-red-700">"{seg.text}"</span>
+                <span className="font-semibold text-red-700">&ldquo;{seg.text}&rdquo;</span>
                 <span className="text-gray-600"> — Đáp án đúng: </span>
                 <span className="font-semibold text-red-700">{block.biasOptions.find(o => o.id === seg.biasType)?.label}</span>
               </p>
@@ -227,7 +264,7 @@ export default function BiasDetectorBlockComponent({ block, onComplete }: Props)
           {block.segments.filter(seg => segmentStates[seg.id]?.correct).map(seg => (
             <div key={seg.id} className="p-3 bg-green-50 border border-green-200 rounded-xl">
               <p className="text-sm">
-                <span className="font-semibold text-green-700">"{seg.text}"</span>
+                <span className="font-semibold text-green-700">&ldquo;{seg.text}&rdquo;</span>
                 <span className="text-gray-600"> — </span>
                 <span className="font-semibold text-green-700">{block.biasOptions.find(o => o.id === seg.biasType)?.label}</span>
               </p>

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { HotColdGuessBlock as HotColdGuessBlockType } from '@/lib/types/content';
 import { Thermometer, Target, Lightbulb } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import BlockShell from './BlockShell';
+import { toPlainText, useAnnouncer, useFocusAfterRender } from './useAnnouncer';
 
 interface Props {
   block: HotColdGuessBlockType;
@@ -36,6 +37,12 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
   const [solved, setSolved] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [message, announce] = useAnnouncer();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const focusAfterRender = useFocusAfterRender();
+  /** Số kèm đơn vị cho câu đọc lên (đơn vị có thể để trống). */
+  const spoken = (n: number) => (block.unit ? `${formatNumber(n)} ${block.unit}` : formatNumber(n));
 
   const currentHintIndex = Math.min(guesses.length, block.hints.length - 1);
   /** Answer + context are shown either way; only the wording differs. */
@@ -43,9 +50,13 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
 
   // Without an escape hatch the block never completes for someone who can't land
   // inside `tolerance`, and the lesson's Continue button stays disabled forever.
+  //
+  // Khi xong (đoán trúng hoặc xem đáp án), ô nhập và các nút biến mất; focus chuyển
+  // sang ô kết quả thay chỗ chúng. Ô đó tự được đọc lên nên không đẩy vào vùng live.
   const handleReveal = () => {
     setRevealed(true);
     onComplete?.();
+    focusAfterRender(() => resultRef.current);
   };
 
   const handleGuess = () => {
@@ -63,7 +74,22 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
     if (diff <= block.tolerance) {
       setSolved(true);
       onComplete?.();
+      focusAfterRender(() => resultRef.current);
+      return;
     }
+
+    // Lịch sử đoán không phải vùng live, nên kết quả từng lần phải đọc riêng.
+    // Giữ focus ở ô nhập (kể cả khi bấm nút "Đoán", vốn sẽ bị tắt vì ô trống).
+    const hint = guess > block.answer ? 'Thấp hơn.' : guess < block.answer ? 'Cao hơn.' : '';
+    announce(`${spoken(guess)}: ${temp.label} ${hint}`.trim());
+    inputRef.current?.focus();
+  };
+
+  const handleShowHint = () => {
+    setShowHint(true);
+    // Nút gợi ý biến mất khi bấm; đọc gợi ý và đưa focus về ô nhập để đoán tiếp.
+    announce(`Gợi ý: ${toPlainText(block.hints[currentHintIndex])}`);
+    inputRef.current?.focus();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -75,7 +101,7 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-6 h-6 text-indigo-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Đoán số liệu'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Đoán số liệu'}</h2>
       </div>
 
       {/* Question */}
@@ -87,7 +113,7 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
           {guesses.map((g, i) => (
             <div key={i} className={`flex items-center justify-between p-3 rounded-xl border ${g.temp.bg} ${g.temp.border}`}>
               <div className="flex items-center gap-2">
-                <span className="text-xl">{g.temp.emoji}</span>
+                <span className="text-xl" aria-hidden="true">{g.temp.emoji}</span>
                 <span className={`font-semibold ${g.temp.color}`}>{g.temp.label}</span>
               </div>
               <div className="flex items-center gap-3">
@@ -106,17 +132,18 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
         <div className="flex gap-2 mb-3">
           <div className="flex-1 relative">
             <input
+              ref={inputRef}
               type="text"
               inputMode="numeric"
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={`Nhập số (${block.unit})`}
-              aria-label="Nhập số liệu dự đoán"
-              className="w-full p-3 pr-16 border-2 border-gray-200 rounded-xl focus:border-indigo-400 focus:outline-none text-lg tabular-nums"
+              aria-label={block.unit ? `Nhập số liệu dự đoán (${block.unit})` : 'Nhập số liệu dự đoán'}
+              className="w-full p-3 pr-16 border-2 border-gray-500 rounded-xl focus:border-indigo-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2 text-lg tabular-nums"
             />
             {block.unit && (
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{block.unit}</span>
+              <span aria-hidden="true" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">{block.unit}</span>
             )}
           </div>
           <button
@@ -139,7 +166,8 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
             </div>
           ) : (
             <button
-              onClick={() => setShowHint(true)}
+              type="button"
+              onClick={handleShowHint}
               className="text-sm text-indigo-600 hover:text-indigo-800 font-medium flex items-center gap-1"
             >
               <Lightbulb className="w-4 h-4" aria-hidden="true" />
@@ -164,17 +192,20 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
         </div>
       )}
 
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       {/* Success state */}
       {finished && (
         <div
+          ref={resultRef}
+          tabIndex={-1}
           className={`mt-4 p-5 border-2 rounded-2xl ${solved ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}
-          aria-live="polite"
         >
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-2xl">{solved ? '🎉' : '💡'}</span>
-            <h4 className={`text-lg font-bold ${solved ? 'text-green-800' : 'text-blue-800'}`}>
+            <span className="text-2xl" aria-hidden="true">{solved ? '🎉' : '💡'}</span>
+            <h3 className={`text-lg font-bold ${solved ? 'text-green-800' : 'text-blue-800'}`}>
               {solved ? 'Chính xác!' : 'Đáp án'}
-            </h4>
+            </h3>
           </div>
           <p className={`${solved ? 'text-green-700' : 'text-blue-700'} mb-2`}>
             <span className="font-semibold">Đáp án: {formatNumber(block.answer)} {block.unit}</span>

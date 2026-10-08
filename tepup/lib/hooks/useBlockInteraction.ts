@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 
 /**
  * Hook for tracking block interaction and triggering onComplete once.
@@ -7,17 +7,23 @@ import { useState, useCallback, useRef } from 'react';
  */
 export function useBlockInteraction(onComplete?: () => void) {
   const [hasInteracted, setHasInteracted] = useState(false);
+  // Synced after commit, not during render: the callback is only ever read from
+  // event handlers, which run after the latest commit anyway.
   const onCompleteRef = useRef(onComplete);
-  onCompleteRef.current = onComplete;
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+  /** Guards the one-time call. A ref, not `hasInteracted`, so two events handled
+   *  before a re-render still fire onComplete only once. */
+  const firedRef = useRef(false);
 
+  // onComplete is called from the handler itself, not inside a setState updater:
+  // updaters must stay pure (StrictMode runs them twice).
   const markInteracted = useCallback(() => {
-    setHasInteracted(prev => {
-      if (!prev) {
-        onCompleteRef.current?.();
-        return true;
-      }
-      return prev;
-    });
+    if (firedRef.current) return;
+    firedRef.current = true;
+    setHasInteracted(true);
+    onCompleteRef.current?.();
   }, []);
 
   return { hasInteracted, markInteracted };

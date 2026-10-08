@@ -27,7 +27,7 @@ export default function BottomTabBar() {
   return (
     <nav
       className="fixed bottom-0 inset-x-0 z-40 bg-white border-t border-gray-100 pb-safe md:hidden"
-      aria-label="Điều hướng chính"
+      aria-label="Điều hướng dưới cùng"
     >
       <ul className="flex">
         {tabs.map((tab) => {

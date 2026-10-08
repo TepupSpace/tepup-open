@@ -1,5 +1,6 @@
 'use client';
 
+import { useId } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
 import type { QuestionBlock } from './BlockEditor';
 
@@ -12,6 +13,8 @@ export default function QuestionBlockEditor({
   block,
   onChange,
 }: QuestionBlockEditorProps) {
+  const uid = useId();
+
   function updateOptionText(index: number, text: string) {
     const options = [...block.options];
     options[index] = { ...options[index], text };
@@ -81,10 +84,14 @@ export default function QuestionBlockEditor({
     <div className="space-y-4">
       {/* Answer mode */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <p id={`${uid}-mode`} className="block text-sm font-medium text-gray-700 mb-1">
           Kiểu trả lời
-        </label>
-        <div className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50">
+        </p>
+        <div
+          role="group"
+          aria-labelledby={`${uid}-mode`}
+          className="inline-flex rounded-lg border border-gray-200 p-0.5 bg-gray-50"
+        >
           {([
             { value: 'single', label: 'Một đáp án' },
             { value: 'multiple', label: 'Nhiều đáp án' },
@@ -93,10 +100,11 @@ export default function QuestionBlockEditor({
               key={opt.value}
               type="button"
               onClick={() => setMode(opt.value)}
+              aria-pressed={(block.mode ?? 'single') === opt.value}
               className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
                 (block.mode ?? 'single') === opt.value
                   ? 'bg-white text-gray-900 shadow-sm font-medium'
-                  : 'text-gray-500 hover:text-gray-700'
+                  : 'text-gray-600 hover:text-gray-800'
               }`}
             >
               {opt.label}
@@ -107,44 +115,54 @@ export default function QuestionBlockEditor({
 
       {/* Question */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Câu hỏi <span className="text-red-500">*</span>
+        <label htmlFor={`${uid}-question`} className="block text-sm font-medium text-gray-700 mb-1">
+          Câu hỏi <span className="text-red-600" aria-hidden="true">*</span>
         </label>
         <textarea
+          id={`${uid}-question`}
+          aria-required="true"
           value={block.question}
           onChange={(e) => onChange({ ...block, question: e.target.value })}
           placeholder="Nhập câu hỏi..."
           rows={2}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
 
       {/* Options */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+      <div role="group" aria-labelledby={`${uid}-options`}>
+        <p id={`${uid}-options`} className="block text-sm font-medium text-gray-700 mb-1">
           Các lựa chọn
-        </label>
-        <p className="text-xs text-gray-500 mb-2">
+        </p>
+        <p id={`${uid}-options-hint`} className="text-xs text-gray-500 mb-2">
           {isMultiple
             ? 'Tích vào TẤT CẢ đáp án đúng. Học viên phải chọn đủ mới được tính đúng.'
             : 'Chọn dấu tích để đánh dấu đáp án đúng'}
         </p>
-        {isMultiple && correctCount === 0 && (
-          <p className="text-xs text-amber-600 mb-2">
-            Chưa có đáp án đúng nào — hãy tích ít nhất một lựa chọn.
-          </p>
-        )}
+        {/* Always mounted so the warning is announced when the last tick is removed. */}
+        <p
+          aria-live="polite"
+          className={isMultiple && correctCount === 0 ? 'text-xs text-amber-700 mb-2' : 'sr-only'}
+        >
+          {isMultiple && correctCount === 0
+            ? 'Chưa có đáp án đúng nào — hãy tích ít nhất một lựa chọn.'
+            : ''}
+        </p>
         <div className="space-y-2">
           {block.options.map((option, index) => (
             <div key={option.id} className="flex items-center gap-2">
               <button
+                type="button"
                 onClick={() => toggleCorrectOption(index)}
+                aria-pressed={option.isCorrect}
+                aria-label={`Lựa chọn ${index + 1} là đáp án đúng`}
+                aria-describedby={`${uid}-options-hint`}
                 className={`p-2 border transition-colors ${
                   isMultiple ? 'rounded-md' : 'rounded-full'
                 } ${
                   option.isCorrect
-                    ? 'bg-green-100 border-green-300 text-green-600'
-                    : 'bg-white border-gray-200 text-gray-400 hover:bg-gray-50'
+                    ? 'bg-green-100 border-green-700 text-green-700'
+                    : 'bg-white border-gray-500 text-gray-500 hover:bg-gray-50'
                 }`}
                 title={
                   option.isCorrect
@@ -154,24 +172,27 @@ export default function QuestionBlockEditor({
                     : 'Đánh dấu là đáp án đúng'
                 }
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4" aria-hidden="true" />
               </button>
               <input
                 type="text"
+                aria-label={`Lựa chọn ${index + 1}`}
                 value={option.text}
                 onChange={(e) => updateOptionText(index, e.target.value)}
                 placeholder={`Lựa chọn ${index + 1}...`}
                 className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  option.isCorrect ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                  option.isCorrect ? 'border-green-700 bg-green-50' : 'border-gray-500'
                 }`}
               />
               {block.options.length > 2 && (
                 <button
+                  type="button"
                   onClick={() => removeOption(index)}
-                  className="p-2 text-gray-400 hover:text-red-500"
+                  className="p-2 text-gray-500 hover:text-red-600"
                   title="Xóa lựa chọn"
+                  aria-label={`Xóa lựa chọn ${index + 1}`}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -179,10 +200,11 @@ export default function QuestionBlockEditor({
         </div>
         {block.options.length < 6 && (
           <button
+            type="button"
             onClick={addOption}
-            className="mt-2 flex items-center gap-1 text-sm text-blue-500 hover:text-blue-600"
+            className="mt-2 flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-4 h-4" aria-hidden="true" />
             <span>Thêm lựa chọn</span>
           </button>
         )}
@@ -190,17 +212,18 @@ export default function QuestionBlockEditor({
 
       {/* Explanation */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={`${uid}-explanation`} className="block text-sm font-medium text-gray-700 mb-1">
           Giải thích (tùy chọn)
         </label>
         <textarea
+          id={`${uid}-explanation`}
           value={block.explanation || ''}
           onChange={(e) =>
             onChange({ ...block, explanation: e.target.value || undefined })
           }
           placeholder="Giải thích hiển thị sau khi trả lời..."
           rows={2}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
         />
       </div>
     </div>

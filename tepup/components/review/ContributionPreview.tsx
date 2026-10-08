@@ -59,7 +59,7 @@ export function BlockListPreview({ blocks, revealAnswers }: { blocks: unknown; r
     return <Warning>Dữ liệu block không hợp lệ (không phải danh sách).</Warning>;
   }
   if (list.length === 0) {
-    return <p className="text-sm text-gray-400">Bài học chưa có nội dung.</p>;
+    return <p className="text-sm text-gray-500">Bài học chưa có nội dung.</p>;
   }
 
   return (
@@ -88,7 +88,7 @@ export function BlockListPreview({ blocks, revealAnswers }: { blocks: unknown; r
         if (type === 'step-break') {
           const label = (block as { label?: string }).label;
           return (
-            <div key={i} className="my-6 flex items-center gap-3 text-xs text-gray-400" aria-hidden="true">
+            <div key={i} className="my-6 flex items-center gap-3 text-xs text-gray-500" aria-hidden="true">
               <div className="h-px flex-1 bg-gray-200" />
               Ngắt bước{label ? `: ${label}` : ''}
               <div className="h-px flex-1 bg-gray-200" />
@@ -159,12 +159,12 @@ function LessonPreview({
         className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50"
         aria-expanded={open}
       >
-        {open ? <ChevronDown className="w-4 h-4 text-gray-400" /> : <ChevronRight className="w-4 h-4 text-gray-400" />}
-        <FileText className="w-3.5 h-3.5 text-gray-400" />
+        {open ? <ChevronDown className="w-4 h-4 text-gray-500" /> : <ChevronRight className="w-4 h-4 text-gray-500" />}
+        <FileText className="w-3.5 h-3.5 text-gray-500" />
         <span className="font-medium">
           {index + 1}. {lesson.name || 'Bài chưa đặt tên'}
         </span>
-        <span className="text-xs text-gray-400">({count} blocks)</span>
+        <span className="text-xs text-gray-500">({count} blocks)</span>
       </button>
       {open && (
         <div className="border-t border-gray-100 px-4 py-5 sm:px-6 bg-white">
@@ -234,7 +234,7 @@ export default function ContributionPreview({
         <Warning>Loại đóng góp &quot;{type}&quot; chưa được hỗ trợ xuất bản.</Warning>
       )}
       {levels.length === 0 ? (
-        <p className="text-sm text-gray-400">Chưa có levels nào.</p>
+        <p className="text-sm text-gray-500">Chưa có levels nào.</p>
       ) : (
         <div className="space-y-4">
           {levels.map((level, levelIdx) => {
@@ -244,7 +244,7 @@ export default function ContributionPreview({
                 <div className="flex items-center gap-2 mb-3">
                   <Layers className={`w-4 h-4 ${accentText}`} />
                   <span className="font-medium text-sm">{level.name || `Level ${levelIdx + 1}`}</span>
-                  <span className="text-xs text-gray-400">{lessons.length} bài</span>
+                  <span className="text-xs text-gray-500">{lessons.length} bài</span>
                 </div>
                 <div className="space-y-2">
                   {lessons.map((lesson, lessonIdx) => (

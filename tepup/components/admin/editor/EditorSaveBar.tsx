@@ -70,16 +70,41 @@ const DEFAULT_SAVE_HINT =
 /**
  * Chú thích hiện ngay khi rê chuột hoặc focus bằng bàn phím (thuộc tính `title` của
  * trình duyệt hiện chậm và không hiện khi focus). Nút bên trong trỏ tới nó bằng
- * aria-describedby.
+ * aria-describedby. Esc ẩn chú thích mà không phải rời chuột/focus (WCAG 1.4.13); nó
+ * hiện lại ở lần rê chuột / focus sau.
  */
 function HoverTip({ id, text, children }: { id: string; text: string; children: ReactNode }) {
+  const wrapRef = useRef<HTMLSpanElement>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDismissed(true);
+    };
+    const reset = () => setDismissed(false);
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('mouseleave', reset);
+    el.addEventListener('focusout', reset);
+    return () => {
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('mouseleave', reset);
+      el.removeEventListener('focusout', reset);
+    };
+  }, []);
+
   return (
-    <span className="relative inline-flex shrink-0 group/tip">
+    <span ref={wrapRef} className="relative inline-flex shrink-0 group/tip">
       {children}
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none invisible opacity-0 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 transition-opacity duration-150 absolute right-0 top-full mt-2 z-40 w-72 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs font-normal leading-snug text-white shadow-lg whitespace-normal"
+        className={`pointer-events-none invisible opacity-0 transition-opacity duration-150 absolute right-0 top-full mt-2 z-40 w-72 rounded-lg bg-gray-900 px-3 py-2 text-left text-xs font-normal leading-snug text-white shadow-lg whitespace-normal ${
+          dismissed
+            ? ''
+            : 'group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100'
+        }`}
       >
         {text}
       </span>
@@ -210,9 +235,9 @@ export default function EditorSaveBar({
         <Link
           href={backHref}
           aria-label="Quay lại"
-          className="p-2 -ml-2 shrink-0 hover:bg-gray-100 rounded-xl transition-colors"
+          className="p-2 -ml-2 shrink-0 text-gray-700 hover:bg-gray-100 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="w-5 h-5" aria-hidden="true" />
         </Link>
         <div className="min-w-0">
           <h1 className="text-lg font-bold text-gray-900 leading-tight truncate">{title}</h1>
@@ -235,13 +260,18 @@ export default function EditorSaveBar({
               className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-medium whitespace-nowrap"
             >
               Bản nháp chưa xuất bản
+              {/* The tooltip (title) only shows on hover: give screen readers the same detail. */}
+              <span className="sr-only">. {draftTooltip}</span>
             </span>
             {onDiscardDraft && (
               <button
                 type="button"
-                onClick={onDiscardDraft}
-                disabled={publishing || status === 'saving'}
-                className="text-xs text-gray-500 hover:text-red-600 hover:underline disabled:opacity-50 disabled:cursor-not-allowed disabled:no-underline disabled:hover:text-gray-500 whitespace-nowrap"
+                onClick={() => {
+                  if (!saveDisabled) onDiscardDraft();
+                }}
+                // aria-disabled, not disabled: a pressed button keeps focus (docs/accessibility.md).
+                aria-disabled={saveDisabled}
+                className="text-xs text-gray-500 hover:text-red-600 hover:underline aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:no-underline aria-disabled:hover:text-gray-500 whitespace-nowrap"
               >
                 Bỏ nháp
               </button>
@@ -254,27 +284,34 @@ export default function EditorSaveBar({
         <HoverTip id="editor-save-draft-hint" text={saveDraftHint}>
           <button
             type="button"
-            onClick={onSaveDraft}
-            disabled={saveDisabled}
+            onClick={() => {
+              if (!saveDisabled) onSaveDraft();
+            }}
+            // aria-disabled, not disabled: pressing it starts saving, and a disabled button
+            // would drop keyboard focus to the page.
+            aria-disabled={saveDisabled}
             aria-describedby="editor-save-draft-hint"
-            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white text-gray-700 border border-gray-300 rounded-xl hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white text-gray-700 border border-gray-500 rounded-xl hover:bg-gray-50 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed transition-colors whitespace-nowrap"
           >
-            <Save className="w-4 h-4" />
+            <Save className="w-4 h-4" aria-hidden="true" />
             <span>Lưu nháp</span>
           </button>
         </HoverTip>
         <HoverTip id="editor-publish-hint" text={publishHint}>
           <button
             type="button"
-            onClick={onPublish}
-            disabled={publishing || publishDisabled}
+            onClick={() => {
+              if (!publishing && !publishDisabled) onPublish();
+            }}
+            // aria-disabled, not disabled: focus stays on the button while publishing runs.
+            aria-disabled={publishing || publishDisabled}
             aria-describedby="editor-publish-hint"
-            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-500 transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed aria-disabled:hover:bg-blue-600 transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
           >
             {publishing ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
             ) : (
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4" aria-hidden="true" />
             )}
             <span>{publishing ? 'Đang xuất bản…' : 'Xuất bản'}</span>
           </button>

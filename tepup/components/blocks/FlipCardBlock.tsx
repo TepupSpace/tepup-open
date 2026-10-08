@@ -1,22 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, SquareStack } from 'lucide-react';
 import type { FlipCardBlock as FlipCardBlockType, FlipCardFace } from '@/lib/types/content';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { isAllowedMediaUrl } from '@/lib/security/safe-url';
 import BlockShell from './BlockShell';
+import { toPlainText, useAnnouncer } from './useAnnouncer';
 
 interface Props {
   block: FlipCardBlockType;
   onComplete?: () => void;
 }
-
-/**
- * Trần chiều cao vùng chữ của một mặt thẻ. Cộng với đệm (16px trên, 28px dưới) thì
- * không thẻ nào vượt quá 300px, nên một thẻ viết quá dài không kéo cả bộ phỏng lên.
- */
-const FACE_SCROLL_MAX = 'max-h-[256px]';
 
 function CardFace({ face }: { face: FlipCardFace }) {
   if (face.kind === 'image') {
@@ -39,7 +34,7 @@ function CardFace({ face }: { face: FlipCardFace }) {
         // An author who left alt blank meant the image as decoration — inventing
         // a description would be worse than announcing nothing.
         alt={face.alt ?? ''}
-        className="mx-auto max-h-[220px] w-auto max-w-full object-contain rounded-lg"
+        className="content-image mx-auto max-h-[220px] w-auto max-w-full object-contain rounded-lg"
       />
     );
   }
@@ -50,60 +45,46 @@ function CardFace({ face }: { face: FlipCardFace }) {
   );
 }
 
-/** One side of the card: its own border and background, since both are visible mid-turn. */
+/** Chữ đọc lên khi một mặt vừa lật ra. */
+function faceText(face: FlipCardFace): string {
+  if (face.kind === 'image') return face.alt || 'Hình ảnh';
+  return toPlainText(face.text);
+}
+
+/**
+ * One side of the card: its own border and background, since both are visible mid-turn.
+ *
+ * Không có vùng cuộn bên trong: nội dung nằm trong một nút bấm thì bàn phím không
+ * cuộn tới được, nên thẻ cứ cao theo mặt dài hơn (lưới trong globals.css lo việc đó).
+ */
 function Face({
   face,
   label,
   seen,
+  hidden,
   className,
-  fadeClass,
 }: {
   face: FlipCardFace;
   label: string;
   seen?: boolean;
+  /** Mặt đang úp: ẩn khỏi trình đọc màn hình để tên nút chỉ gồm mặt đang hiện. */
+  hidden: boolean;
   className: string;
-  /** Màu bắt đầu của dải mờ báo hiệu còn nội dung — phải khớp nền của mặt thẻ. */
-  fadeClass: string;
 }) {
-  const scrollRef = useRef<HTMLSpanElement>(null);
-  /** Chỉ đúng khi nội dung chạm trần và thật sự phải cuộn. */
-  const [overflowing, setOverflowing] = useState(false);
-
-  const measure = useCallback(() => {
-    const el = scrollRef.current;
-    if (el) setOverflowing(el.scrollHeight > el.clientHeight + 1);
-  }, []);
-
-  useEffect(() => {
-    measure();
-    // Lưới cân chiều cao các thẻ sau khi bố cục xong, và chữ xuống dòng lại mỗi khi
-    // bề ngang đổi — cả hai đều có thể bật/tắt trạng thái cuộn sau lần đo đầu.
-    const el = scrollRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [measure]);
-
   return (
-    <span className={`flip-card-face rounded-xl border-2 p-4 pb-7 pr-9 ${className}`}>
-      <span ref={scrollRef} className={`w-full overflow-y-auto ${FACE_SCROLL_MAX}`}>
+    <span
+      aria-hidden={hidden || undefined}
+      className={`flip-card-face rounded-xl border-2 p-4 pb-7 pr-9 ${className}`}
+    >
+      <span className="block w-full">
         <CardFace face={face} />
       </span>
-      {overflowing && (
-        // Không có dải này thì thẻ chạm trần trông như bị cắt mất chữ, vì trên mobile
-        // thanh cuộn chỉ hiện lúc đang cuộn.
-        <span
-          aria-hidden="true"
-          className={`pointer-events-none absolute inset-x-0 bottom-0 h-8 rounded-b-xl bg-gradient-to-t ${fadeClass} to-transparent`}
-        />
-      )}
       {seen && (
-        <span className="absolute top-2 right-2 text-green-500">
-          <Check className="w-4 h-4" />
+        <span className="absolute top-2 right-2 text-green-700">
+          <Check className="w-4 h-4" aria-hidden="true" />
         </span>
       )}
-      <span className="absolute bottom-2 right-3 text-[11px] text-gray-400">{label}</span>
+      <span className="absolute bottom-2 right-3 text-xs text-gray-600">{label}</span>
     </span>
   );
 }
@@ -113,6 +94,8 @@ export default function FlipCardBlockComponent({ block, onComplete }: Props) {
   const [flipped, setFlipped] = useState<Record<string, boolean>>({});
   /** Cards flipped at least once — this, not `flipped`, is what unlocks Continue. */
   const [seen, setSeen] = useState<Record<string, boolean>>({});
+
+  const [message, announce] = useAnnouncer();
 
   const seenCount = Object.keys(seen).length;
   // A block with no cards has nothing to flip — completing immediately beats
@@ -125,15 +108,24 @@ export default function FlipCardBlockComponent({ block, onComplete }: Props) {
   }, [finished]);
 
   const toggle = (id: string) => {
+    const card = block.cards.find((c) => c.id === id);
+    const nowFlipped = !flipped[id];
     setFlipped((prev) => ({ ...prev, [id]: !prev[id] }));
     setSeen((prev) => (prev[id] ? prev : { ...prev, [id]: true }));
+    // Trình đọc màn hình chỉ báo "đã nhấn", không tự đọc lại tên nút — nên đọc mặt vừa lật ra.
+    if (card) {
+      const count = seen[id] ? seenCount : seenCount + 1;
+      announce(
+        `${nowFlipped ? 'Mặt sau' : 'Mặt trước'}: ${faceText(nowFlipped ? card.back : card.front)}. Đã xem ${count}/${block.cards.length} thẻ.`
+      );
+    }
   };
 
   return (
     <BlockShell>
       <div className="flex items-center gap-2 mb-1">
-        <SquareStack className="w-5 h-5 text-pink-500" />
-        <h3 className="font-semibold text-gray-900">{block.title || 'Lật thẻ'}</h3>
+        <SquareStack className="w-5 h-5 text-pink-500" aria-hidden="true" />
+        <h2 className="font-semibold text-gray-900">{block.title || 'Lật thẻ'}</h2>
       </div>
       <p className="text-sm text-gray-500 mb-4">
         {block.instruction || 'Chạm vào từng thẻ để xem nội dung phía sau.'}
@@ -161,31 +153,34 @@ export default function FlipCardBlockComponent({ block, onComplete }: Props) {
               aria-pressed={isFlipped}
               className={`flip-card ${isFlipped ? 'is-flipped' : ''}`}
             >
-              <div className="flip-card-inner">
+              {/* <span> chứ không phải <div>: trong <button> chỉ được chứa phần tử dòng. */}
+              <span className="flip-card-inner">
                 <Face
                   face={card.front}
                   label="Mặt trước"
                   seen={seen[card.id]}
+                  hidden={isFlipped}
                   className="border-gray-200 bg-gray-50 text-gray-800"
-                  fadeClass="from-gray-50"
                 />
                 <Face
                   face={card.back}
                   label="Mặt sau"
                   seen={seen[card.id]}
+                  hidden={!isFlipped}
                   className="flip-card-back border-pink-300 bg-pink-50 text-pink-900"
-                  fadeClass="from-pink-50"
                 />
-              </div>
+              </span>
             </button>
           );
         })}
       </div>
 
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       <div className="mt-4 text-sm">
         {finished ? (
-          <span className="flex items-center gap-1.5 font-medium text-green-600">
-            <Check className="w-4 h-4" />
+          <span className="flex items-center gap-1.5 font-medium text-green-700">
+            <Check className="w-4 h-4" aria-hidden="true" />
             Đã xem hết {block.cards.length} thẻ!
           </span>
         ) : (

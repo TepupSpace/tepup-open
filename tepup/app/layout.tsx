@@ -1,17 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Andika, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./reader.css";
+import { READER_PREFS_SCRIPT } from "@/lib/reader-prefs";
 import Providers from "@/components/Providers";
 import PwaBootstrap from "@/components/pwa/PwaBootstrap";
 
+// "vietnamese": thiếu tập này thì chữ có dấu (ế, ộ, ữ…) rơi về Arial, lệch nét
+// giữa chữ có dấu và không dấu trong cùng một từ.
 const geistSans = Geist({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  subsets: ["latin", "vietnamese"],
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Phông "dễ đọc" của tuỳ chọn đọc (lib/reader-prefs.ts): thiết kế cho người mới
+// biết chữ, phân biệt rõ I/l/1 và b/d/p/q, có đủ dấu tiếng Việt (OpenDyslexic và
+// Atkinson Hyperlegible thì không). `preload: false`: chỉ tải khi người học bật.
+const andika = Andika({
+  variable: "--font-andika",
+  weight: ["400", "700"],
+  subsets: ["latin", "vietnamese"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -58,9 +72,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi">
+    // suppressHydrationWarning: script dưới đây đặt `data-reader-*` lên <html>
+    // trước khi React hydrate, nên thuộc tính lệch với HTML server là chủ ý.
+    <html lang="vi" suppressHydrationWarning>
+      <head>
+        {/* Áp tuỳ chọn đọc trước khi vẽ trang, tránh loé nền sáng ở chế độ tối. */}
+        <script dangerouslySetInnerHTML={{ __html: READER_PREFS_SCRIPT }} />
+      </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}
+        className={`${geistSans.variable} ${geistMono.variable} ${andika.variable} antialiased bg-white`}
       >
         <a
           href="#main-content"

@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import BackButton from '@/components/BackButton';
@@ -61,6 +62,14 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 
 interface CoursePageProps {
   params: Promise<{ slug: string }>;
+}
+
+// Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
+// document.title đổi. Hàm lấy dữ liệu đã được cache nên không tốn thêm query.
+export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const course = await getCourseBySlug(slug);
+  return course ? { title: `${course.name} | Tepup` } : {};
 }
 
 export default async function CoursePage({ params }: CoursePageProps) {

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import type { PerspectiveSwitchBlock as PerspectiveSwitchBlockType } from '@/lib/types/content';
 import { Users, Check, X, Eye } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import BlockShell from './BlockShell';
+import { toPlainText, useAnnouncer, useFocusAfterRender } from './useAnnouncer';
 
 interface Props {
   block: PerspectiveSwitchBlockType;
@@ -40,11 +41,20 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
   const [readTabs, setReadTabs] = useState<Set<string>>(new Set([block.perspectives[0]?.id || '']));
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [checked, setChecked] = useState(false);
+  const [message, announce] = useAnnouncer();
+  const uid = useId();
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const resultRef = useRef<HTMLDivElement>(null);
+  const focusAfterRender = useFocusAfterRender();
 
   const allRead = readTabs.size === block.perspectives.length;
 
   const handleTabClick = (id: string) => {
     setActiveTab(id);
+    if (!readTabs.has(id) && readTabs.size + 1 === block.perspectives.length) {
+      // Câu hỏi mở ra phía dưới, ngoài chỗ đang focus — phải báo thì mới biết.
+      announce('Đã đọc hết các góc nhìn. Câu hỏi đã mở bên dưới.');
+    }
     setReadTabs(prev => {
       const next = new Set(prev);
       next.add(id);
@@ -52,17 +62,40 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
     });
   };
 
+  /** Mẫu tab chuẩn: mũi tên trái/phải chuyển tab (vòng tròn), Home/End về đầu/cuối. */
+  const handleTabKeyDown = (e: React.KeyboardEvent, index: number) => {
+    const count = block.perspectives.length;
+    let next: number;
+    if (e.key === 'ArrowRight') next = (index + 1) % count;
+    else if (e.key === 'ArrowLeft') next = (index - 1 + count) % count;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = count - 1;
+    else return;
+    e.preventDefault();
+    handleTabClick(block.perspectives[next].id);
+    tabRefs.current[next]?.focus();
+  };
+
   const isCorrect = checked && block.question.options.find(o => o.id === selectedAnswer)?.isCorrect;
 
   // Completion is gated on answering, not on answering correctly — same rule as a
   // plain question block. Options lock after checking, so requiring a correct answer
   // would strand anyone who picks wrong with no way to continue the lesson.
+  // Nút "Kiểm tra" biến mất khi bấm; focus chuyển sang ô kết quả thay chỗ nó, và
+  // trình đọc màn hình đọc kết quả từ chính ô đó (nên không đẩy vào vùng live nữa).
   const handleCheck = () => {
     setChecked(true);
     onComplete?.();
+    focusAfterRender(() => resultRef.current);
   };
 
-  const activePerspective = block.perspectives.find(p => p.id === activeTab);
+  const correctAnswers = block.question.options
+    .filter(o => o.isCorrect)
+    .map(o => toPlainText(o.text).replace(/[.!?…]+$/, ''))
+    .join('; ');
+
+  const activeIndex = block.perspectives.findIndex(p => p.id === activeTab);
+  const activePerspective = block.perspectives[activeIndex];
 
   // Icon/color per role for visual distinction
   const roleColors = ['bg-blue-100 text-blue-700 border-blue-300', 'bg-rose-100 text-rose-700 border-rose-300', 'bg-amber-100 text-amber-700 border-amber-300', 'bg-purple-100 text-purple-700 border-purple-300'];
@@ -72,7 +105,7 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Users className="w-6 h-6 text-violet-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Đa góc nhìn'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Đa góc nhìn'}</h2>
       </div>
 
       {/* Event description */}
@@ -80,8 +113,12 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
         <p className="text-gray-800 leading-relaxed font-medium">{renderInlineMarkdown(block.event)}</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4 overflow-x-auto pb-1 scrollbar-none snap-x snap-mandatory">
+      {/* Tabs — chọn một góc nhìn thì bảng bên dưới đổi nội dung, đúng mẫu tablist. */}
+      <div
+        role="tablist"
+        aria-label="Các góc nhìn"
+        className="flex flex-wrap gap-2 mb-4"
+      >
         {block.perspectives.map((p, i) => {
           const isActive = activeTab === p.id;
           const isRead = readTabs.has(p.id);
@@ -91,9 +128,20 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
           return (
             <button
               key={p.id}
+              ref={el => {
+                tabRefs.current[i] = el;
+              }}
+              type="button"
+              role="tab"
+              id={`${uid}-tab-${i}`}
+              aria-selected={isActive}
+              aria-controls={`${uid}-panel`}
+              // Chỉ tab đang chọn nằm trong thứ tự Tab; các tab khác đi bằng mũi tên.
+              tabIndex={isActive ? 0 : -1}
               onClick={() => handleTabClick(p.id)}
+              onKeyDown={e => handleTabKeyDown(e, i)}
               className={`
-                flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-medium text-sm transition-all whitespace-nowrap snap-start
+                flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-medium text-sm transition-all text-left
                 ${isActive
                   ? `${colorClass} border-current shadow-sm`
                   : isRead
@@ -102,9 +150,10 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
                 }
               `}
             >
-              {tabIcon && <span className="text-lg">{tabIcon}</span>}
+              {tabIcon && <span className="text-lg" aria-hidden="true">{tabIcon}</span>}
               <span>{p.role}</span>
-              {isRead && !isActive && <Eye className="w-3.5 h-3.5 text-green-500" aria-hidden="true" />}
+              {isRead && !isActive && <Eye className="w-3.5 h-3.5 text-green-700" aria-hidden="true" />}
+              {isRead && !isActive && <span className="sr-only">(đã đọc)</span>}
             </button>
           );
         })}
@@ -123,12 +172,17 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
 
       {/* Active perspective content */}
       {activePerspective && (
-        <div className="bg-white/80 rounded-xl p-5 mb-4 border border-violet-100 animate-fade-in">
+        <div
+          role="tabpanel"
+          id={`${uid}-panel`}
+          aria-labelledby={`${uid}-tab-${activeIndex}`}
+          className="bg-white/80 rounded-xl p-5 mb-4 border border-violet-100 animate-fade-in"
+        >
           <div className="flex items-center gap-2 mb-3">
             {resolveIcon(activePerspective.icon) && (
-              <span className="text-2xl">{resolveIcon(activePerspective.icon)}</span>
+              <span className="text-2xl" aria-hidden="true">{resolveIcon(activePerspective.icon)}</span>
             )}
-            <h4 className="font-bold text-gray-900">{activePerspective.role}</h4>
+            <h3 className="font-bold text-gray-900">{activePerspective.role}</h3>
           </div>
           <p className="text-gray-700 leading-relaxed whitespace-pre-line">
             {renderInlineMarkdown(activePerspective.narrative)}
@@ -139,9 +193,9 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
       {/* Question (unlocked only after reading all) */}
       {allRead ? (
         <div className="bg-white/60 rounded-xl p-4 border-2 border-violet-200">
-          <p className="text-gray-900 font-medium mb-3">{renderInlineMarkdown(block.question.text)}</p>
+          <p id={`${uid}-question`} className="text-gray-900 font-medium mb-3">{renderInlineMarkdown(block.question.text)}</p>
 
-          <div className="space-y-2">
+          <div role="group" aria-labelledby={`${uid}-question`} className="space-y-2">
             {block.question.options.map((option) => {
               const isSelected = selectedAnswer === option.id;
               const showCorrect = checked && option.isCorrect;
@@ -150,8 +204,10 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
               return (
                 <button
                   key={option.id}
+                  type="button"
                   onClick={() => !checked && setSelectedAnswer(option.id)}
                   disabled={checked}
+                  aria-pressed={isSelected}
                   className={`
                     w-full p-3 text-left rounded-xl border-2 transition-all text-sm
                     ${showCorrect ? 'border-green-500 bg-green-50'
@@ -162,8 +218,8 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
                     ${checked ? 'cursor-default' : 'cursor-pointer'}
                   `}
                 >
-                  <div className="flex items-center gap-2">
-                    <div className={`
+                  <span className="flex items-center gap-2">
+                    <span className={`
                       w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0
                       ${showCorrect ? 'border-green-500 bg-green-500'
                         : showWrong ? 'border-red-500 bg-red-500'
@@ -172,12 +228,15 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
                     `}>
                       {showCorrect && <Check className="w-3 h-3 text-white" aria-hidden="true" />}
                       {showWrong && <X className="w-3 h-3 text-white" aria-hidden="true" />}
-                      {isSelected && !checked && <div className="w-1.5 h-1.5 bg-white rounded-full" />}
-                    </div>
+                      {isSelected && !checked && <span className="w-1.5 h-1.5 bg-white rounded-full" />}
+                    </span>
                     <span className={`${showCorrect ? 'text-green-700 font-medium' : showWrong ? 'text-red-700' : isSelected ? 'text-violet-700 font-medium' : 'text-gray-700'}`}>
                       {renderInlineMarkdown(option.text)}
+                      {/* Màu và icon không tới được trình đọc màn hình — nói rõ bằng chữ. */}
+                      {showCorrect && <span className="sr-only"> — đáp án đúng</span>}
+                      {showWrong && <span className="sr-only"> — bạn chọn, sai</span>}
                     </span>
-                  </div>
+                  </span>
                 </button>
               );
             })}
@@ -185,6 +244,7 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
 
           {!checked && selectedAnswer && (
             <button
+              type="button"
               onClick={handleCheck}
               className="mt-3 px-6 py-2.5 bg-violet-600 text-white font-semibold rounded-xl hover:bg-violet-700 transition-colors"
             >
@@ -193,8 +253,14 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
           )}
 
           {checked && (
-            <div className={`mt-4 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`} aria-live="polite">
+            <div
+              ref={resultRef}
+              tabIndex={-1}
+              className={`mt-4 p-4 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-blue-50 border border-blue-200'}`}
+            >
               <p className={`${isCorrect ? 'text-green-700' : 'text-blue-700'} leading-relaxed`}>
+                {/* Người nhìn thấy đáp án đúng qua màu các lựa chọn; người nghe cần câu này. */}
+                {!isCorrect && <span className="sr-only">Chưa đúng. Đáp án đúng: {correctAnswers}. </span>}
                 <span className="font-semibold">{isCorrect ? 'Chính xác! ' : 'Giải thích: '}</span>
                 {renderInlineMarkdown(block.question.explanation)}
               </p>
@@ -203,10 +269,13 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
         </div>
       ) : (
         <div className="bg-gray-100 rounded-xl p-4 border-2 border-dashed border-gray-300 text-center">
-          <Lock className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-          <p className="text-gray-500 font-medium">Đọc tất cả {block.perspectives.length} góc nhìn để mở câu hỏi</p>
+          <Lock className="w-6 h-6 text-gray-500 mx-auto mb-2" />
+          <p className="text-gray-600 font-medium">Đọc tất cả {block.perspectives.length} góc nhìn để mở câu hỏi</p>
         </div>
       )}
+
+      {/* Vùng live luôn có mặt (ngoài phần câu hỏi vốn chỉ hiện sau khi đọc hết). */}
+      <p className="sr-only" aria-live="polite">{message}</p>
     </BlockShell>
   );
 }

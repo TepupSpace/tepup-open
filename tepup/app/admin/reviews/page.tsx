@@ -4,9 +4,11 @@ import Link from '@/components/ui/AppLink';
 import SuggestionQueue from '@/components/review/SuggestionQueue';
 import { CheckSquare, Clock, User } from 'lucide-react';
 
+export const metadata = { title: 'Duyệt nội dung' };
+
 const TYPE_LABELS: Record<string, string> = {
   NEW_COURSE: 'Khóa học mới',
-  NEW_LEVEL: 'Level mới',
+  NEW_LEVEL: 'Cấp độ mới',
   NEW_LESSON: 'Bài học mới',
   EDIT_LESSON_CONTENT: 'Chỉnh sửa bài học',
   EDIT_COURSE: 'Chỉnh sửa khóa học',
@@ -34,9 +36,11 @@ export default async function AdminReviewQueuePage() {
         </span>
       </div>
 
+      {/* Danh sách đóng góp và hàng đợi góp ý bên dưới là hai phần cùng cấp (h2). */}
+      <h2 className="sr-only">Đóng góp chờ duyệt</h2>
       {contributions.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <CheckSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+          <CheckSquare className="w-12 h-12 text-gray-500 mx-auto mb-3" />
           <p className="text-gray-500">Không có đóng góp nào cần duyệt.</p>
         </div>
       ) : (
@@ -59,7 +63,7 @@ export default async function AdminReviewQueuePage() {
                         <Clock className="w-3 h-3" />
                         Chờ duyệt
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs text-gray-500">
                         {TYPE_LABELS[contribution.type] || contribution.type}
                       </span>
                     </div>
@@ -77,7 +81,7 @@ export default async function AdminReviewQueuePage() {
                       )}
                     </div>
                   </div>
-                  <span className="text-sm text-blue-600 font-medium">
+                  <span className="text-sm text-blue-600 font-medium" aria-hidden="true">
                     Xem chi tiết →
                   </span>
                 </div>

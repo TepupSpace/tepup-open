@@ -61,8 +61,10 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
       hasScrolledRef.current = true;
       // Small delay to ensure DOM is fully rendered
       setTimeout(() => {
+        // Cuộn mượt bằng JS không chịu quy tắc CSS prefers-reduced-motion: tự kiểm tra.
+        const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
         currentLessonRef.current?.scrollIntoView({
-          behavior: 'smooth',
+          behavior: reduced ? 'auto' : 'smooth',
           block: 'center',
         });
       }, 150);
@@ -75,10 +77,11 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
         <div key={level.id} className="mb-12">
           {/* Level Header */}
           <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 text-center shadow-sm">
-            <span className="text-blue-500 text-sm font-semibold uppercase tracking-wide">
+            <span className="text-blue-600 text-sm font-semibold uppercase tracking-wide">
               Cấp độ {levelIndex + 1}
             </span>
-            <h3 className="text-lg font-bold text-gray-900 mt-1">{level.name}</h3>
+            {/* h2: ngay dưới h1 tên khoá, không nhảy cấp */}
+            <h2 className="text-lg font-bold text-gray-900 mt-1">{level.name}</h2>
           </div>
 
           {/* Lessons Path */}
@@ -118,6 +121,7 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
                       isActive={isCurrentLesson}
                       isCurrent={state.isCurrent}
                       isSkippingAhead={state.isSkippingAhead}
+                      isOpen={selectedLesson?.lesson.id === lesson.id}
                       onClick={() => setSelectedLesson({ lesson: lessonWithState, isSkippingAhead: state.isSkippingAhead })}
                     />
                   </div>

@@ -7,6 +7,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
+    "lint:a11y": "eslint -c eslint.a11y.config.mjs --max-warnings=0 app components",
     "postinstall": "prisma generate",
     "studio": "prisma studio"
   },

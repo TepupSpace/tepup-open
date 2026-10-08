@@ -7,6 +7,7 @@
 - [ ] `npx tsc --noEmit` passes (run from `tepup/`)
 - [ ] `npx tsx scripts/test-safe-expr.ts` and `scripts/test-image-sanitize.ts` pass
 - [ ] `npx tsx scripts/check-committed-media.ts --all` is clean: no EXIF/GPS or author metadata in any image or file I added
+- [ ] `npm run lint:a11y` passes, and for UI changes I went through the checklist in `docs/accessibility.md` (keyboard, screen-reader names, contrast, dark mode, text size)
 - [ ] No real names, locations, emails or secrets in code, comments, commits or screenshots
 - [ ] I agree my code is MIT-licensed and any lesson content is CC BY-SA 4.0
 

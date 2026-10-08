@@ -1,5 +1,7 @@
 'use client';
 
+import { useId } from 'react';
+
 export interface LessonMeta {
   title: string;
   slug: string;
@@ -16,46 +18,56 @@ interface Props {
 export default function LessonMetaPanel({ meta, onChange }: Props) {
   const set = <K extends keyof LessonMeta>(key: K, value: LessonMeta[K]) =>
     onChange({ ...meta, [key]: value });
+  const uid = useId();
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-20 space-y-4">
       <h2 className="text-sm font-semibold text-gray-900">Thông tin bài học</h2>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Tiêu đề <span className="text-red-500">*</span>
+        <label htmlFor={`${uid}-title`} className="block text-sm font-medium text-gray-700 mb-1">
+          Tiêu đề <span className="text-red-600" aria-hidden="true">*</span>
         </label>
         <input
+          id={`${uid}-title`}
+          aria-required="true"
           type="text"
           value={meta.title}
           onChange={(e) => set('title', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           placeholder="Tiêu đề bài học"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Slug</label>
+        <label htmlFor={`${uid}-slug`} className="block text-sm font-medium text-gray-700 mb-1">
+          Slug
+        </label>
         <input
+          id={`${uid}-slug`}
+          aria-describedby={`${uid}-slug-hint`}
           type="text"
           value={meta.slug}
           onChange={(e) => set('slug', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
           placeholder="tu-dong-tao-tu-ten-bai"
         />
-        <p className="mt-1 text-xs text-gray-500">
+        <p id={`${uid}-slug-hint`} className="mt-1 text-xs text-gray-500">
           Đây là địa chỉ bài học: /courses/&lt;khoá&gt;/&lt;slug&gt;. Để trống sẽ giữ nguyên slug hiện tại.
           Đổi slug sẽ làm link cũ ngừng hoạt động.
         </p>
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Thứ tự</label>
+        <label htmlFor={`${uid}-order`} className="block text-sm font-medium text-gray-700 mb-1">
+          Thứ tự
+        </label>
         <input
+          id={`${uid}-order`}
           type="number"
           value={meta.sortOrder}
           onChange={(e) => set('sortOrder', Number(e.target.value) || 0)}
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
         />
       </div>
 
@@ -64,7 +76,7 @@ export default function LessonMetaPanel({ meta, onChange }: Props) {
           type="checkbox"
           checked={meta.isActive}
           onChange={(e) => set('isActive', e.target.checked)}
-          className="w-4 h-4 rounded accent-blue-500"
+          className="w-4 h-4 rounded accent-blue-600"
         />
         <span className="text-sm text-gray-700">Hiển thị bài học (bỏ chọn để ẩn)</span>
       </label>

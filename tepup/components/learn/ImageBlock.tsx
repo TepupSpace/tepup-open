@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { isAllowedMediaUrl } from '@/lib/security/safe-url';
 import { BlockedMedia } from './BlockedMedia';
+import { imageAltText } from '@/lib/a11y/content-warnings';
 
 type ImageBlockProps = {
-  block: { type: 'image'; src: string; alt: string; caption?: string };
+  block: { type: 'image'; src: string; alt: string; caption?: string; decorative?: boolean };
   /** Gọi khi ảnh đã tải xong (hoặc lỗi) — lúc này chiều cao khối mới là thật. */
   onSettled?: () => void;
 };
@@ -13,7 +14,7 @@ type ImageBlockProps = {
 export function ImageBlockComponent({ block, onSettled }: ImageBlockProps) {
   // Ảnh ngoài allowlist là tracking pixel tiềm năng: không bao giờ để trình duyệt tải.
   if (!isAllowedMediaUrl(block.src)) {
-    return <BlockedMedia kind="image" label={block.alt} onSettled={onSettled} />;
+    return <BlockedMedia kind="image" label={imageAltText(block)} onSettled={onSettled} />;
   }
   return <AllowedImage block={block} onSettled={onSettled} />;
 }
@@ -21,6 +22,8 @@ export function ImageBlockComponent({ block, onSettled }: ImageBlockProps) {
 function AllowedImage({ block, onSettled }: ImageBlockProps) {
   const imgRef = useRef<HTMLImageElement>(null);
   const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  // Ảnh trang trí → ""; thiếu mô tả → chú thích; không bao giờ là tên tệp.
+  const alt = imageAltText(block);
 
   const settle = (next: 'loaded' | 'error') => {
     setState(next);
@@ -49,14 +52,17 @@ function AllowedImage({ block, onSettled }: ImageBlockProps) {
         )}
         {state === 'error' ? (
           <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
-            Không tải được ảnh{block.alt ? `: ${block.alt}` : ''}
+            Không tải được ảnh{alt ? `: ${alt}` : ''}
           </div>
         ) : (
+          // onLoad/onError là sự kiện tải ảnh, không phải tương tác của người học.
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
           <img
             ref={imgRef}
             src={block.src}
-            alt={block.alt}
-            className={`rounded-xl w-full ${state === 'loaded' ? '' : 'absolute inset-0 opacity-0'}`}
+            alt={alt}
+            // content-image: in dark mode reader.css puts a white backing behind it (diagrams).
+            className={`content-image rounded-xl w-full ${state === 'loaded' ? '' : 'absolute inset-0 opacity-0'}`}
             onLoad={() => settle('loaded')}
             onError={() => settle('error')}
           />

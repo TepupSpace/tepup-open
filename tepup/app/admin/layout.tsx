@@ -7,7 +7,9 @@ import DesktopOnlyNotice from '@/components/mobile/DesktopOnlyNotice';
 import { SessionProvider } from 'next-auth/react';
 
 export const metadata = {
-  title: 'Admin - Tepup',
+  // Trang con đặt `metadata.title` riêng ("Khoá học", "Bản nháp"…): mỗi trang một tiêu đề, để
+  // trình đọc màn hình đọc được khi chuyển trang (Next chỉ thông báo khi tiêu đề đổi).
+  title: { default: 'Quản trị | Tepup', template: '%s — Quản trị | Tepup' },
   description: 'Quản trị nội dung Tepup',
 };
 
@@ -27,11 +29,12 @@ export default async function AdminLayout({
   return (
     <SessionProvider>
       <DesktopOnlyNotice />
-      <div className="min-h-screen bg-gray-50">
+      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học. */}
+      <div className="reader min-h-screen bg-gray-50">
         <AdminSidebar />
         <div className="lg:pl-64 transition-all duration-300">
           <AdminHeader />
-          <main className="p-6">{children}</main>
+          <main id="main-content" className="p-6">{children}</main>
         </div>
       </div>
     </SessionProvider>

@@ -63,6 +63,11 @@ body {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  /* Tab tới phần tử nằm dưới header/chân trang dính thì trình duyệt cuộn chừa
+     chỗ cho chúng, thay vì để phần tử đang focus bị che (WCAG 2.4.11).
+     --bottom-chrome do từng màn khai báo qua useBottomChrome. */
+  scroll-padding-top: 5rem;
+  scroll-padding-bottom: calc(var(--bottom-chrome, 0rem) + var(--safe-bottom, 0px) + 1rem);
 }
 
 /* Custom scrollbar */

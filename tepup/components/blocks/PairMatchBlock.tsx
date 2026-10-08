@@ -1,11 +1,12 @@
 'use client';
 
-import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { Check, Waypoints } from 'lucide-react';
 import type { PairMatchBlock as PairMatchBlockType } from '@/lib/types/content';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
 import { seededShuffle } from '@/lib/utils/seededShuffle';
 import BlockShell from './BlockShell';
+import { toPlainText, useAnnouncer } from './useAnnouncer';
 
 interface Props {
   block: PairMatchBlockType;
@@ -32,6 +33,7 @@ function Item({
   colorClass,
   onClick,
   disabled,
+  buttonRef,
 }: {
   text: string;
   state: ItemState;
@@ -39,6 +41,7 @@ function Item({
   colorClass?: string;
   onClick: () => void;
   disabled: boolean;
+  buttonRef?: (el: HTMLButtonElement | null) => void;
 }) {
   const look =
     state === 'solved'
@@ -53,6 +56,7 @@ function Item({
 
   return (
     <button
+      ref={buttonRef}
       type="button"
       onClick={onClick}
       disabled={disabled}
@@ -76,6 +80,11 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
   const [solved, setSolved] = useState<Record<string, number>>({});
   const [selectedLeft, setSelectedLeft] = useState<string | null>(null);
   const [wrongPair, setWrongPair] = useState<{ left: string; right: string } | null>(null);
+  const [message, announce] = useAnnouncer();
+  /** Nút cột trái theo pair id — sau mỗi lần nối, mục bên phải vừa bấm bị tắt nên
+   *  focus phải được trả về cột trái thay vì rơi mất. */
+  const leftRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+  const focusAfterRender = useRef<string | null>(null);
 
   // Seeded from the pair ids so server and client agree — see seededShuffle.
   const rightColumn = useMemo(
@@ -94,6 +103,13 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [finished]);
 
+  useEffect(() => {
+    const id = focusAfterRender.current;
+    if (!id) return;
+    focusAfterRender.current = null;
+    leftRefs.current[id]?.focus();
+  });
+
   const handleLeftClick = (pairId: string) => {
     if (solved[pairId]) return;
     setWrongPair(null);
@@ -107,13 +123,28 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
       setSolved((prev) => ({ ...prev, [pairId]: Object.keys(prev).length + 1 }));
       setSelectedLeft(null);
       setWrongPair(null);
+      const pair = block.pairs.find((p) => p.id === pairId);
+      const done = solvedCount + 1;
+      announce(
+        `Đúng: "${toPlainText(pair?.left)}" với "${toPlainText(pair?.right)}". ` +
+          (done === block.pairs.length ? 'Đã nối đúng tất cả!' : `Đã nối đúng ${done}/${block.pairs.length}.`)
+      );
+      // Focus sang mục bên trái kế tiếp chưa nối (vòng lại từ đầu nếu cần).
+      const row = block.pairs.findIndex((p) => p.id === pairId);
+      const next = [...block.pairs.slice(row + 1), ...block.pairs.slice(0, row)].find(
+        (p) => !solved[p.id]
+      );
+      focusAfterRender.current = next?.id ?? null;
       return;
     }
 
     // Wrong: flash both sides, then release so the learner can try again freely.
+    // Chớp đỏ không tới được trình đọc màn hình — báo bằng lời, rồi trả focus về mục trái.
     setWrongPair({ left: selectedLeft, right: pairId });
+    focusAfterRender.current = selectedLeft;
     setSelectedLeft(null);
     window.setTimeout(() => setWrongPair(null), 600);
+    announce(`Sai cặp, thử lại. Đã nối đúng ${solvedCount}/${block.pairs.length}.`);
   };
 
   const colorFor = (pairId: string) => PAIR_COLORS[(solved[pairId] - 1) % PAIR_COLORS.length];
@@ -121,8 +152,8 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
   return (
     <BlockShell>
       <div className="flex items-center gap-2 mb-1">
-        <Waypoints className="w-5 h-5 text-sky-500" />
-        <h3 className="font-semibold text-gray-900">{block.title || 'Nối cặp'}</h3>
+        <Waypoints className="w-5 h-5 text-sky-500" aria-hidden="true" />
+        <h2 className="font-semibold text-gray-900">{block.title || 'Nối cặp'}</h2>
       </div>
       <p className="text-sm text-gray-500 mb-4">
         {block.instruction || 'Chạm một mục bên trái, rồi chạm mục tương ứng bên phải.'}
@@ -154,6 +185,9 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
                 colorClass={solved[leftPair.id] ? colorFor(leftPair.id) : undefined}
                 onClick={() => handleLeftClick(leftPair.id)}
                 disabled={Boolean(solved[leftPair.id])}
+                buttonRef={(el) => {
+                  leftRefs.current[leftPair.id] = el;
+                }}
               />
               <Item
                 text={rightPair.right}
@@ -176,10 +210,12 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
         })}
       </div>
 
+      <p className="sr-only" aria-live="polite">{message}</p>
+
       <div className="mt-4 flex items-center gap-2 text-sm">
         {finished ? (
-          <span className="flex items-center gap-1.5 font-medium text-green-600">
-            <Check className="w-4 h-4" />
+          <span className="flex items-center gap-1.5 font-medium text-green-700">
+            <Check className="w-4 h-4" aria-hidden="true" />
             Đã nối đúng tất cả!
           </span>
         ) : (

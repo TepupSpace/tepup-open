@@ -1,0 +1,6 @@
+node_modules/
+results/
+urls.json
+.auth/
+full-run.log
+results-full/

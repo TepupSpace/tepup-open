@@ -1,23 +1,28 @@
 'use client';
 
+import { useId } from 'react';
 import { useAIChat } from '@/lib/contexts/AIChatContext';
 import { PERSONAS, PERSONA_ORDER, MODEL_OPTIONS } from '@/lib/ai/personas';
 
 export default function AIChatSettings() {
   const { settings, updateModel, updatePersona } = useAIChat();
+  const modelHeadingId = useId();
+  const personaHeadingId = useId();
 
+  // aria-pressed: the chosen option is otherwise shown only by colour.
   return (
     <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
       {/* Model selection: hidden while there is only one model to choose */}
       {MODEL_OPTIONS.length > 1 && <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          Model AI
+        <h3 id={modelHeadingId} className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Mô hình AI
         </h3>
-        <div className="space-y-2">
+        <div role="group" aria-labelledby={modelHeadingId} className="space-y-2">
           {MODEL_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               onClick={() => updateModel(opt.id as Parameters<typeof updateModel>[0])}
+              aria-pressed={settings.model === opt.id}
               className={`
                 w-full text-left px-4 py-3 rounded-xl border-2 transition-all
                 ${settings.model === opt.id
@@ -37,10 +42,10 @@ export default function AIChatSettings() {
 
       {/* Persona selection */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+        <h3 id={personaHeadingId} className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
           Nhân vật AI
         </h3>
-        <div className="space-y-2">
+        <div role="group" aria-labelledby={personaHeadingId} className="space-y-2">
           {PERSONA_ORDER.map((personaId) => {
             const persona = PERSONAS[personaId];
             const isActive = settings.personaId === personaId;
@@ -48,6 +53,7 @@ export default function AIChatSettings() {
               <button
                 key={personaId}
                 onClick={() => updatePersona(personaId)}
+                aria-pressed={isActive}
                 className={`
                   w-full text-left px-4 py-3 rounded-xl border-2 transition-all
                   ${isActive
@@ -57,7 +63,7 @@ export default function AIChatSettings() {
                 `}
               >
                 <div className="flex items-center gap-3">
-                  <span className="text-xl leading-none">{persona.emoji}</span>
+                  <span className="text-xl leading-none" aria-hidden="true">{persona.emoji}</span>
                   <div>
                     <p className={`text-sm font-medium ${isActive ? 'text-blue-700' : 'text-gray-800'}`}>
                       {persona.name}
@@ -65,7 +71,7 @@ export default function AIChatSettings() {
                     <p className="text-xs text-gray-500 mt-0.5">{persona.label}</p>
                   </div>
                   {isActive && (
-                    <div className="ml-auto w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                    <div className="ml-auto w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" aria-hidden="true" />
                   )}
                 </div>
               </button>

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import StoryCard from '@/components/StoryCard';
@@ -35,6 +36,14 @@ interface StoryPageProps {
   params: Promise<{ characterId: string }>;
 }
 
+// Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
+// document.title đổi. Hàm lấy dữ liệu đã được cache nên không tốn thêm query.
+export async function generateMetadata({ params }: StoryPageProps): Promise<Metadata> {
+  const { characterId } = await params;
+  const character = await getCharacterBySlug(characterId);
+  return character ? { title: `Câu chuyện của ${character.name} | Tepup` } : {};
+}
+
 export default async function StoryPage({ params }: StoryPageProps) {
   const { characterId } = await params;
   const [character, characterStories] = await Promise.all([
@@ -52,7 +61,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
   const colorClasses: Record<string, { bg: string; text: string; iconBg: string; gradientFrom: string; gradientTo: string }> = {
     'text-teal-600': {
       bg: 'bg-teal-50',
-      text: 'text-teal-600',
+      text: 'text-teal-700',
       iconBg: 'bg-teal-100',
       gradientFrom: 'from-teal-500',
       gradientTo: 'to-emerald-500',
@@ -66,7 +75,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
     },
     'text-orange-600': {
       bg: 'bg-orange-50',
-      text: 'text-orange-600',
+      text: 'text-orange-700',
       iconBg: 'bg-orange-100',
       gradientFrom: 'from-orange-500',
       gradientTo: 'to-amber-500',
@@ -77,7 +86,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
 
   return (
     <div className="bg-gray-50">
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <BackButton fallbackUrl="/courses" />
 
@@ -99,7 +108,7 @@ export default async function StoryPage({ params }: StoryPageProps) {
               <h1 className="text-3xl font-bold text-gray-900 mb-1">{character.name}</h1>
               <p className={`text-lg font-medium ${colors.text} mb-3`}>{character.role}</p>
               <p className="text-gray-600 text-lg max-w-xl">
-                "{character.description}"
+                “{character.description}”
               </p>
             </div>
           </div>

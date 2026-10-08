@@ -13,6 +13,7 @@
  */
 import type { ContentBlock, ListItem, CheckListItem } from '@/lib/types/content';
 import { inlineToHtml, htmlToInline, type InlineContent } from './inline-html';
+import { authoredAlt } from '@/lib/a11y/content-warnings';
 
 // Minimal shape of a BlockNote block (subset of PartialBlock we read/write).
 export interface BNBlock {
@@ -89,6 +90,11 @@ function checkItemsToContent(children: BNBlock[] | undefined): CheckListItem[] {
   return items;
 }
 
+/** Optional text prop: '' (BlockNote's default) means "not set". */
+function optText(v: unknown): string | undefined {
+  return typeof v === 'string' && v.trim() ? v : undefined;
+}
+
 function tableRowsToContent(content: unknown): string[][] {
   const rows = (content as { rows?: Array<{ cells?: unknown[] }> } | undefined)?.rows ?? [];
   return rows.map((r) =>
@@ -115,14 +121,35 @@ function bnBlockToContent(b: BNBlock): ContentBlock | null {
       return withId({ type: 'code', language: (props.language as string) || undefined, code: inlineToText(b.content) });
     case 'toggleListItem':
       return withId({ type: 'toggle', html: inlineToHtml(asInline(b.content)), children: toContentBlocks(b.children ?? []) });
-    case 'table':
-      return withId({ type: 'table', rows: tableRowsToContent(b.content) });
-    case 'image':
-      return withId({ type: 'image', src: (props.url as string) || '', alt: (props.name as string) || (props.caption as string) || '', caption: (props.caption as string) || undefined });
+    case 'table': {
+      const headerRows = (b.content as { headerRows?: unknown } | undefined)?.headerRows;
+      return withId({
+        type: 'table',
+        rows: tableRowsToContent(b.content),
+        ...(typeof headerRows === 'number' && headerRows > 0 ? { headerRow: true } : {}),
+      });
+    }
+    case 'image': {
+      // `alt` and `decorative` are Tepup props (see blocknote/schema.ts). Never fall back
+      // to `name`: BlockNote fills it with the uploaded file's name.
+      const decorative = props.decorative === true;
+      return withId({
+        type: 'image',
+        src: (props.url as string) || '',
+        alt: decorative ? '' : optText(props.alt)?.trim() ?? '',
+        caption: (props.caption as string) || undefined,
+        ...(decorative ? { decorative: true } : {}),
+      });
+    }
     case 'video':
-      return withId({ type: 'video', url: (props.url as string) || '', caption: (props.caption as string) || undefined });
     case 'audio':
-      return withId({ type: 'audio', url: (props.url as string) || '', caption: (props.caption as string) || undefined });
+      return withId({
+        type: b.type,
+        url: (props.url as string) || '',
+        caption: (props.caption as string) || undefined,
+        captionsUrl: optText(props.captionsUrl)?.trim(),
+        transcript: optText(props.transcript),
+      });
     case 'file':
       return withId({ type: 'file', url: (props.url as string) || '', name: (props.name as string) || undefined, caption: (props.caption as string) || undefined });
     case 'step-break':
@@ -213,13 +240,13 @@ function contentBlockToBN(block: ContentBlock): BNBlock[] {
     case 'toggle':
       return [withId({ type: 'toggleListItem', content: htmlToInline(block.html), children: toBlockNote(block.children) })];
     case 'table':
-      return [withId({ type: 'table', content: { type: 'tableContent', rows: block.rows.map((cells) => ({ cells: cells.map((c) => htmlToInline(c)) })) } })];
+      return [withId({ type: 'table', content: { type: 'tableContent', ...(block.headerRow ? { headerRows: 1 } : {}), rows: block.rows.map((cells) => ({ cells: cells.map((c) => htmlToInline(c)) })) } })];
     case 'image':
-      return [withId({ type: 'image', props: { url: block.src, caption: block.caption ?? '', name: block.alt ?? '' } })];
+      // Older saves stored the file name as `alt`: it loads as "no description yet".
+      return [withId({ type: 'image', props: { url: block.src, caption: block.caption ?? '', name: block.alt ?? '', alt: block.decorative ? '' : authoredAlt(block.alt), decorative: block.decorative === true } })];
     case 'video':
-      return [withId({ type: 'video', props: { url: block.url, caption: block.caption ?? '' } })];
     case 'audio':
-      return [withId({ type: 'audio', props: { url: block.url, caption: block.caption ?? '' } })];
+      return [withId({ type: block.type, props: { url: block.url, caption: block.caption ?? '', captionsUrl: block.captionsUrl ?? '', transcript: block.transcript ?? '' } })];
     case 'file':
       return [withId({ type: 'file', props: { url: block.url, name: block.name ?? '', caption: block.caption ?? '' } })];
     case 'step-break':

@@ -61,7 +61,7 @@ export default function ErrorState({
         </div>
 
         {error.digest && (
-          <p className="mt-6 text-xs text-gray-400">Mã lỗi: {error.digest}</p>
+          <p className="mt-6 text-xs text-gray-500">Mã lỗi: {error.digest}</p>
         )}
       </div>
     </div>

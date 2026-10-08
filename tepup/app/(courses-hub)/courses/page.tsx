@@ -13,7 +13,14 @@ export default async function CoursesPage() {
     getCategories(),
     getCharacters(),
   ]);
-  const shelves = categories.filter((c) => c.courses.length > 0);
+  // Trang chỉ có hai khối: Câu chuyện và Chuyên đề. Mỗi danh mục trong DB là một
+  // nhóm có nhãn nhỏ bên trong khối Chuyên đề, không phải một khối riêng.
+  const groups = categories.map((c) => ({
+    id: c.slug,
+    label: c.name,
+    description: c.description,
+    courses: c.courses,
+  }));
 
   return (
     <main id="main-content" className="ch-main">
@@ -25,9 +32,12 @@ export default async function CoursesPage() {
       <div className="ch-shell ch-sections">
         <StoryShowcase characters={characters} />
 
-        {shelves.map((category, i) => (
-          <CourseShelf key={category.id} category={category} index={i} />
-        ))}
+        <CourseShelf
+          id="chuyen-de"
+          title={<>Học qua <em>Chuyên đề</em></>}
+          description="Đi sâu vào từng chủ đề qua các bài học ngắn, tương tác"
+          groups={groups}
+        />
 
         {/* Đặt ở cuối trang thay vì làm thanh chắn ngang màn hình: người đã cuộn tới
             đây là người đang thật sự tìm khoá học. Component tự ẩn khi đã cài, khi

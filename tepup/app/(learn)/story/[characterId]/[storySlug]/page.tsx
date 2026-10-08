@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import BackButton from '@/components/BackButton';
@@ -62,6 +63,15 @@ interface StoryDetailPageProps {
   params: Promise<{ characterId: string; storySlug: string }>;
 }
 
+// Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
+// document.title đổi. Hàm lấy dữ liệu đã được cache nên không tốn thêm query.
+export async function generateMetadata({ params }: StoryDetailPageProps): Promise<Metadata> {
+  const { characterId, storySlug } = await params;
+  const story = await getStoryBySlug(storySlug);
+  if (!story || story.characterId !== characterId) return {};
+  return { title: `${story.title} | Tepup` };
+}
+
 export default async function StoryDetailPage({ params }: StoryDetailPageProps) {
   const { characterId, storySlug } = await params;
 
@@ -89,7 +99,7 @@ export default async function StoryDetailPage({ params }: StoryDetailPageProps) 
   const colorClasses: Record<string, { bg: string; text: string; iconBg: string; gradientFrom: string; gradientTo: string; badge: string; border: string }> = {
     'text-teal-600': {
       bg: 'bg-teal-50',
-      text: 'text-teal-600',
+      text: 'text-teal-700',
       iconBg: 'bg-teal-100',
       gradientFrom: 'from-teal-500',
       gradientTo: 'to-emerald-500',
@@ -107,7 +117,7 @@ export default async function StoryDetailPage({ params }: StoryDetailPageProps) 
     },
     'text-orange-600': {
       bg: 'bg-orange-50',
-      text: 'text-orange-600',
+      text: 'text-orange-700',
       iconBg: 'bg-orange-100',
       gradientFrom: 'from-orange-500',
       gradientTo: 'to-amber-500',
@@ -121,7 +131,7 @@ export default async function StoryDetailPage({ params }: StoryDetailPageProps) 
   return (
     <div className="bg-gray-50">
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Button */}
         <BackButton fallbackUrl={`/story/${characterId}`} />
 
@@ -151,7 +161,7 @@ export default async function StoryDetailPage({ params }: StoryDetailPageProps) 
 
               {/* Story Teaser */}
               <p className="text-gray-600 mb-6 leading-relaxed">
-                "{story.teaser}"
+                “{story.teaser}”
               </p>
 
               {/* Stats */}
@@ -172,9 +182,10 @@ export default async function StoryDetailPage({ params }: StoryDetailPageProps) 
               <div className="mt-6">
                 <div className="flex items-center gap-2 mb-3">
                   <BookOpen className="w-4 h-4 text-blue-500" />
-                  <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  {/* h2: cùng cấp với các phần của lộ trình chương, ngay dưới h1 */}
+                  <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
                     Khoá học liên quan
-                  </h3>
+                  </h2>
                 </div>
                 <div className="space-y-3">
                   {validRelatedCourses.map((course) => {

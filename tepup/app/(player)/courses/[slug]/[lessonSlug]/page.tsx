@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getLessonPage } from '@/lib/services/content-service';
 import LessonRouteView from '@/components/learn/LessonRouteView';
@@ -27,6 +28,14 @@ export async function generateStaticParams() {
 
 interface LessonPageProps {
   params: Promise<{ slug: string; lessonSlug: string }>;
+}
+
+// Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
+// document.title đổi. Hàm lấy dữ liệu đã được cache nên không tốn thêm query.
+export async function generateMetadata({ params }: LessonPageProps): Promise<Metadata> {
+  const { slug, lessonSlug } = await params;
+  const data = await getLessonPage(slug, lessonSlug);
+  return data ? { title: `${data.lesson.name} — ${data.course.name} | Tepup` } : {};
 }
 
 export default async function LessonRoute({ params }: LessonPageProps) {

@@ -1,12 +1,26 @@
 import Link from '@/components/ui/AppLink';
 import LessonPlayer from '@/components/learn/LessonPlayer';
+import { getCourseBySlug } from '@/lib/services/content-service';
+import { itemAfter, type NextItemLink } from '@/lib/utils/next-item';
 import type { LessonPage } from '@/lib/types/content';
+
+/**
+ * Bài kế tiếp trong cả khoá (vượt qua ranh giới cấp độ), theo đúng thứ tự và bộ
+ * lọc `isActive` của trang khoá học. `getCourseBySlug` đã cache nên không tốn
+ * thêm truy vấn ở các lượt xem sau.
+ */
+async function nextLessonLink(data: LessonPage): Promise<NextItemLink | null> {
+  const course = await getCourseBySlug(data.course.slug);
+  if (!course) return null;
+  const next = itemAfter(course.levels.flatMap((lvl) => lvl.lessons), data.lesson.id);
+  return next ? { href: `/courses/${course.slug}/${next.slug}`, title: next.name } : null;
+}
 
 /**
  * Phần thân chung của trang bài học: route công khai (ISR) và route staff
  * (`/staff-view/...`, proxy.ts rewrite tới cho người đã đăng nhập) render y hệt nhau.
  */
-export default function LessonRouteView({
+export default async function LessonRouteView({
   data,
   isHidden = false,
 }: {
@@ -25,7 +39,7 @@ export default function LessonRouteView({
   // what previously made an unreachable lesson look like a real (fake) one.
   if (!data.content || data.content.blocks.length === 0) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center px-4">
+      <div className="reader min-h-screen bg-white flex items-center justify-center px-4">
         {hiddenBadge}
         <div className="text-center max-w-md">
           <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.lesson.name}</h1>
@@ -50,6 +64,7 @@ export default function LessonRouteView({
         title={data.content.title || data.lesson.name}
         blocks={data.content.blocks}
         exitHref={exitHref}
+        next={await nextLessonLink(data)}
       />
     </>
   );

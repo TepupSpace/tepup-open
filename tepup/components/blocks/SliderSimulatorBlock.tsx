@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import type { SliderSimulatorBlock as SliderSimulatorBlockType } from '@/lib/types/content';
 import { SlidersHorizontal, AlertCircle, Lightbulb, CheckCircle } from 'lucide-react';
 import { useBlockInteraction } from '@/lib/hooks/useBlockInteraction';
@@ -38,6 +38,11 @@ function barStyle(color: string | undefined): React.CSSProperties {
   return color && BAR_HEX.test(color) ? { backgroundColor: color } : {};
 }
 
+/** Giá trị thanh trượt kèm đơn vị — dùng cho cả chữ hiển thị lẫn aria-valuetext. */
+function formatSliderValue(value: number, unit?: string): string {
+  return `${value.toLocaleString('vi-VN')}${unit ? ` ${unit}` : ''}`;
+}
+
 function formatOutput(value: number, format?: 'number' | 'percent' | 'currency'): string {
   switch (format) {
     case 'percent':
@@ -58,6 +63,7 @@ export default function SliderSimulatorBlockComponent({ block, onComplete }: Pro
     return initial;
   });
   const { markInteracted } = useBlockInteraction(onComplete);
+  const sliderId = useId();
 
   const outputs = useMemo(() => {
     return block.outputs.map(o => ({
@@ -102,7 +108,7 @@ export default function SliderSimulatorBlockComponent({ block, onComplete }: Pro
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <SlidersHorizontal className="w-6 h-6 text-sky-600" aria-hidden="true" />
-        <h3 className="text-lg font-bold text-gray-900">{block.title || 'Mô phỏng'}</h3>
+        <h2 className="text-lg font-bold text-gray-900">{block.title || 'Mô phỏng'}</h2>
       </div>
 
       {block.description && (
@@ -111,15 +117,16 @@ export default function SliderSimulatorBlockComponent({ block, onComplete }: Pro
 
       {/* Sliders */}
       <div className="space-y-4 mb-6">
-        {block.sliders.map(slider => (
+        {block.sliders.map((slider, i) => (
           <div key={slider.id}>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-sm font-medium text-gray-700">{slider.label}</label>
+              <label htmlFor={`${sliderId}-${i}`} className="text-sm font-medium text-gray-700">{slider.label}</label>
               <span className="text-sm font-bold tabular-nums text-sky-700">
-                {(values[slider.id] ?? slider.defaultValue).toLocaleString('vi-VN')}{slider.unit ? ` ${slider.unit}` : ''}
+                {formatSliderValue(values[slider.id] ?? slider.defaultValue, slider.unit)}
               </span>
             </div>
             <input
+              id={`${sliderId}-${i}`}
               type="range"
               min={slider.min}
               max={slider.max}
@@ -127,11 +134,13 @@ export default function SliderSimulatorBlockComponent({ block, onComplete }: Pro
               value={values[slider.id]}
               onChange={e => handleSliderChange(slider.id, parseFloat(e.target.value))}
               aria-label={slider.label}
+              // Không có dòng này trình đọc màn hình chỉ đọc số trần, thiếu đơn vị.
+              aria-valuetext={formatSliderValue(values[slider.id] ?? slider.defaultValue, slider.unit)}
               className="range-touch w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sky-600 text-sky-600"
             />
-            <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-              <span>{slider.min.toLocaleString('vi-VN')}{slider.unit ? ` ${slider.unit}` : ''}</span>
-              <span>{slider.max.toLocaleString('vi-VN')}{slider.unit ? ` ${slider.unit}` : ''}</span>
+            <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+              <span>{formatSliderValue(slider.min, slider.unit)}</span>
+              <span>{formatSliderValue(slider.max, slider.unit)}</span>
             </div>
           </div>
         ))}
