@@ -78,7 +78,7 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
           {/* Level Header */}
           <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 text-center shadow-sm">
             <span className="text-blue-600 text-sm font-semibold uppercase tracking-wide">
-              Cấp độ {levelIndex + 1}
+              Chương {levelIndex + 1}
             </span>
             {/* h2: ngay dưới h1 tên khoá, không nhảy cấp */}
             <h2 className="text-lg font-bold text-gray-900 mt-1">{level.name}</h2>
