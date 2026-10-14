@@ -26,7 +26,10 @@ Category → Course → Level → Lesson → LessonContent.blocks (JSON)
 Character → Story → StoryPart → Chapter → ChapterContent.blocks (JSON)
 Course ⇄ Story via CourseStoryRecommendation
 LibraryDocument (reference articles, rendered server-side)
+LibraryEntry (topic, source, glossary term, acronym, tool) ⇄ LibraryLink; LibraryUsage (reverse index)
 ```
+
+Lessons and chapters link to library entries with `/tv/<slug>`; learners get a preview on hover/tap and a stacked side panel on click. See [`design-reference-library.md`](design-reference-library.md).
 
 All runtime content is stored in Postgres as JSON arrays of **blocks**. Block types are defined in [`tepup/lib/types/content.ts`](../tepup/lib/types/content.ts):
 

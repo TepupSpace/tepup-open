@@ -15,7 +15,7 @@ import { useBottomChrome } from '@/lib/hooks/useBottomChrome';
  */
 const tabs = [
   { href: '/courses', label: 'Khóa học', icon: BookOpen },
-  { href: '/library', label: 'Thư viện', icon: Library },
+  { href: '/thu-vien', label: 'Thư viện', icon: Library },
 ];
 
 export default function BottomTabBar() {

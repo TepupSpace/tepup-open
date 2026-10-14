@@ -18,8 +18,8 @@ const MAX_SLUG_LENGTH = 200;
 export interface DraftInput {
   title: string;
   blocks: unknown[];
-  /** Lesson settings for LESSON drafts; always null for chapters. */
-  meta: LessonDraftMeta | null;
+  /** Lesson settings for LESSON drafts; the whole entry form for LIBRARY_ENTRY; null for chapters. */
+  meta: LessonDraftMeta | Record<string, unknown> | null;
   baseUpdatedAt: Date | null;
 }
 
@@ -80,7 +80,18 @@ export function parseDraftBody(body: unknown, target: DraftTarget): ParseDraftRe
     return { ok: false, error: 'Bản nháp quá lớn để lưu' };
   }
 
-  let parsedMeta: LessonDraftMeta | null = null;
+  let parsedMeta: LessonDraftMeta | Record<string, unknown> | null = null;
+  // Mục thư viện: cả form của mục (đã gõ dở cũng được); chỉ kiểm tra dạng và cỡ. Kiểm tra
+  // đầy đủ chạy khi xuất bản (PUT /api/admin/library-entries/[id]).
+  if (target === 'LIBRARY_ENTRY') {
+    if (!isPlainObject(meta)) {
+      return { ok: false, error: 'Dữ liệu nháp của mục không hợp lệ' };
+    }
+    if (JSON.stringify(meta).length > MAX_BLOCKS_JSON_LENGTH) {
+      return { ok: false, error: 'Bản nháp quá lớn để lưu' };
+    }
+    parsedMeta = meta;
+  }
   if (target === 'LESSON' && meta !== undefined && meta !== null) {
     if (!isPlainObject(meta)) {
       return { ok: false, error: 'Cài đặt bài học không hợp lệ' };
@@ -131,7 +142,7 @@ export async function saveDraft<M = null>(
     title: input.title,
     blocks: input.blocks as Prisma.InputJsonValue,
     meta:
-      target === 'LESSON' && input.meta
+      (target === 'LESSON' || target === 'LIBRARY_ENTRY') && input.meta
         ? (input.meta as unknown as Prisma.InputJsonValue)
         : Prisma.DbNull,
     baseUpdatedAt: input.baseUpdatedAt,

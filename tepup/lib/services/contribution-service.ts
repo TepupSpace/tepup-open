@@ -3,6 +3,7 @@ import type { ContentBlock } from '@/components/admin/editor/BlockEditor';
 import { slugifyUnique } from '@/lib/utils/slug';
 import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import { isSupportedContributionType, validateContributionData } from '@/lib/schemas/content-validation';
+import { rebuildUsage } from '@/lib/library/usage-service';
 
 interface CourseContributionData {
   course: {
@@ -159,13 +160,15 @@ async function publishNewCourse(data: CourseContributionData, contributorId: str
         });
 
         if (lesson.content.blocks.length > 0 || lesson.content.title) {
+          const blocks = JSON.parse(JSON.stringify(trimEmptyBlocks(lesson.content.blocks).blocks));
           await tx.lessonContent.create({
             data: {
               lessonId: newLesson.id,
               title: lesson.content.title || lesson.name,
-              blocks: JSON.parse(JSON.stringify(trimEmptyBlocks(lesson.content.blocks).blocks)),
+              blocks,
             },
           });
+          await rebuildUsage(tx, 'LESSON', newLesson.id, blocks);
         }
       }
     }
@@ -173,12 +176,12 @@ async function publishNewCourse(data: CourseContributionData, contributorId: str
 }
 
 async function publishEditLessonContent(lessonId: string, data: { blocks: ContentBlock[] }) {
-  await prisma.lessonContent.update({
-    where: { lessonId },
-    data: {
-      // Empty lines would be blank steps in the player (lib/editor/trim-empty-blocks.ts).
-      blocks: JSON.parse(JSON.stringify(trimEmptyBlocks(data.blocks).blocks)),
-    },
+  // Empty lines would be blank steps in the player (lib/editor/trim-empty-blocks.ts).
+  const blocks = JSON.parse(JSON.stringify(trimEmptyBlocks(data.blocks).blocks));
+  await prisma.$transaction(async (tx) => {
+    await tx.lessonContent.update({ where: { lessonId }, data: { blocks } });
+    // "Xuất hiện trong" of every library entry the lesson links to.
+    await rebuildUsage(tx, 'LESSON', lessonId, blocks);
   });
 }
 

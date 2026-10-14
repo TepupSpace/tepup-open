@@ -9,6 +9,7 @@
  * Link (`<a href>`) chỉ gửi request khi người học tự bấm, nên được rộng hơn: mọi
  * http(s) và mailto — nhưng không bao giờ `javascript:`/`data:`/…
  */
+import { isTvHref } from '@/lib/library/refs';
 
 /**
  * Host media hợp lệ, kèm tiền tố đường dẫn bắt buộc.
@@ -70,9 +71,15 @@ export function isAllowedMediaUrl(url: unknown): url is string {
 /** Danh sách host media hợp lệ, để hiển thị trong thông báo lỗi. */
 export const ALLOWED_MEDIA_HOSTS_LABEL = MEDIA_HOSTS.map((h) => h.host + h.pathPrefix).join(', ');
 
-/** Link href hợp lệ trong rich text: chỉ http(s):// và mailto:. */
+/**
+ * Link href hợp lệ trong rich text: http(s)://, mailto:, và đúng một dạng link nội
+ * bộ là tham chiếu thư viện `/tv/<slug>` (xem lib/library/refs.ts — mẫu cố tình hẹp,
+ * không có đường dẫn con hay `..`). Mọi đường dẫn tương đối khác vẫn bị bỏ.
+ */
 export function isSafeLinkHref(href: unknown): href is string {
   if (typeof href !== 'string') return false;
+  // `as unknown`: không để type guard thu hẹp `href` thành never ở các dòng dưới.
+  if (isTvHref(href as unknown)) return true;
   const h = href.trim();
   if (!h || h.length > MAX_URL_LENGTH) return false;
   if (/[\u0000-\u001f\u007f]/.test(h)) return false;

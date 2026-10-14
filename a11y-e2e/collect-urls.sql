@@ -50,7 +50,7 @@ SELECT json_build_object(
     'character', (SELECT id FROM "Character" ORDER BY "sortOrder" LIMIT 1),
     'course', (SELECT id FROM "Course" WHERE "isActive" ORDER BY "sortOrder" LIMIT 1),
     'story', (SELECT id FROM "Story" WHERE "isActive" ORDER BY "sortOrder" LIMIT 1),
-    'library', (SELECT id FROM "LibraryDocument" LIMIT 1),
+    'library', (SELECT id FROM "LibraryEntry" ORDER BY slug LIMIT 1),
     'lesson', (SELECT lc."lessonId" FROM "LessonContent" lc WHERE lc.blocks::text LIKE '%"question"%' LIMIT 1),
     'chapter', (SELECT cc."chapterId" FROM "ChapterContent" cc WHERE jsonb_array_length(cc.blocks::jsonb) > 3 LIMIT 1)
   )

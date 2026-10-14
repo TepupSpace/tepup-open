@@ -7,7 +7,7 @@
 
 import type { ContentBlock } from './content';
 
-export type DraftTarget = 'LESSON' | 'CHAPTER';
+export type DraftTarget = 'LESSON' | 'CHAPTER' | 'LIBRARY_ENTRY';
 
 /** Lesson settings from the side panel. They take effect on publish, never on draft save. */
 export interface LessonDraftMeta {

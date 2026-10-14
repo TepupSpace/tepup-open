@@ -4,9 +4,16 @@ import { useCallback, useEffect, useState } from 'react';
 import { MessageSquareQuote, ExternalLink, PencilLine, Check, X, CheckCheck } from 'lucide-react';
 import { SUGGESTION_LIMITS, SUGGESTION_STATUS_LABELS, type SuggestionStatusValue } from '@/lib/suggestions';
 
+const TARGET_LABEL = {
+  LESSON: 'Bài học',
+  CHAPTER: 'Chương truyện',
+  LIBRARY_ENTRY: 'Thư viện',
+  NEW_ENTRY: 'Mục thư viện mới',
+} as const;
+
 interface SuggestionItem {
   id: string;
-  targetType: 'LESSON' | 'CHAPTER';
+  targetType: 'LESSON' | 'CHAPTER' | 'LIBRARY_ENTRY' | 'NEW_ENTRY';
   quote: string | null;
   proposal: string;
   reason: string | null;
@@ -103,7 +110,7 @@ export default function SuggestionQueue({ canEdit }: { canEdit: boolean }) {
                   {SUGGESTION_STATUS_LABELS[s.status]}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {s.targetType === 'LESSON' ? 'Bài học' : 'Chương truyện'} · {s.target.context}
+                  {TARGET_LABEL[s.targetType]} · {s.target.context}
                 </span>
                 <span className="text-xs text-gray-500">
                   · {new Date(s.createdAt).toLocaleDateString('vi-VN')}

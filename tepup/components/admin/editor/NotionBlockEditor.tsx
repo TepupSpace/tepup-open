@@ -6,6 +6,7 @@ import {
   useCreateBlockNote,
   SuggestionMenuController,
   FormattingToolbarController,
+  LinkToolbarController,
   getDefaultReactSlashMenuItems,
 } from '@blocknote/react';
 import { filterSuggestionItems } from '@blocknote/core';
@@ -13,6 +14,7 @@ import { vi as viDictionary } from '@blocknote/core/locales';
 import { tepupSchema } from './blocknote/schema';
 import { WidgetEditContext } from './blocknote/WidgetEditContext';
 import { TepupFormattingToolbar } from './blocknote/MediaAccessibilityButton';
+import { TepupLinkToolbar } from './blocknote/TepupLinkToolbar';
 import BlockEditDrawer from './BlockEditDrawer';
 import { EditorModeContext, CONTRIBUTOR_NO_UPLOAD_MESSAGE, type EditorMode } from './EditorModeContext';
 import {
@@ -414,10 +416,12 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
           theme={readerTheme}
           slashMenu={false}
           formattingToolbar={false}
+          linkToolbar={false}
           onChange={emitChange}
         >
           <SuggestionMenuController triggerCharacter="/" getItems={getSlashItems} />
           <FormattingToolbarController formattingToolbar={TepupFormattingToolbar} />
+          <LinkToolbarController linkToolbar={TepupLinkToolbar} />
         </BlockNoteView>
       </div>
 

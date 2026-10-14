@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { canReviewContent } from '@/lib/role-utils';
 import type { SuggestionStatus, UserRole } from '@prisma/client';
+import { TYPE_LABELS } from '@/lib/library/schemas';
 
 const STATUSES: SuggestionStatus[] = ['PENDING', 'ACCEPTED', 'APPLIED', 'REJECTED'];
 
@@ -28,9 +29,11 @@ export async function GET(req: NextRequest) {
     include: { reviewer: { select: { username: true } } },
   });
 
-  const lessonIds = suggestions.filter((s) => s.targetType === 'LESSON').map((s) => s.targetId);
-  const chapterIds = suggestions.filter((s) => s.targetType === 'CHAPTER').map((s) => s.targetId);
-  const [lessons, chapters] = await Promise.all([
+  // A new-term suggestion (NEW_ENTRY) points at the lesson or chapter it was made from.
+  const lessonIds = suggestions.filter((s) => s.targetType === 'LESSON' || s.targetType === 'NEW_ENTRY').map((s) => s.targetId);
+  const chapterIds = suggestions.filter((s) => s.targetType === 'CHAPTER' || s.targetType === 'NEW_ENTRY').map((s) => s.targetId);
+  const entryIds = suggestions.filter((s) => s.targetType === 'LIBRARY_ENTRY').map((s) => s.targetId);
+  const [lessons, chapters, entries] = await Promise.all([
     prisma.lesson.findMany({
       where: { id: { in: lessonIds } },
       select: { id: true, name: true, slug: true, course: { select: { name: true, slug: true } } },
@@ -44,13 +47,37 @@ export async function GET(req: NextRequest) {
         story: { select: { title: true, slug: true, character: { select: { slug: true } } } },
       },
     }),
+    prisma.libraryEntry.findMany({
+      where: { id: { in: entryIds } },
+      select: { id: true, slug: true, title: true, type: true },
+    }),
   ]);
+  const entryById = new Map(entries.map((e) => [e.id, e]));
   const lessonById = new Map(lessons.map((l) => [l.id, l]));
   const chapterById = new Map(chapters.map((c) => [c.id, c]));
 
   const items = suggestions.map((s) => {
     let target: { title: string; context: string; viewHref: string | null; editHref: string | null };
-    if (s.targetType === 'LESSON') {
+    if (s.targetType === 'LIBRARY_ENTRY') {
+      const e = entryById.get(s.targetId);
+      target = e
+        ? {
+            title: e.title,
+            context: `Mục thư viện · ${TYPE_LABELS[e.type]}`,
+            viewHref: `/thu-vien/muc/${e.slug}`,
+            editHref: `/admin/library-entries/${e.id}`,
+          }
+        : { title: '(mục thư viện đã bị xoá)', context: '', viewHref: null, editHref: null };
+    } else if (s.targetType === 'NEW_ENTRY') {
+      const l = lessonById.get(s.targetId);
+      const c = chapterById.get(s.targetId);
+      target = {
+        title: `Đề xuất ${TYPE_LABELS[s.suggestedType ?? 'CONCEPT'].toLowerCase()} mới`,
+        context: l ? `từ bài “${l.name}”` : c ? `từ chương “${c.title}”` : 'từ thư viện',
+        viewHref: l ? `/courses/${l.course.slug}/${l.slug}` : c ? `/story/${c.story.character.slug}/${c.story.slug}/${c.slug}` : null,
+        editHref: `/admin/library-entries/new?type=${s.suggestedType ?? 'CONCEPT'}`,
+      };
+    } else if (s.targetType === 'LESSON') {
       const l = lessonById.get(s.targetId);
       target = l
         ? {

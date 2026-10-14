@@ -1,17 +1,20 @@
 'use client';
 
-import { useState, useEffect, useId, useRef } from 'react';
-import FocusTrap from 'focus-trap-react';
-import { Plus, Trash2, Search, ExternalLink } from 'lucide-react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { Plus, Trash2, ExternalLink, BookOpen, AlertTriangle } from 'lucide-react';
 import type { LibraryDocumentBlock } from './BlockEditor';
+import ReferencePicker, { type PickedEntry } from './ReferencePicker';
 import { useEditorMode } from './EditorModeContext';
 
-interface LibraryDocument {
+/** Mục đang gắn với khối (từ /api/library/<id|slug>, lib/library/document-compat.ts). */
+interface Linked {
   id: string;
+  slug: string;
   title: string;
   description: string;
   category: string | null;
-  slug: string;
+  /** Có khi là mục thư viện; không có = tài liệu cũ chưa chuyển. */
+  entryType?: string;
 }
 
 interface LibraryDocumentBlockEditorProps {
@@ -19,133 +22,84 @@ interface LibraryDocumentBlockEditorProps {
   onChange: (block: LibraryDocumentBlock) => void;
 }
 
-export default function LibraryDocumentBlockEditor({
-  block,
-  onChange,
-}: LibraryDocumentBlockEditorProps) {
+/**
+ * Khối "Bài đọc" (library-document): thẻ trong bài mở một MỤC THƯ VIỆN trong bảng bên.
+ * Chọn mục bằng cùng ô tìm với nút "Tham chiếu" (dán link tìm được đúng mục Nguồn); quản
+ * trị viên tạo được mục mới ngay tại đây nếu chưa có. Khối lưu `documentId` (id của mục):
+ * không đổi khi mục đổi slug. `documentSlug` của khối cũ vẫn đọc được.
+ *
+ * Cách cũ — khối tự chứa nội dung (mode 'inline') — không còn tạo mới được, vì nội dung
+ * đọc thêm giờ đều là mục thư viện (dùng lại được, có nguồn, có liên kết). Khối cũ dạng
+ * này vẫn sửa được như trước, kèm lời nhắc chuyển sang mục thư viện.
+ */
+export default function LibraryDocumentBlockEditor({ block, onChange }: LibraryDocumentBlockEditorProps) {
   const uid = useId();
-  const [mode, setMode] = useState<'reference' | 'inline'>(
-    block.mode || (block.documentId ? 'reference' : 'inline')
-  );
-  const [showSearchModal, setShowSearchModal] = useState(false);
-  // null = still loading the list.
-  const [documents, setDocuments] = useState<LibraryDocument[] | null>(null);
-  const [loadError, setLoadError] = useState(false);
-  // Text for the dialog's always-mounted live region (result count / loading / error).
-  const [listStatus, setListStatus] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDoc, setSelectedDoc] = useState<LibraryDocument | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  // "Chọn tài liệu khác": where focus goes back when the opener was replaced by the selection.
-  const changeDocRef = useRef<HTMLButtonElement>(null);
-  // Contributors read the public library API (active documents only); /api/admin/library is 401 for them.
-  const libraryApi = useEditorMode() === 'contributor' ? '/api/library' : '/api/admin/library';
+  const mode = useEditorMode();
+  const legacyInline = block.mode === 'inline' || (!block.mode && !block.documentId && !block.documentSlug && !!block.title);
+  const ref = block.documentId || block.documentSlug || '';
+  const [linked, setLinked] = useState<Linked | null>(null);
+  const [loadError, setLoadError] = useState('');
+  const [picking, setPicking] = useState(!legacyInline && !ref);
+  const [pickError, setPickError] = useState('');
+  const changeRef = useRef<HTMLButtonElement>(null);
 
   // Initialize documentContent for inline mode
   const documentContent = block.documentContent || { sections: [{ paragraphs: [''] }] };
 
-  // Fetch documents for reference mode
   useEffect(() => {
-    if (mode !== 'reference') return;
+    if (legacyInline || !ref) return;
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(libraryApi);
-        const data = await res.json();
+        const res = await fetch(`/api/library/${encodeURIComponent(ref)}`);
+        const json = await res.json();
         if (cancelled) return;
-        if (res.ok && data.data) {
-          // The public list has no isActive field (it only returns active documents).
-          setDocuments(data.data.filter((doc: { isActive?: boolean }) => doc.isActive !== false));
-          setLoadError(false);
+        if (res.ok && json.data) {
+          setLinked(json.data);
+          setLoadError('');
         } else {
-          setLoadError(true);
+          setLinked(null);
+          setLoadError('Không tìm thấy mục này trong thư viện (có thể đã bị xoá hoặc đang ẩn). Hãy chọn mục khác.');
         }
-      } catch (err) {
-        console.error('Error fetching documents:', err);
-        if (!cancelled) setLoadError(true);
+      } catch {
+        if (!cancelled) setLoadError('Không tải được mục. Kiểm tra kết nối rồi thử lại.');
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [mode, libraryApi]);
+  }, [ref, legacyInline]);
 
-  // Fetch selected document info if documentId exists
-  useEffect(() => {
-    const documentId = block.documentId;
-    if (mode !== 'reference' || !documentId || selectedDoc) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`${libraryApi}/${documentId}`);
-        const data = await res.json();
-        if (!cancelled && data.data) setSelectedDoc(data.data);
-      } catch (err) {
-        console.error('Error fetching document:', err);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [block.documentId, mode, selectedDoc, libraryApi]);
-
-  function handleModeChange(newMode: 'reference' | 'inline') {
-    setMode(newMode);
-    if (newMode === 'reference') {
-      // Clear inline data
-      onChange({
-        type: 'library-document',
-        mode: 'reference',
-        documentId: undefined,
-      });
-      setSelectedDoc(null);
-    } else {
-      // Clear reference data, initialize inline content
-      onChange({
-        type: 'library-document',
-        mode: 'inline',
-        title: '',
-        description: '',
-        documentContent: { sections: [{ paragraphs: [''] }] },
-      });
+  async function pick(e: PickedEntry) {
+    if (e.type === 'ACRONYM') {
+      setPickError('Viết tắt không mở thành bài đọc. Chọn mục mà chữ viết tắt trỏ tới.');
+      return;
     }
+    setPickError('');
+    // Kết quả tìm chỉ có slug; lấy id để khối không hỏng khi mục đổi slug.
+    let id = (e as PickedEntry & { id?: string }).id;
+    if (!id) {
+      try {
+        const res = await fetch(`/api/library/${encodeURIComponent(e.slug)}`);
+        id = res.ok ? (await res.json()).data?.id : undefined;
+      } catch {
+        id = undefined;
+      }
+    }
+    if (!id) {
+      setPickError('Không mở được mục này làm bài đọc (có thể đang ẩn). Chọn mục khác.');
+      return;
+    }
+    setLinked(null);
+    onChange({ type: 'library-document', mode: 'reference', documentId: id });
+    setPicking(false);
+    requestAnimationFrame(() => changeRef.current?.focus());
   }
 
-  function closeSearchModal() {
-    setShowSearchModal(false);
-    // Empty the live region so the next opening announces fresh text.
-    setListStatus('');
+  function startPicking() {
+    setPickError('');
+    setPicking(true);
   }
-
-  function selectDocument(doc: LibraryDocument) {
-    setSelectedDoc(doc);
-    onChange({
-      type: 'library-document',
-      mode: 'reference',
-      documentId: doc.id,
-    });
-    closeSearchModal();
-  }
-
-  const filteredDocuments = (documents ?? []).filter((doc) =>
-    doc.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  const isLoadingDocuments = documents === null && !loadError;
-
-  // Announce the result count (debounced while typing), loading and load errors.
-  useEffect(() => {
-    if (!showSearchModal) return;
-    const message = loadError
-      ? 'Không tải được danh sách tài liệu.'
-      : isLoadingDocuments
-      ? 'Đang tải danh sách tài liệu…'
-      : filteredDocuments.length === 0
-      ? 'Không tìm thấy tài liệu nào'
-      : `${filteredDocuments.length} tài liệu`;
-    const t = setTimeout(() => setListStatus(message), 400);
-    return () => clearTimeout(t);
-  }, [showSearchModal, loadError, isLoadingDocuments, filteredDocuments.length]);
 
   // Inline mode content manipulation functions
   function addSection() {
@@ -204,189 +158,105 @@ export default function LibraryDocumentBlockEditor({
 
   return (
     <div className="space-y-6">
-      {/* Mode Toggle */}
-      <fieldset className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-        <legend className="sr-only">Cách thêm tài liệu</legend>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            name={`${uid}-mode`}
-            value="reference"
-            checked={mode === 'reference'}
-            onChange={() => handleModeChange('reference')}
-            className="w-4 h-4 text-purple-600"
-          />
-          <span className="text-sm font-medium text-gray-700">
-            Tham chiếu tài liệu có sẵn
-          </span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="radio"
-            name={`${uid}-mode`}
-            value="inline"
-            checked={mode === 'inline'}
-            onChange={() => handleModeChange('inline')}
-            className="w-4 h-4 text-purple-600"
-          />
-          <span className="text-sm font-medium text-gray-700">
-            Tạo nội dung mới
-          </span>
-        </label>
-      </fieldset>
+      {!legacyInline && (
+        <section aria-labelledby={`${uid}-h`} className="space-y-3">
+          <p id={`${uid}-h`} className="text-sm text-gray-700">
+            Thẻ “Xem tài liệu” trong bài mở một mục thư viện trong bảng bên. Chọn mục, hoặc dán link để tìm đúng mục Nguồn.
+          </p>
 
-      {/* Reference Mode */}
-      {mode === 'reference' && (
-        <div>
-          {selectedDoc ? (
+          {!picking && ref && (
             <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-              <div className="flex items-start justify-between mb-2">
-                <div className="flex-1">
-                  {/* Not a heading: the drawer's h2 is the only heading above it. */}
-                  <p className="font-semibold text-gray-900">{selectedDoc.title}</p>
-                  <p className="text-sm text-gray-600 mt-1">{selectedDoc.description}</p>
-                  {selectedDoc.category && (
-                    <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full mt-2">
-                      {selectedDoc.category}
-                    </span>
+              {loadError ? (
+                <p className="flex gap-2 text-sm text-red-700" role="alert">
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  {loadError}
+                </p>
+              ) : !linked ? (
+                <p className="text-sm text-gray-600">Đang tải mục…</p>
+              ) : (
+                <div className="flex items-start gap-3">
+                  <BookOpen className="w-5 h-5 mt-0.5 text-purple-700 shrink-0" aria-hidden="true" />
+                  <div className="flex-1 min-w-0">
+                    {/* Not a heading: the drawer's h2 is the only heading above it. */}
+                    <p className="text-xs font-semibold uppercase tracking-wide text-purple-700">{linked.category}</p>
+                    <p className="font-semibold text-gray-900">{linked.title}</p>
+                    <p className="text-sm text-gray-700 mt-1 line-clamp-3">{linked.description}</p>
+                  </div>
+                  {mode === 'admin' && (
+                    <a
+                      href={linked.entryType ? `/admin/library-entries/${linked.id}` : `/admin/library/${linked.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 text-purple-700 hover:bg-purple-100 rounded-lg transition-colors"
+                      title="Sửa mục trong thư viện"
+                      aria-label={`Sửa “${linked.title}” trong thư viện (mở thẻ mới)`}
+                    >
+                      <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                    </a>
                   )}
                 </div>
-                <a
-                  href={`/admin/library/${selectedDoc.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-3 p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
-                  title="Chỉnh sửa tài liệu"
-                  aria-label="Chỉnh sửa tài liệu (mở trong thẻ mới)"
-                >
-                  <ExternalLink className="w-4 h-4" aria-hidden="true" />
-                </a>
-              </div>
+              )}
               <button
-                ref={changeDocRef}
+                ref={changeRef}
                 type="button"
-                onClick={() => setShowSearchModal(true)}
-                className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                onClick={startPicking}
+                className="mt-3 text-sm text-purple-700 hover:underline font-medium rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
               >
-                Chọn tài liệu khác
+                Chọn mục khác
               </button>
             </div>
-          ) : (
+          )}
+
+          {picking && (
+            <div className="p-4 border border-gray-200 rounded-lg space-y-2">
+              {/* eslint-disable-next-line jsx-a11y/no-autofocus -- the author just asked to change the entry */}
+              <ReferencePicker onPick={pick} autoFocus={!!ref} />
+              {pickError && (
+                <p className="text-sm text-red-700" role="alert">
+                  {pickError}
+                </p>
+              )}
+              {ref && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPicking(false);
+                    requestAnimationFrame(() => changeRef.current?.focus());
+                  }}
+                  className="text-sm text-gray-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
+                >
+                  Huỷ, giữ mục đang chọn
+                </button>
+              )}
+            </div>
+          )}
+        </section>
+      )}
+
+      {legacyInline && (
+        <div className="flex gap-2 p-3 rounded-lg bg-amber-50 border border-amber-300 text-amber-900 text-sm">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" />
+          <div className="space-y-2">
+            <p>
+              Khối này tự chứa nội dung (cách cũ). Nội dung đọc thêm giờ nên là một mục thư viện: dùng lại được ở bài khác, có
+              nguồn và liên kết. Bạn vẫn sửa được nội dung bên dưới.
+            </p>
             <button
               type="button"
-              onClick={() => setShowSearchModal(true)}
-              className="w-full py-3 border-2 border-dashed border-purple-200 rounded-lg text-purple-600 hover:border-purple-300 hover:bg-purple-50 transition-colors flex items-center justify-center gap-2"
+              onClick={() => {
+                onChange({ type: 'library-document', mode: 'reference' });
+                setPicking(true);
+              }}
+              className="font-medium text-amber-900 underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700"
             >
-              <Search className="w-5 h-5" aria-hidden="true" />
-              <span>Chọn tài liệu từ thư viện</span>
+              Thay bằng một mục thư viện (bỏ nội dung riêng này)
             </button>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Search Modal */}
-      {showSearchModal && (
-        <>
-          {/* Backdrop: a mouse shortcut, hidden from assistive tech (Escape and "Đóng" cover everyone else). */}
-          <div
-            className="fixed inset-0 bg-black/50 z-50"
-            onClick={closeSearchModal}
-            aria-hidden="true"
-          />
-          {/* Trap: Tab stays inside, Escape closes, focus goes back to the opener (or to
-              "Chọn tài liệu khác" when the opener was replaced by the chosen document). */}
-          <FocusTrap
-            focusTrapOptions={{
-              allowOutsideClick: true,
-              initialFocus: () => searchInputRef.current ?? undefined,
-              setReturnFocus: (previous: HTMLElement | SVGElement) =>
-                previous instanceof HTMLElement && previous.isConnected
-                  ? previous
-                  : changeDocRef.current ?? false,
-              onDeactivate: closeSearchModal,
-            }}
-          >
-            <div className="fixed inset-0 flex items-center justify-center z-50 p-4 pointer-events-none">
-              <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby={`${uid}-dialog-title`}
-                className="pointer-events-auto bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col"
-              >
-                <h3 id={`${uid}-dialog-title`} className="text-lg font-semibold text-gray-900 mb-4">
-                  Chọn tài liệu từ thư viện
-                </h3>
-
-                {/* Search Input */}
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" aria-hidden="true" />
-                  <input
-                    ref={searchInputRef}
-                    type="search"
-                    aria-label="Tìm kiếm tài liệu"
-                    placeholder="Tìm kiếm tài liệu..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                  />
-                </div>
-
-                {/* Mounted with the dialog but empty; filled after opening so it is read out. */}
-                <p className="sr-only" aria-live="polite">{listStatus}</p>
-
-                {/* Documents List */}
-                <div className="flex-1 overflow-y-auto space-y-2">
-                  {loadError ? (
-                    <p className="text-center text-red-600 py-8">
-                      Không tải được danh sách tài liệu. Hãy đóng và thử lại.
-                    </p>
-                  ) : isLoadingDocuments ? (
-                    <p className="text-center text-gray-500 py-8">
-                      Đang tải danh sách tài liệu…
-                    </p>
-                  ) : filteredDocuments.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">
-                      Không tìm thấy tài liệu nào
-                    </p>
-                  ) : (
-                    filteredDocuments.map((doc) => (
-                      <button
-                        key={doc.id}
-                        type="button"
-                        onClick={() => selectDocument(doc)}
-                        className="w-full text-left p-3 border border-gray-200 rounded-lg hover:border-purple-300 hover:bg-purple-50 transition-colors"
-                      >
-                        <span className="block font-medium text-gray-900">{doc.title}</span>
-                        <span className="block text-sm text-gray-600 mt-1 line-clamp-2">
-                          {doc.description}
-                        </span>
-                        {doc.category && (
-                          <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-medium rounded-full mt-2">
-                            {doc.category}
-                          </span>
-                        )}
-                      </button>
-                    ))
-                  )}
-                </div>
-
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={closeSearchModal}
-                    className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    Đóng
-                  </button>
-                </div>
-              </div>
-            </div>
-          </FocusTrap>
-        </>
-      )}
-
-      {/* Inline Mode - Full Editor */}
-      {mode === 'inline' && (
+      {/* Nội dung riêng (cách cũ): chỉ còn cho khối đã có sẵn. */}
+      {legacyInline && (
         <div className="space-y-6">
           {/* Title */}
           <div>

@@ -28,7 +28,7 @@ export default function MarketingFooter() {
             <Link href="/courses" className="text-gray-600 hover:text-gray-900">
               Khóa học
             </Link>
-            <Link href="/library" className="text-gray-600 hover:text-gray-900">
+            <Link href="/thu-vien" className="text-gray-600 hover:text-gray-900">
               Thư viện
             </Link>
           </nav>

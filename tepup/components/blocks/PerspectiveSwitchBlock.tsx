@@ -231,7 +231,7 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
                       {isSelected && !checked && <span className="w-1.5 h-1.5 bg-white rounded-full" />}
                     </span>
                     <span className={`${showCorrect ? 'text-green-700 font-medium' : showWrong ? 'text-red-700' : isSelected ? 'text-violet-700 font-medium' : 'text-gray-700'}`}>
-                      {renderInlineMarkdown(option.text)}
+                      {renderInlineMarkdown(option.text, { links: false })}
                       {/* Màu và icon không tới được trình đọc màn hình — nói rõ bằng chữ. */}
                       {showCorrect && <span className="sr-only"> — đáp án đúng</span>}
                       {showWrong && <span className="sr-only"> — bạn chọn, sai</span>}

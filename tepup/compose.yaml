@@ -42,6 +42,9 @@ services:
       LOCAL_ADMIN_PASSWORD: ${LOCAL_ADMIN_PASSWORD:-tepup-local-admin}
       # Optional: a Groq key makes the AI chat answer; without one it fails gracefully.
       GROQ_API_KEY: ${GROQ_API_KEY:-}
+      # Library reference reader (previews + side panels). On by default here so it can
+      # be tested; production turns it on with the same variable. 0 = plain /tv/ links.
+      TEPUP_TV_REFERENCES: ${TEPUP_TV_REFERENCES:-1}
 
 volumes:
   db-data:

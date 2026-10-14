@@ -38,8 +38,8 @@ test('touch targets: course, story, lesson', async ({ page }, testInfo) => {
 });
 
 /**
- * Text selection on a phone: a touch, then a selection that settles. The "Hỏi AI / Kiểm
- * chứng / Góp ý sửa" bar must appear near the bottom, clear of the OS menu above the text.
+ * Text selection on a phone: a touch, then a selection that settles. The "AI / Góp ý"
+ * bar must appear near the bottom, clear of the OS menu above the text.
  * (Emulation: a real long-press and the OS menu itself can't be reproduced here.)
  */
 test('text selection toolbar on touch', async ({ page }, testInfo) => {

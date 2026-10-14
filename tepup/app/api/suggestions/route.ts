@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { ENTRY_TYPES, type EntryType } from '@/lib/library/schemas';
 import { prisma } from '@/lib/prisma';
 import { clientIp, rateLimit } from '@/lib/security/rate-limit';
 import { SUGGESTION_LIMITS, cleanSuggestionText } from '@/lib/suggestions';
@@ -36,7 +37,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true }, { status: 201 });
   }
 
-  const targetType = body.targetType === 'lesson' ? 'LESSON' : body.targetType === 'chapter' ? 'CHAPTER' : null;
+  const TARGETS = { lesson: 'LESSON', chapter: 'CHAPTER', 'library-entry': 'LIBRARY_ENTRY', 'new-entry': 'NEW_ENTRY' } as const;
+  const targetType = typeof body.targetType === 'string' && body.targetType in TARGETS
+    ? TARGETS[body.targetType as keyof typeof TARGETS]
+    : null;
   const targetId = typeof body.targetId === 'string' ? body.targetId : '';
   const quote = cleanSuggestionText(body.quote, SUGGESTION_LIMITS.quote);
   const proposal = cleanSuggestionText(body.proposal, SUGGESTION_LIMITS.proposal);
@@ -55,17 +59,37 @@ export async function POST(request: Request) {
     );
   }
 
-  // Only published content can receive suggestions.
+  // Only published content can receive suggestions. A new term (NEW_ENTRY) is suggested
+  // from a lesson/chapter the learner is reading, or from the library itself ('thu-vien').
+  const lessonOrChapter = async (id: string) =>
+    (await prisma.lesson.findFirst({ where: { id, isActive: true }, select: { id: true } })) ??
+    (await prisma.chapter.findFirst({ where: { id, isActive: true }, select: { id: true } }));
   const target =
     targetType === 'LESSON'
       ? await prisma.lesson.findFirst({ where: { id: targetId, isActive: true }, select: { id: true } })
-      : await prisma.chapter.findFirst({ where: { id: targetId, isActive: true }, select: { id: true } });
+      : targetType === 'CHAPTER'
+        ? await prisma.chapter.findFirst({ where: { id: targetId, isActive: true }, select: { id: true } })
+        : targetType === 'LIBRARY_ENTRY'
+          ? await prisma.libraryEntry.findFirst({ where: { id: targetId, isActive: true }, select: { id: true } })
+          : targetId === 'thu-vien'
+            ? { id: targetId }
+            : await lessonOrChapter(targetId);
+  // NEW_ENTRY needs the thing itself (word, link, tool name) and what kind of entry it is.
+  const suggestedType =
+    targetType === 'NEW_ENTRY' && typeof body.suggestedType === 'string' && (ENTRY_TYPES as readonly string[]).includes(body.suggestedType)
+      ? (body.suggestedType as EntryType)
+      : targetType === 'NEW_ENTRY'
+        ? 'CONCEPT'
+        : null;
+  if (targetType === 'NEW_ENTRY' && !quote) {
+    return NextResponse.json({ error: 'Vui lòng ghi điều bạn muốn thêm vào thư viện' }, { status: 400 });
+  }
   if (!target) {
     return NextResponse.json({ error: 'Không tìm thấy bài học' }, { status: 404 });
   }
 
   await prisma.suggestion.create({
-    data: { targetType, targetId, quote: quote || null, proposal, reason: reason || null },
+    data: { targetType, targetId, quote: quote || null, proposal, reason: reason || null, suggestedType },
   });
 
   return NextResponse.json({ ok: true }, { status: 201 });

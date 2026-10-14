@@ -3,6 +3,7 @@ import LessonPlayer from '@/components/learn/LessonPlayer';
 import { getCourseBySlug } from '@/lib/services/content-service';
 import { itemAfter, type NextItemLink } from '@/lib/utils/next-item';
 import type { LessonPage } from '@/lib/types/content';
+import { tvReferencesEnabled } from '@/lib/library/flags';
 
 /**
  * Bài kế tiếp trong cả khoá (vượt qua ranh giới cấp độ), theo đúng thứ tự và bộ
@@ -65,6 +66,7 @@ export default async function LessonRouteView({
         blocks={data.content.blocks}
         exitHref={exitHref}
         next={await nextLessonLink(data)}
+        references={tvReferencesEnabled()}
       />
     </>
   );

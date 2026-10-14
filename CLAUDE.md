@@ -25,7 +25,10 @@ Free, anonymous, mobile-first lessons in Vietnamese. Learners have no accounts; 
 - ⚠️ **Schema changes reach the databases before the code does.** Merging to `main` deploys immediately, so code that needs a new column or table returns errors until the SQL is applied. Apply the SQL to staging, then production, then merge.
 - `npx prisma studio`
 - `npx tsx scripts/<name>.ts` — seed, migration and audit scripts
-- `npx tsx scripts/test-safe-expr.ts` — the only automated check (no test framework). Run it after touching `lib/security/safe-expr.ts` or any block formula.
+- `npm test` — Vitest unit tests (`tests/unit/`): sanitiser, inline markdown, `/tv/` link parsing, citations. Run after touching any of those.
+- `npx tsx scripts/test-safe-expr.ts` — run after touching `lib/security/safe-expr.ts` or any block formula.
+- `npx tsx scripts/snapshot-render.ts --env=<env> --out=<file>` then `--compare=<file>` — renders every string of every lesson and chapter through the learner's two renderers and reports any difference. **Take a baseline before changing `sanitize-html.ts`, `safe-url.ts` or `renderInlineMarkdown.tsx`, and compare after.** Read-only.
+- `npx tsx scripts/audit-library-links.ts --env=<env>` — read-only check of library references in all content (see [Reference library](#reference-library)).
 - `docker compose up --build` — the full app against a **local, disposable** Postgres, production-like (`next build` + `next start`), on http://localhost:3000. See [Local Docker stack](#local-docker-stack). Optional: a convenient way to test database writes without touching staging, but any reasonable test (staging, `next dev`, a script) is fine.
 
 ## Environments & databases
@@ -47,7 +50,7 @@ Newer scripts (`add-block-test-course.ts`, `seed-stories-v2.ts`, `resolve-librar
 app/
   (landing)/            homepage
   (courses-hub)/        /courses (course hub: paper background, character strip, cover shelf)
-  (learn)/              /courses/[slug], /library, /story/[characterId]/...
+  (learn)/              /courses/[slug], /thu-vien (library; /library redirects), /story/[characterId]/...
   (player)/             lesson player  /courses/[slug]/[lessonSlug]
                         story player   /story/[characterId]/[storySlug]/[chapterSlug]
   (auth)/               login, register(-contributor), banned, feature-request
@@ -82,6 +85,7 @@ Path alias: `@/*` → `tepup/*`.
 Category → Course → Level → Lesson → LessonContent.blocks (JSON array)
 Character → Story → StoryPart → Chapter → ChapterContent.blocks (JSON array)
 Course ⇄ Story via CourseStoryRecommendation;  LibraryDocument (reference articles)
+LibraryEntry (topic, source, term, acronym, tool) ⇄ LibraryLink;  LibraryUsage = reverse index
 ```
 - Block types (`lib/types/content.ts`):
   - Core: `text`, `image`, `callout`, `question`, `library-document`
@@ -99,6 +103,21 @@ Touch all of these, or the block breaks somewhere:
 3. Strict zod schema in `lib/schemas/blocks.ts`. Contributor content is rejected otherwise.
 4. Editor in `components/admin/editor/` + wiring in `BlockEditor`/`NotionBlockEditor`/`block-utils.ts`/`types.ts` + `lib/editor/blocknote-converter.ts`
 5. Length limits in `lib/blockLimits.ts` if layout depends on text length
+
+## Reference library
+Design: [`docs/design-reference-library.md`](docs/design-reference-library.md). Content links to a library entry with **`/tv/<slug>`**, in rich text and in markdown fields alike.
+- `/tv/<slug>` (a-z, 0-9, hyphens, optional `#<n>`) is the **only** relative link the sanitiser and the editor keep (`isSafeLinkHref` in `lib/security/safe-url.ts`, pattern in `lib/library/refs.ts`). Don't widen it. The sanitiser hook adds `data-tv`; it is never taken from input.
+- `ReferenceProvider` (`components/reference/`) handles every `a[data-tv]` by event delegation: hover/focus = preview, click/Enter = side panel, tap = preview with "Mở". Panels render inside `.reader` (no portal) so reading settings apply.
+- Text that sits **inside a control** (quiz options, flip cards, pair-match and sort-bucket items, perspective options) is rendered with `renderInlineMarkdown(text, { links: false })`: a link inside a button is a nested-interactive accessibility error. Links there show as plain text; the audit script warns.
+- **One kind of knowledge entry (Mục từ, `CONCEPT`), linked as a network — no topic/term/area hierarchy.** Don't reintroduce sub-types or parent links. Links: `RELATED` (undirected, stored once), `CITES` (→ source), `EXPANDS_TO` (acronym →), and `MENTIONS`, which `writeLinks()` in `entry-service.ts` rebuilds from `/tv/` links in the entry's text on every save (never edited by hand). Same-word entries differ by a bracket in the title ("Giám sát (dịch tễ)"). Link targets must be the right type (`LINK_RULES`). After any entry mutation call `revalidateLibrary()`.
+- **Every path that writes `LessonContent`/`ChapterContent` must call `rebuildUsage()`** (`lib/library/usage-service.ts`) in the same transaction, like the publish routes and `contribution-service` do, or "Xuất hiện trong" goes stale. `scripts/rebuild-library-usage.ts` rebuilds everything.
+- The reader (previews, side panels) is **on by default**; `TEPUP_TV_REFERENCES=0` (server env, Vercel Production, then re-run the deploy workflow) is the off switch. Off: `/tv/<slug>` links still work as plain links (`/tv/<slug>` redirects to `/thu-vien/muc/<slug>`).
+- Saved entries live in `localStorage` (`tepup_saved_entries_v1`, `lib/library/saved.ts`), like progress. Suggestions about entries reuse the anonymous `Suggestion` table (`LIBRARY_ENTRY`, `NEW_ENTRY`).
+- **"Bài đọc" blocks (`library-document`) point at a library entry by `documentId`** (the entry id; survives slug renames).
+- **One library.** Old "Bài đọc" documents are reclassified into entries with the same id/slug (`scripts/reclassify-library-documents.ts`). `/api/library*` read `LibraryEntry` first, then `LibraryDocument` (`lib/library/document-compat.ts`); a `library-document` block opens the entry in the reference panel (`useOpenEntry()`). `/library` → `/thu-vien` (tabs share one layout in `app/(learn)/thu-vien/(tabs)/`; map at `/thu-vien/ban-do`); admin `/admin/library` → `/admin/library-entries`. Don't edit `LibraryDocument` rows any more.
+- **One entry per source.** `LibraryEntry.sourceKey` (unique) is computed on save from the URL or identifier (`lib/library/source-key.ts`). Never set it from client input; scripts that write SOURCE entries must compute it the same way.
+- Editor: the formatting toolbar has "Tham chiếu" and no plain link button (no Ctrl+K), by decision; don't bring BlockNote's `CreateLinkButton` back (`blocknote/MediaAccessibilityButton.tsx`).
+- Local demo data: `scripts/seed-reference-demo.ts --env=<local env> --apply` (refuses non-local databases); `--remove --apply` deletes it. Browser tests: `a11y-e2e/tests/references*.spec.ts`.
 
 ## Security invariants
 Author content is untrusted: contributors self-register. Keep these rules:
@@ -166,6 +185,7 @@ Target: WCAG 2.2 AA. Full guide, with the reasons and a manual test checklist: `
 - ⚠️ **Drafts are stored unvalidated on purpose**, so half-written blocks can autosave. Never render a `ContentDraft` to learners or copy it to live content without going through the publish route's validation (`prepareBlocksForSave` plus `sanitizeAdminBlocks`). Lesson settings (slug, visibility, order) are part of the draft and only apply on publish.
 - **Publishing checks for conflicts.** The client sends the live `updatedAt` it started from (`baseUpdatedAt`). If live content changed since then (another admin, or an approved contributor edit), the API returns 409 and the editor asks before overwriting (`force: true`). Anything else that writes `LessonContent`/`ChapterContent` should leave `updatedAt` to Prisma, so this check keeps working.
 - Shared types are in `lib/types/drafts.ts`, and server helpers in `lib/services/draft-service.ts`. The table comes from `prisma/sql/2026-10-02-content-drafts.sql`.
+- **Library entries use the same flow** (`ContentDraft` target `LIBRARY_ENTRY`, `meta` = the whole entry form; `/api/admin/library-entries/[id]/draft`; publishing is the entry `PUT`, which checks `baseUpdatedAt` and deletes the draft). A new entry's first "Lưu nháp" creates it hidden.
 - ⚠️ **Empty lines never reach saved content.** Every BlockNote paragraph becomes its own `text` block, and without `step-break`s the player reveals one block per tap, so a saved empty line is a blank step for learners. `trimEmptyBlocks` (`lib/editor/trim-empty-blocks.ts`) drops empty text/heading/quote/list blocks and blank line breaks at a text block's edges.
   - It runs in four places: on what the editors send (drafts and publish), in both publish routes, in `validateBlockList` (contributor saves and submits) and in `contribution-service` publish.
   - The player also skips empty blocks (`computeGroups` in `LessonPlayer.tsx`), for content saved before this rule existed.
@@ -206,6 +226,7 @@ Target: WCAG 2.2 AA. Full guide, with the reasons and a manual test checklist: `
 
 ## AI chat (low priority, free tier)
 - Not a focus of the site. Keep it on free resources and make it **fail gracefully**; don't invest more without a decision.
+- Options for letting learners use their own AI (open in your AI, your own key, MCP/llms.txt) are written up and **parked** in `docs/proposal-ai-options.md`.
 - It runs on **Groq's free plan**: `openai/gpt-oss-120b`, falling back to `openai/gpt-oss-20b` on 404/413/429 (`app/api/ai/chat/route.ts`). `llama-3.3-70b-versatile` became enterprise-only and returns 404. Mixtral, Llama 3 8B and Gemma 2 were retired.
   - Each model's free quota is 8K tokens/minute and 200K tokens/day, **shared by every learner**. The request sizes in the route (`MAX_TOTAL_CHARS`, `MAX_REPLY_TOKENS`, `reasoning_effort: 'low'`) are tuned to fit. Don't raise them without checking Groq's current limits.
   - Check Groq's model list before changing the models; free-plan models change without notice.

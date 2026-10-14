@@ -9,7 +9,8 @@
     "lint": "eslint",
     "lint:a11y": "eslint -c eslint.a11y.config.mjs --max-warnings=0 app components",
     "postinstall": "prisma generate",
-    "studio": "prisma studio"
+    "studio": "prisma studio",
+    "test": "vitest run"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",
@@ -47,7 +48,8 @@
     "prisma": "^7.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   },
   "overrides": {
     "mysql2": "^3.24.4",

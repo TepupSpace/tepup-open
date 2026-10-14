@@ -9,6 +9,7 @@ import {
   useComponentsContext,
   useEditorState,
 } from '@blocknote/react';
+import { ReferenceLinkButton } from './ReferenceLinkButton';
 
 /**
  * "Trợ năng" button in BlockNote's toolbar for image, video and audio blocks. It edits
@@ -166,10 +167,19 @@ export function MediaAccessibilityButton() {
   );
 }
 
-/** BlockNote's default formatting toolbar with the "Trợ năng" button after "Chú thích". */
+/**
+ * BlockNote's default formatting toolbar with the "Trợ năng" button after "Chú thích",
+ * and "Tham chiếu" (library reference link) in place of BlockNote's own link button.
+ */
 export function TepupFormattingToolbar() {
   const items = getFormattingToolbarItems();
   const at = items.findIndex((item) => item.key === 'fileCaptionButton');
   items.splice(at + 1, 0, <MediaAccessibilityButton key="mediaAccessibilityButton" />);
+  // BlockNote's own "Tạo liên kết" (and its Ctrl+K, registered only while the button is
+  // mounted) is replaced: links go through library entries, so every external source has
+  // one (docs/design-reference-library.md §5.3).
+  const link = items.findIndex((item) => item.key === 'createLinkButton');
+  if (link === -1) items.push(<ReferenceLinkButton key="referenceLinkButton" />);
+  else items.splice(link, 1, <ReferenceLinkButton key="referenceLinkButton" />);
   return <FormattingToolbar>{items}</FormattingToolbar>;
 }

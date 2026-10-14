@@ -40,7 +40,7 @@ function CardFace({ face }: { face: FlipCardFace }) {
   }
   return (
     <span className="block text-center text-sm sm:text-base leading-relaxed">
-      {renderInlineMarkdown(face.text)}
+      {renderInlineMarkdown(face.text, { links: false })}
     </span>
   );
 }

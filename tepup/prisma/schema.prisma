@@ -453,6 +453,8 @@ model Suggestion {
   proposal   String
   /// Why / source (optional)
   reason     String?
+  /// NEW_ENTRY: loại mục người học đề xuất (mục từ, nguồn, viết tắt, công cụ)
+  suggestedType LibraryEntryType?
   status     SuggestionStatus @default(PENDING)
   reviewerId String?
   reviewer   User?            @relation("SuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
@@ -467,6 +469,90 @@ model Suggestion {
 enum SuggestionTarget {
   LESSON
   CHAPTER
+  /// Góp ý về một mục thư viện có sẵn (targetId = LibraryEntry.id)
+  LIBRARY_ENTRY
+  /// Đề xuất mục thư viện mới (targetId = Lesson.id/Chapter.id nơi người học đề xuất, hoặc 'thu-vien')
+  NEW_ENTRY
+}
+
+// ============================================================
+// Thư viện tham chiếu (docs/design-reference-library.md)
+// ============================================================
+
+/// Loại mục thư viện. ARTICLE = tài liệu chuyển từ LibraryDocument sang (giai đoạn 5).
+enum LibraryEntryType {
+  /// Mục từ: mọi khái niệm/thuật ngữ/chủ đề — một loại, nối thành mạng (không xếp cây)
+  CONCEPT
+  SOURCE
+  ACRONYM
+  TOOL
+}
+
+/// Một mục thư viện: mục từ, nguồn, viết tắt hoặc công cụ.
+/// Bài học trỏ tới mục bằng link `/tv/<slug>`. Trường riêng của từng loại nằm trong
+/// `meta` và được kiểm tra bằng zod (`lib/library/schemas.ts`).
+model LibraryEntry {
+  id        String           @id @default(cuid())
+  /// a-z, 0-9, gạch ngang. Dùng chung một không gian slug cho mọi loại.
+  slug      String           @unique
+  type      LibraryEntryType
+  title     String
+  /// Xem nhanh: tối đa 2 câu / 200 ký tự, viết riêng chứ không cắt từ thân bài.
+  summary   String
+  /// sections[{heading?, paragraphs[]}] — cùng dạng với LibraryDocument.content.
+  body      Json?
+  meta      Json             @default("{}")
+  /// Nguồn: khoá chống trùng (link hoặc số hiệu đã chuẩn hoá, lib/library/source-key.ts).
+  /// Tính ở server khi lưu; UNIQUE nên hai mục không thể trỏ cùng một tài liệu.
+  sourceKey String?          @unique
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  linksFrom LibraryLink[]    @relation("LibraryLinkFrom")
+  linksTo   LibraryLink[]    @relation("LibraryLinkTo")
+  usages    LibraryUsage[]
+
+  @@index([type])
+}
+
+enum LibraryLinkKind {
+  /// CONCEPT|TOOL <-> CONCEPT|TOOL: liên quan (hai chiều, lưu một lần)
+  RELATED
+  /// CONCEPT|TOOL -> SOURCE: mục dùng nguồn này
+  CITES
+  /// ACRONYM -> CONCEPT|TOOL
+  EXPANDS_TO
+  /// Bất kỳ -> bất kỳ: link /tv/ trong thân bài của mục nguồn (server tự dựng khi lưu; liên kết ngược)
+  MENTIONS
+}
+
+model LibraryLink {
+  fromId String
+  toId   String
+  kind   LibraryLinkKind
+  order  Int             @default(0)
+  from   LibraryEntry    @relation("LibraryLinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  to     LibraryEntry    @relation("LibraryLinkTo", fields: [toId], references: [id], onDelete: Cascade)
+
+  @@id([fromId, toId, kind])
+  @@index([toId, kind])
+}
+
+enum LibraryUsageTarget {
+  LESSON
+  CHAPTER
+}
+
+/// Chỉ mục ngược: bài/chương nào đang trỏ tới mục nào. Dựng lại mỗi lần xuất bản.
+model LibraryUsage {
+  entryId    String
+  targetType LibraryUsageTarget
+  targetId   String
+  count      Int
+  entry      LibraryEntry       @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  @@id([entryId, targetType, targetId])
+  @@index([targetType, targetId])
 }
 
 enum SuggestionStatus {
@@ -503,4 +589,6 @@ model ContentDraft {
 enum ContentDraftTarget {
   LESSON
   CHAPTER
+  /// Mục thư viện (Quản trị › Thư viện); `meta` giữ toàn bộ form của mục, `blocks` rỗng
+  LIBRARY_ENTRY
 }

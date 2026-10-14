@@ -5,6 +5,7 @@ import { ProgressProvider } from '@/lib/contexts/ProgressContext';
 import { AIChatProvider } from '@/lib/contexts/AIChatContext';
 import { NavigationProgressProvider } from '@/lib/contexts/NavigationProgressContext';
 import AIChatBox from '@/components/ai/AIChatBox';
+import ScrollJumpButtons from '@/components/ui/ScrollJumpButtons';
 import RouteProgressBar from '@/components/ui/RouteProgressBar';
 import NavigationHistoryTracker from '@/components/NavigationHistoryTracker';
 
@@ -23,6 +24,7 @@ export default function Providers({ children }: ProvidersProps) {
         <AIChatProvider>
           {children}
           <AIChatBox />
+          <ScrollJumpButtons />
         </AIChatProvider>
       </ProgressProvider>
     </NavigationProgressProvider>

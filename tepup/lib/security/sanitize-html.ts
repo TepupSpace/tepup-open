@@ -16,6 +16,7 @@
  */
 import DOMPurify, { type UponSanitizeAttributeHookEvent } from 'isomorphic-dompurify';
 import { isSafeLinkHref } from './safe-url';
+import { parseTvHref } from '@/lib/library/refs';
 
 const ALLOWED_TAGS = [
   'b', 'strong', 'i', 'em', 'u', 's', 'del', 'code', 'a', 'br', 'span', 'sub', 'sup', 'mark',
@@ -44,6 +45,14 @@ function onAttribute(node: Element, data: UponSanitizeAttributeHookEvent) {
 
 function afterAttributes(node: Element) {
   if (node.nodeName === 'A' && node.hasAttribute('href')) {
+    const ref = parseTvHref(node.getAttribute('href'));
+    if (ref) {
+      // Tham chiếu thư viện: mở bảng bên trong cùng trang (ReferenceProvider bắt sự
+      // kiện qua data-tv), không mở tab mới. data-* do hook này gắn, không lấy từ input.
+      node.setAttribute('data-tv', ref.slug);
+      if (ref.section !== undefined) node.setAttribute('data-tv-section', String(ref.section));
+      return;
+    }
     node.setAttribute('target', '_blank');
     node.setAttribute('rel', 'noopener noreferrer nofollow');
   }
@@ -52,7 +61,8 @@ function afterAttributes(node: Element) {
 const CONFIG = {
   ALLOWED_TAGS,
   ALLOWED_ATTR,
-  ALLOWED_URI_REGEXP: /^(?:https?:|mailto:)/i,
+  // `/tv/` mới chỉ là tiền tố; hook `onAttribute` (isSafeLinkHref) kiểm tra đúng mẫu đầy đủ.
+  ALLOWED_URI_REGEXP: /^(?:https?:|mailto:|\/tv\/)/i,
   ALLOW_DATA_ATTR: false,
   ALLOW_ARIA_ATTR: false,
   KEEP_CONTENT: true,

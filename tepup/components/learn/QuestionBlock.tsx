@@ -151,7 +151,7 @@ export function QuestionBlockComponent({
                   )}
                 </div>
                 <span className={`${showCorrect ? 'text-green-700 font-medium' : showMissed ? 'text-green-700' : showWrong ? 'text-red-700' : isSelected ? 'text-blue-700 font-medium' : 'text-gray-700'}`}>
-                  {renderInlineMarkdown(option.text)}
+                  {renderInlineMarkdown(option.text, { links: false })}
                   {status && <span className="sr-only"> {status}</span>}
                 </span>
                 {showMissed && (

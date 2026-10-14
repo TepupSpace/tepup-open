@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
+import { useOpenEntry } from '@/components/reference/ReferenceProvider';
 
 export function LibraryDocumentBlockComponent({
   block,
@@ -40,6 +41,10 @@ export function LibraryDocumentBlockComponent({
   const [loading, setLoading] = useState(mode === 'reference' && !!documentRef);
   const [error, setError] = useState('');
   const openerRef = useRef<HTMLButtonElement>(null);
+  // Tài liệu đã là mục thư viện: mở trong bảng bên của trình đọc tham chiếu (cùng chỗ với
+  // link /tv/), để "Bài đọc" và mục tham chiếu chỉ có một cách đọc. Không có trình đọc
+  // (cờ tắt, hoặc block nằm ngoài bài học) thì vẫn dùng cửa sổ cũ bên dưới.
+  const openEntry = useOpenEntry();
   const closeRef = useRef<HTMLButtonElement>(null);
 
   // Fetch document if reference mode
@@ -145,7 +150,11 @@ export function LibraryDocumentBlockComponent({
           <button
             ref={openerRef}
             type="button"
-            onClick={() => setIsOpen(true)}
+            onClick={(e) => {
+              const slug = libraryDocument?.entryType ? (libraryDocument.slug as string) : null;
+              if (mode === 'reference' && slug && openEntry) openEntry(slug, e.currentTarget);
+              else setIsOpen(true);
+            }}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
           >
             <span>Xem tài liệu</span>

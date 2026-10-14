@@ -8,7 +8,7 @@ import ReaderSettings from '@/components/reader/ReaderSettings';
 
 const navItems = [
   { href: '/courses', label: 'Khóa học', icon: BookOpen },
-  { href: '/library', label: 'Thư viện', icon: Library },
+  { href: '/thu-vien', label: 'Thư viện', icon: Library },
 ];
 
 export default function LearnHeader() {

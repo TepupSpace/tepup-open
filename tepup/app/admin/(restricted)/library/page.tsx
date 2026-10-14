@@ -1,7 +1,9 @@
-import LibraryClient from './LibraryClient';
+import { redirect } from 'next/navigation';
 
-export const metadata = { title: 'Thư viện' };
-
+/**
+ * Tài liệu thư viện cũ (LibraryDocument) đã được xếp lại thành mục thư viện cùng id/slug
+ * (scripts/reclassify-library-documents.ts). Quản lý mọi loại mục ở một chỗ.
+ */
 export default function Page() {
-  return <LibraryClient />;
+  redirect('/admin/library-entries');
 }

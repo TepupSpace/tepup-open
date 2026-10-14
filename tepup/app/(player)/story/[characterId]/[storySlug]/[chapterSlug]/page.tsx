@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { getChapterPage } from '@/lib/services/content-service';
 import LessonPlayer from '@/components/learn/LessonPlayer';
+import { tvReferencesEnabled } from '@/lib/library/flags';
 import { itemAfter } from '@/lib/utils/next-item';
 
 // ISR. Trước đây `.next/prerender-manifest.json` có `dynamicRoutes: {}` — nghĩa là
@@ -75,6 +76,7 @@ export default async function ChapterRoute({ params }: ChapterPageProps) {
       blocks={data.content.blocks}
       exitHref={exitHref}
       next={nextChapter ? { href: `${exitHref}/${nextChapter.slug}`, title: nextChapter.title } : null}
+      references={tvReferencesEnabled()}
     />
   );
 }

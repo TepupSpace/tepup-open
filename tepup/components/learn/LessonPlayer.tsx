@@ -15,6 +15,8 @@ import ReaderSettings from '@/components/reader/ReaderSettings';
 import { BlockRenderer, INTERACTIVE_BLOCK_TYPES, preloadBlockTypes } from '@/components/learn/BlockRenderer';
 import { isEmptyBlock } from '@/lib/editor/trim-empty-blocks';
 import type { NextItemLink } from '@/lib/utils/next-item';
+import ReferenceProvider from '@/components/reference/ReferenceProvider';
+import { collectTvSlugs } from '@/lib/library/refs';
 
 interface LessonPlayerProps {
   /** Stable database id — this is what progress is keyed by, never the slug. */
@@ -26,6 +28,8 @@ interface LessonPlayerProps {
   exitHref: string;
   /** The next lesson/chapter, offered at the end. Null on the last one. */
   next?: NextItemLink | null;
+  /** Library reference reader (previews + side panels) on? Server flag, see lib/library/flags.ts. */
+  references?: boolean;
 }
 
 /**
@@ -98,11 +102,16 @@ export default function LessonPlayer({
   blocks,
   exitHref,
   next = null,
+  references = false,
 }: LessonPlayerProps) {
+  // Every /tv/<slug> in the content, so the reader fetches all previews in one request.
+  const refSlugs = useMemo(() => [...collectTvSlugs(blocks).keys()], [blocks]);
   const { navigate, goBack, isPending: isNavigating } = useNavigate();
   // Anonymous "suggest a fix": null = closed, string = open with that passage pre-filled.
   const [suggestQuote, setSuggestQuote] = useState<string | null>(null);
+  // One form for every kind of suggestion; the learner picks "sửa bài" or "thuật ngữ" in it.
   const closeSuggest = useCallback(() => setSuggestQuote(null), []);
+  const openSuggestEdit = useCallback((q: string) => setSuggestQuote(q), []);
   const scrollRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
@@ -150,9 +159,19 @@ export default function LessonPlayer({
   const currentGroup = groups[visibleGroups - 1] ?? [];
   const showNext = isComplete && next !== null;
 
-  // Chân trang có nút Tiếp tục chiếm khoảng chừng này; nút chat nổi phải tránh ra.
-  // Cuối bài có thêm dòng "Tiếp theo" nên cao hơn; màn hỏi xem lại thì không có chân trang.
-  useBottomChrome(mode === 'choose' ? '0rem' : showNext ? '6.5rem' : '4.75rem');
+  // Nút nổi (chat, lên/xuống đầu trang) phải đứng trên chân trang dính. Đo chiều cao thật
+  // của chân trang (cuối bài có thêm dòng "Tiếp theo", chữ to hơn khi người học phóng chữ);
+  // ước lượng cố định trước đây thấp hơn thực tế nên nút đè lên chân trang. Chưa đo được thì
+  // dùng ước lượng. Màn hỏi xem lại thì không có chân trang.
+  const [footerHeight, setFooterHeight] = useState(0);
+  useEffect(() => {
+    const el = footerRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => setFooterHeight(Math.ceil(el.getBoundingClientRect().height)));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [mode]);
+  useBottomChrome(mode === 'choose' ? '0rem' : footerHeight ? `${footerHeight}px` : showNext ? '6.5rem' : '4.75rem');
 
   /**
    * Phần tử cuộn thật. Root chỉ đặt `min-height` nên `flex-1` của <main> không
@@ -447,11 +466,13 @@ export default function LessonPlayer({
 
   return (
     <div className="reader min-h-screen-dvh bg-white flex flex-col">
-      <TextSelectionPopover onSuggestEdit={setSuggestQuote} />
+      <ReferenceProvider slugs={refSlugs} enabled={references}>
+      <TextSelectionPopover onSuggest={openSuggestEdit} />
       <SuggestEditDialog
         open={suggestQuote !== null}
         onClose={closeSuggest}
         contentType={contentType}
+        allowTermType={references}
         contentId={contentId}
         title={title}
         initialQuote={suggestQuote ?? ''}
@@ -488,7 +509,7 @@ export default function LessonPlayer({
           </div>
           <ReaderSettings />
           <button
-            onClick={() => setSuggestQuote('')}
+            onClick={() => openSuggestEdit('')}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             aria-label={contentType === 'lesson' ? 'Góp ý chỉnh sửa bài học' : 'Góp ý chỉnh sửa chương'}
             title="Góp ý chỉnh sửa"
@@ -617,6 +638,7 @@ export default function LessonPlayer({
         </div>
       </footer>
       )}
+      </ReferenceProvider>
     </div>
   );
 }

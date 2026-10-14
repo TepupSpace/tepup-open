@@ -299,3 +299,54 @@ html {
 .tepup-lesson-editor [data-prev-level="1"] { --prev-level: 1.875rem; }
 .tepup-lesson-editor [data-prev-level="2"] { --prev-level: 1.5rem; }
 .tepup-lesson-editor [data-prev-level="3"] { --prev-level: 1.5rem; }
+
+/* Tham chiếu thư viện (`<a data-tv>`, docs/design-reference-library.md §6.1): gạch chân
+   chấm để phân biệt với link ra ngoài. Dùng biến bảng màu, nên app/reader.css tự đổi
+   sang màu tối. Áp cho cả rich text (sanitize-html gắn data-tv) lẫn markdown. */
+a[data-tv] {
+  color: var(--color-purple-700);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+a[data-tv]:hover {
+  text-decoration-style: solid;
+}
+/* Chấm trên Bản đồ thư viện cũng là a[data-tv]: nhãn của chấm không gạch chân. */
+svg a[data-tv] {
+  text-decoration-line: none;
+}
+a[data-tv]:focus-visible {
+  outline: 2px solid var(--color-purple-600);
+  outline-offset: 2px;
+  border-radius: 0.125rem;
+}
+
+/* Link trong trình soạn bài: tham chiếu thư viện (/tv/) trông như người học thấy (gạch chân
+   chấm, tím); link ra ngoài gạch liền, xanh, có ↗, để tác giả thấy ngay chỗ nào chưa qua
+   mục Nguồn. Biến bảng màu: tự đổi theo giao diện tối. */
+.tepup-lesson-editor a[href^="/tv/"] {
+  color: var(--color-purple-700);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.2em;
+}
+.tepup-lesson-editor a[href]:not([href^="/tv/"]) {
+  color: var(--color-blue-700);
+  text-decoration-line: underline;
+  text-underline-offset: 0.2em;
+}
+.tepup-lesson-editor a[href]:not([href^="/tv/"])::after {
+  content: "↗";
+  font-size: 0.75em;
+  margin-left: 0.1em;
+}
+
+/* Thư viện: giữ chỗ cho thanh cuộn để chuyển giữa các phần (trang dài/ngắn) không làm
+   cả khung dịch sang trái/phải. */
+html:has(main.library-tabs) {
+  scrollbar-gutter: stable;
+}

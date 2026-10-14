@@ -1,4 +1,5 @@
 import React from 'react';
+import { parseTvHref } from '@/lib/library/refs';
 
 /**
  * Inline markdown for authored course content.
@@ -39,7 +40,18 @@ function trimTrailingPunctuation(url: string): { href: string; tail: string } {
 
 const linkClass = 'text-purple-600 hover:text-purple-800 underline break-words';
 
-export function renderInlineMarkdown(text: string): React.ReactNode {
+export interface InlineMarkdownOptions {
+  /**
+   * false: links render as their plain text. For text that sits INSIDE a control (a quiz
+   * option, a flip card, a pair-match or sort-bucket item, a perspective option): a link
+   * inside a button or label is a nested interactive control (axe `nested-interactive`),
+   * which screen readers and keyboards can't reach reliably.
+   */
+  links?: boolean;
+}
+
+export function renderInlineMarkdown(text: string, opts: InlineMarkdownOptions = {}): React.ReactNode {
+  const links = opts.links !== false;
   if (!text || !/[*`[]|https?:\/\//.test(text)) return text;
 
   const nodes: React.ReactNode[] = [];
@@ -59,8 +71,19 @@ export function renderInlineMarkdown(text: string): React.ReactNode {
           {code}
         </code>,
       );
+    } else if (linkText !== undefined && !links) {
+      nodes.push(<React.Fragment key={key++}>{renderInlineMarkdown(linkText, opts)}</React.Fragment>);
     } else if (linkText !== undefined) {
-      if (SAFE_HREF.test(linkHref)) {
+      const ref = parseTvHref(linkHref);
+      if (ref) {
+        // Tham chiếu thư viện: cùng dạng với link /tv/ trong rich text (sanitize-html.ts),
+        // để ReferenceProvider bắt được cả hai bằng một bộ nghe sự kiện. Kiểu chữ: globals.css.
+        nodes.push(
+          <a key={key++} href={linkHref} data-tv={ref.slug} data-tv-section={ref.section}>
+            {renderInlineMarkdown(linkText)}
+          </a>,
+        );
+      } else if (SAFE_HREF.test(linkHref)) {
         nodes.push(
           <a key={key++} href={linkHref} target="_blank" rel="noopener noreferrer" className={linkClass}>
             {renderInlineMarkdown(linkText)}
@@ -74,15 +97,17 @@ export function renderInlineMarkdown(text: string): React.ReactNode {
     } else if (bold !== undefined) {
       nodes.push(
         <strong key={key++} className="font-semibold">
-          {renderInlineMarkdown(bold)}
+          {renderInlineMarkdown(bold, opts)}
         </strong>,
       );
     } else if (italic !== undefined) {
       nodes.push(
         <em key={key++} className="italic">
-          {renderInlineMarkdown(italic)}
+          {renderInlineMarkdown(italic, opts)}
         </em>,
       );
+    } else if (bareUrl !== undefined && !links) {
+      nodes.push(bareUrl);
     } else if (bareUrl !== undefined) {
       const { href, tail } = trimTrailingPunctuation(bareUrl);
       nodes.push(

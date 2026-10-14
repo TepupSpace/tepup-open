@@ -2,12 +2,15 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent, FocusEvent as ReactFocusEvent } from 'react';
-import { MessageCircle, Search, PencilLine } from 'lucide-react';
+import { MessageCircle, Search, PencilLine, Sparkles, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAIChat } from '@/lib/contexts/AIChatContext';
 
 interface TextSelectionPopoverProps {
-  /** When set, adds a "suggest a fix" action for the selected passage. */
-  onSuggestEdit?: (selectedText: string) => void;
+  /**
+   * When set, adds "Góp ý" for the selected passage. One form covers every kind of
+   * suggestion (fix the lesson, propose a glossary term); the learner picks the kind there.
+   */
+  onSuggest?: (selectedText: string) => void;
 }
 
 interface PopoverState {
@@ -36,7 +39,7 @@ function isEditable(el: Element | null): boolean {
   return el instanceof HTMLElement && (el.isContentEditable || el.matches('input, textarea, select'));
 }
 
-export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPopoverProps = {}) {
+export default function TextSelectionPopover({ onSuggest }: TextSelectionPopoverProps = {}) {
   const { openWithSelection } = useAIChat();
   const [popover, setPopover] = useState<PopoverState>({
     visible: false,
@@ -47,6 +50,11 @@ export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPop
     keyboard: false,
   });
   const popoverRef = useRef<HTMLDivElement>(null);
+  // "AI" mở các thao tác AI ngay trong thanh (thay chỗ các nút khác), để thanh luôn gọn
+  // hai nút trên điện thoại. Mỗi lần chọn đoạn mới thì quay về thanh chính.
+  const [aiMenu, setAiMenu] = useState(false);
+  // Đổi nhóm nút bằng bàn phím hay chuột đều giữ focus trong thanh: nút đầu của nhóm mới.
+  const focusFirstAfterSwap = useRef(false);
   // Kiểu con trỏ của lần nhấn gần nhất: chuột/bút thì dùng `mouseup`, cảm ứng thì
   // dùng `selectionchange` (xem TOUCH_SETTLE_MS).
   const lastPointerRef = useRef<string>('mouse');
@@ -73,6 +81,7 @@ export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPop
     const y = Math.max(rect.top - 8, 56);
 
     setPopover({ visible: true, x, y, selectedText: text, touch, keyboard });
+    setAiMenu(false);
   }, []);
 
   useEffect(() => {
@@ -139,6 +148,12 @@ export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPop
     }
   }, [popover.visible, popover.keyboard, popover.selectedText]);
 
+  useEffect(() => {
+    if (!focusFirstAfterSwap.current) return;
+    focusFirstAfterSwap.current = false;
+    popoverRef.current?.querySelector('button')?.focus();
+  }, [aiMenu]);
+
   if (!popover.visible) return null;
 
   const hide = () => setPopover((prev) => ({ ...prev, visible: false }));
@@ -153,9 +168,14 @@ export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPop
     openWithSelection({ selectedText: popover.selectedText, mode: 'factcheck' });
   };
 
-  const handleSuggestEdit = () => {
+  const handleSuggest = () => {
     hide();
-    onSuggestEdit?.(popover.selectedText);
+    onSuggest?.(popover.selectedText);
+  };
+
+  const toggleAiMenu = (open: boolean) => {
+    focusFirstAfterSwap.current = true;
+    setAiMenu(open);
   };
 
   const handleToolbarKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
@@ -221,22 +241,38 @@ export default function TextSelectionPopover({ onSuggestEdit }: TextSelectionPop
       }
       className="flex items-center bg-gray-900 text-white rounded-xl shadow-xl overflow-hidden max-w-[calc(100vw-1rem)]"
     >
-      <button onClick={handleAskAI} className={buttonClass}>
-        <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-        Hỏi AI
-      </button>
-      <div className="w-px h-5 bg-gray-600 flex-shrink-0" aria-hidden="true" />
-      <button onClick={handleFactCheck} className={buttonClass}>
-        <Search className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-        Kiểm chứng
-      </button>
-      {onSuggestEdit && (
+      {aiMenu ? (
         <>
-          <div className="w-px h-5 bg-gray-600 flex-shrink-0" aria-hidden="true" />
-          <button onClick={handleSuggestEdit} className={buttonClass}>
-            <PencilLine className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-            Góp ý sửa
+          <button onClick={() => toggleAiMenu(false)} className={buttonClass} aria-label="Quay lại">
+            <ChevronLeft className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
           </button>
+          <div className="w-px h-5 bg-gray-600 flex-shrink-0" aria-hidden="true" />
+          <button onClick={handleAskAI} className={buttonClass}>
+            <MessageCircle className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+            Hỏi AI
+          </button>
+          <div className="w-px h-5 bg-gray-600 flex-shrink-0" aria-hidden="true" />
+          <button onClick={handleFactCheck} className={buttonClass}>
+            <Search className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+            Kiểm chứng
+          </button>
+        </>
+      ) : (
+        <>
+          <button onClick={() => toggleAiMenu(true)} className={buttonClass} aria-expanded={false}>
+            <Sparkles className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+            AI
+            <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 -ml-0.5" aria-hidden="true" />
+          </button>
+          {onSuggest && (
+            <>
+              <div className="w-px h-5 bg-gray-600 flex-shrink-0" aria-hidden="true" />
+              <button onClick={handleSuggest} className={buttonClass}>
+                <PencilLine className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                Góp ý
+              </button>
+            </>
+          )}
         </>
       )}
     </div>

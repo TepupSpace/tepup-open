@@ -78,8 +78,10 @@ const menuGroups = [
         minRole: 'ADMIN' as const,
       },
       {
+        // Một chỗ cho mọi loại mục: chủ đề, nguồn, thuật ngữ, viết tắt, công cụ, bài đọc
+        // (tài liệu cũ ở /admin/library đã được xếp lại thành các loại này).
         title: 'Thư viện',
-        href: '/admin/library',
+        href: '/admin/library-entries',
         icon: Library,
         minRole: 'ADMIN' as const,
       },

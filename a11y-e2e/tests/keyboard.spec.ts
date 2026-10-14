@@ -164,7 +164,7 @@ test('suggest-edit dialog by keyboard', async ({ page }, testInfo) => {
 });
 
 /**
- * Regression: opening "Góp ý sửa" from the selection bar and pressing "Huỷ" must leave the
+ * Regression: opening "Góp ý" from the selection bar and pressing "Huỷ" must leave the
  * learner where they were reading (focus used to return to the page heading and jump to the top).
  */
 test('suggest dialog from a selection keeps the reading position', async ({ page }, testInfo) => {
@@ -191,7 +191,7 @@ test('suggest dialog from a selection keeps the reading position', async ({ page
   await page.mouse.move(box.x + Math.min(box.width - 4, 260), box.y + 10, { steps: 8 });
   await page.mouse.up();
   const bar = page.getByRole('toolbar', { name: 'Thao tác với đoạn đã chọn' });
-  await bar.getByRole('button', { name: /Góp ý sửa/ }).click();
+  await bar.getByRole('button', { name: /^Góp ý$/ }).click();
   await page.getByRole('button', { name: 'Huỷ' }).click();
   await page.waitForTimeout(400);
   const after = await page.evaluate(() => window.scrollY);

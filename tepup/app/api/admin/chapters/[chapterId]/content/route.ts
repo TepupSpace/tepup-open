@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { revalidateContent } from '@/lib/cache';
+import { revalidateContent, revalidateLibrary } from '@/lib/cache';
+import { rebuildUsage } from '@/lib/library/usage-service';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
 import { contentErrorBody, sanitizeAdminBlocks } from '@/lib/schemas/content-validation';
@@ -108,10 +109,13 @@ export async function PUT(
 
       // Published: the draft has served its purpose.
       await deleteDraft('CHAPTER', chapterId, tx);
+      // "Xuất hiện trong" of every library entry this chapter links to (lib/library/usage-service.ts).
+      await rebuildUsage(tx, 'CHAPTER', chapterId, safeBlocks);
       return saved;
     });
 
     revalidateContent();
+    revalidateLibrary();
     return NextResponse.json({ data: content });
   } catch (error) {
     console.error('Error updating chapter content:', error);

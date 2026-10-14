@@ -17,7 +17,7 @@ export default function HubHeader() {
           <Link href="/courses" aria-current="page">
             Khoá học
           </Link>
-          <Link href="/library">Thư viện</Link>
+          <Link href="/thu-vien">Thư viện</Link>
           <span className="ch-nav__soon" aria-disabled="true">
             Công cụ
             <small>Sắp có</small>

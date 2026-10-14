@@ -69,7 +69,7 @@ function Item({
             {badge}
           </span>
         )}
-        <span>{renderInlineMarkdown(text)}</span>
+        <span>{renderInlineMarkdown(text, { links: false })}</span>
       </span>
     </button>
   );

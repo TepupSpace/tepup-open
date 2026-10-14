@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { Prisma } from '@prisma/client';
-import { revalidateContent } from '@/lib/cache';
+import { revalidateContent, revalidateLibrary } from '@/lib/cache';
+import { rebuildUsage } from '@/lib/library/usage-service';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
 import { lessonSlugInCourse } from '@/lib/api-helpers';
@@ -179,10 +180,13 @@ export async function PUT(
 
       // Published: the draft has served its purpose.
       await deleteDraft('LESSON', lessonId, tx);
+      // "Xuất hiện trong" of every library entry this lesson links to (lib/library/usage-service.ts).
+      await rebuildUsage(tx, 'LESSON', lessonId, safeBlocks);
       return saved;
     });
 
     revalidateContent();
+    revalidateLibrary();
     return NextResponse.json({ data: content });
   } catch (error) {
     console.error('Error updating lesson content:', error);

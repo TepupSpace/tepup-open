@@ -267,7 +267,7 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
                         : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-100 cursor-grab'
                   }`}
                 >
-                  {renderInlineMarkdown(item.text)}
+                  {renderInlineMarkdown(item.text, { links: false })}
                 </button>
               );
             })}
@@ -307,7 +307,7 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
                     key={it.id}
                     className="px-2 py-1 rounded-md bg-green-100 text-green-800 text-xs"
                   >
-                    {renderInlineMarkdown(it.text)}
+                    {renderInlineMarkdown(it.text, { links: false })}
                   </span>
                 ))}
               </div>
@@ -322,7 +322,7 @@ export default function SortBucketBlockComponent({ block, onComplete }: Props) {
           className="pointer-events-none fixed z-50 px-3 py-2 rounded-lg border-2 border-green-500 bg-white text-sm text-green-900 shadow-lg"
           style={{ left: drag.x, top: drag.y, transform: 'translate(-50%, -120%)' }}
         >
-          {renderInlineMarkdown(draggedItem.text)}
+          {renderInlineMarkdown(draggedItem.text, { links: false })}
         </div>
       )}
 
