@@ -28,6 +28,7 @@ import {
 import { shortCitation, fullCitation, type Citation } from './citation';
 import { baseTitle, collectTvSlugs, isValidEntrySlug } from './refs';
 import { sourceKeyOf } from './source-key';
+import { layoutGraph } from './graph-layout';
 
 const CACHE_SECONDS = 300;
 /** Giới hạn số slug một lần hỏi xem nhanh (một bài học hiếm khi quá vài chục). */
@@ -443,15 +444,17 @@ export async function getEntryAdmin(id: string) {
 // ============================================================
 
 export interface GraphData {
-  nodes: { slug: string; title: string; type: EntryType }[];
+  /** x, y = bố cục ban đầu (graph-layout.ts), tính một lần và cache cùng dữ liệu. */
+  nodes: { slug: string; title: string; type: EntryType; x: number; y: number }[];
   /** s, t = chỉ số trong `nodes`. Mỗi cặp một cạnh, bất kể loại và chiều liên kết. */
   edges: { s: number; t: number }[];
 }
 
 async function getGraphInternal(): Promise<GraphData> {
   const [entries, links] = await Promise.all([
-    prisma.libraryEntry.findMany({ where: { isActive: true }, select: { id: true, slug: true, title: true, type: true } }),
-    prisma.libraryLink.findMany({ select: { fromId: true, toId: true } }),
+    // Thứ tự cố định để bố cục không đổi giữa các lần làm mới cache khi dữ liệu không đổi.
+    prisma.libraryEntry.findMany({ where: { isActive: true }, select: { id: true, slug: true, title: true, type: true }, orderBy: { slug: 'asc' } }),
+    prisma.libraryLink.findMany({ select: { fromId: true, toId: true }, orderBy: [{ fromId: 'asc' }, { toId: 'asc' }] }),
   ]);
   const index = new Map(entries.map((e, i) => [e.id, i]));
   const seen = new Set<string>();
@@ -465,11 +468,13 @@ async function getGraphInternal(): Promise<GraphData> {
     seen.add(key);
     edges.push({ s: a, t: b });
   }
-  return { nodes: entries.map((e) => ({ slug: e.slug, title: e.title, type: e.type as EntryType })), edges };
+  const pos = layoutGraph(entries.length, edges);
+  return { nodes: entries.map((e, i) => ({ slug: e.slug, title: e.title, type: e.type as EntryType, ...pos[i] })), edges };
 }
 
 /** Mọi mục đang hiển thị và mọi liên kết giữa chúng. */
-export const getGraph = unstable_cache(getGraphInternal, ['library-graph'], {
+// v2: các mục có thêm x, y. Đổi khoá để cache cũ (không có toạ độ) không được dùng sau khi triển khai.
+export const getGraph = unstable_cache(getGraphInternal, ['library-graph-v2'], {
   revalidate: CACHE_SECONDS,
   tags: [LIBRARY_TAG],
 });

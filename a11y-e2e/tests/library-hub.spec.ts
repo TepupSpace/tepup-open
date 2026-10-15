@@ -83,8 +83,25 @@ test.describe('library hub', () => {
     test.skip(!(await node.count()), 'seed-reference-demo.ts has not been run on this database');
     // Its neighbours are lit, unrelated entries dimmed.
     await expect(map.locator('a[data-tv="giam-sat-hang-loat"]')).toHaveCSS('opacity', '1');
-    await expect(map.locator('a[data-tv="cong-cu-mat-khau"]')).toHaveCSS('opacity', '0.3');
+    await expect(map.locator('a[data-tv="cong-cu-mat-khau"]')).toHaveCSS('opacity', '0.2');
     await screenshot(page, testInfo, '/thu-vien/ban-do focus', false);
+    // Dragging a dot moves it and never opens the entry (a drag starts after 5px).
+    const dot = node.locator('circle').nth(1);
+    const start = await dot.boundingBox();
+    await page.mouse.move(start!.x + start!.width / 2, start!.y + start!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(start!.x + 80, start!.y + 40, { steps: 8 });
+    await page.mouse.up();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    expect(Math.abs((await dot.boundingBox())!.x - start!.x)).toBeGreaterThan(20);
+    // Ctrl + scroll zooms the map, not the page.
+    const scrollY = await page.evaluate(() => window.scrollY);
+    const r0 = Number(await dot.getAttribute('r'));
+    await page.keyboard.down('Control');
+    await page.mouse.wheel(0, -300);
+    await page.keyboard.up('Control');
+    await expect.poll(async () => Number(await dot.getAttribute('r'))).toBeGreaterThan(r0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollY);
     // Filters: hiding sources removes their dots.
     await page.getByRole('checkbox', { name: /Nguồn/ }).uncheck();
     await expect(map.locator('a[data-tv="planet-money-palantir"]')).toHaveCount(0);

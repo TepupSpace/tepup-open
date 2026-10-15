@@ -292,7 +292,18 @@ All tabs share one layout (`app/(learn)/thu-vien/(tabs)/layout.tsx`): the "Thư 
 
 ### 7.5 Map (Bản đồ)
 
-`/thu-vien/ban-do` draws every entry as a dot and every link (of any kind) as a line, like Obsidian's graph view. Dot size grows with the number of links; colour shows the type, and checkboxes hide a type or the entries that have no links yet. Hovering or focusing a dot lights it and its neighbours and dims the rest; clicking (or Enter) opens the entry in the side panel, because each dot is an ordinary `/tv/` link. `?muc=<slug>` (the "Xem trên bản đồ thư viện" link in a panel) centres and highlights one entry. The layout is a small deterministic force simulation (`components/reference/LibraryGraph.tsx`, no extra dependency). A "Xem dạng danh sách" list gives the same information to keyboard and screen-reader users.
+`/thu-vien/ban-do` draws every entry as a dot and every link (of any kind) as a line, like Obsidian's graph view. Dot size grows with the number of links; colour shows the type, and checkboxes hide a type or the entries that have no links yet. Hovering or focusing a dot lights it and its neighbours and dims the rest; clicking (or Enter) opens the entry in the side panel, because each dot is an ordinary `/tv/` link. `?muc=<slug>` (the "Xem trên bản đồ thư viện" link in a panel) centres and highlights one entry. The layout follows Obsidian's graph view (its `sim.js` is d3-force in a Web Worker): a pull to the centre, springs along links with strength 1/min(degree) so a hub doesn't drag its leaves around, repulsion between every pair, and collision so dots never overlap. It cools over about 300 ticks (`lib/library/graph-layout.ts`, no extra dependency). The starting layout is computed once on the server and cached with the graph data. Repulsion is stronger than Obsidian's scaled default, because at the library's size the default lets clusters run into each other.
+
+Behaviour on the page (`components/reference/LibraryGraph.tsx`):
+- **Filtering doesn't re-lay the map.** The remaining dots keep their places and glide to new ones when the simulation is reheated.
+- **Dragging a dot** pins it under the pointer, and the dots linked to it follow. A drag only starts after the pointer moves 5px, so a click still opens the entry.
+- **Zoom** is Ctrl/⌘ + scroll (trackpad pinch counts as this), a two-finger pinch, or the buttons. It eases toward the pointer. A plain scroll still scrolls the page.
+- **Hover and focus** fade everything unrelated to 20% opacity. Edges run from rim to rim, and dots grow with √zoom.
+- **Labels never overlap.** Priority goes to the highlighted dot, then its neighbours, then the most-linked entries, so more labels appear as you zoom in. They are text-xs (rem), so they follow the reading-size setting.
+- **With `?muc=`, a "Phạm vi" control** limits the map to entries 1–3 links away, like Obsidian's local graph.
+- **Reduced motion:** with "prefers-reduced-motion", nothing animates; dots and the view jump straight to their new places.
+
+A "Xem dạng danh sách" list gives the same information to keyboard and screen-reader users.
 
 ---
 
