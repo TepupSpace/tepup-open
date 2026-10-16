@@ -1,12 +1,29 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Image from 'next/image';
 import FocusTrap from 'focus-trap-react';
 import { Download, Share, SquarePlus, X } from 'lucide-react';
 import { useIsStandalone } from '@/lib/hooks/useMediaQuery';
 
 const DISMISSED_KEY = 'tepup_install_dismissed';
+
+/** Đọc một lần từ trình duyệt; ở server thì coi như đã tắt (không hiện gì) và không phải iOS. */
+const noSubscribe = () => () => {};
+const readDismissed = () => {
+  try {
+    return localStorage.getItem(DISMISSED_KEY) === '1';
+  } catch {
+    return false;
+  }
+};
+const readIsIosSafari = () => {
+  // iPad từ iPadOS 13 khai báo mình là Macintosh, phải kiểm tra thêm cảm ứng.
+  const ua = navigator.userAgent;
+  const iosLike = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  return iosLike && isSafari;
+};
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -43,26 +60,12 @@ interface BeforeInstallPromptEvent extends Event {
 export default function InstallPrompt() {
   const isStandalone = useIsStandalone();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [dismissed, setDismissed] = useState(true);
+  const storedDismissed = useSyncExternalStore(noSubscribe, readDismissed, () => true);
+  const [dismissedNow, setDismissed] = useState(false);
+  const dismissed = storedDismissed || dismissedNow;
   const [showIosGuide, setShowIosGuide] = useState(false);
-  const [isIos, setIsIos] = useState(false);
+  const isIos = useSyncExternalStore(noSubscribe, readIsIosSafari, () => false);
   const sectionRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    try {
-      setDismissed(localStorage.getItem(DISMISSED_KEY) === '1');
-    } catch {
-      setDismissed(false);
-    }
-
-    // iPad từ iPadOS 13 khai báo mình là Macintosh, phải kiểm tra thêm cảm ứng.
-    const ua = navigator.userAgent;
-    const iosLike =
-      /iPad|iPhone|iPod/.test(ua) ||
-      (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-    const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-    setIsIos(iosLike && isSafari);
-  }, []);
 
   useEffect(() => {
     const onBeforeInstall = (event: Event) => {

@@ -305,6 +305,8 @@ export default function ChapterContentClient({
                       )}
                       {block.type === 'image' && isAllowedMediaUrl(block.src) && (
                         <figure>
+                          {/* Xem trước ảnh của tác giả: <img> có chủ ý, không qua bộ tối ưu ảnh của Vercel. */}
+                          {/* eslint-disable-next-line @next/next/no-img-element -- xem trên */}
                           <img
                             src={block.src}
                             alt={imageAltText(block)}

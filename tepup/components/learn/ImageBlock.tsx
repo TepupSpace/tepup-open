@@ -55,8 +55,9 @@ function AllowedImage({ block, onSettled }: ImageBlockProps) {
             Không tải được ảnh{alt ? `: ${alt}` : ''}
           </div>
         ) : (
-          // onLoad/onError là sự kiện tải ảnh, không phải tương tác của người học.
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+          // onLoad/onError là sự kiện tải ảnh, không phải tương tác của người học. <img> thay cho
+          // next/image có chủ ý: ảnh của tác giả, không đưa qua bộ tối ưu ảnh của Vercel (hạn mức gói Hobby).
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, @next/next/no-img-element -- xem trên
           <img
             ref={imgRef}
             src={block.src}

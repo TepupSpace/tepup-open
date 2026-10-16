@@ -44,6 +44,8 @@ const LibraryDocumentBlockComponent = dynamic(
   { loading: () => <BlockSkeleton height="8rem" /> }
 );
 
+// Each block component takes its own block type; a string-keyed map can't tie the key to the prop type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous component map
 const INTERACTIVE_BLOCK_MAP: Record<string, React.ComponentType<{ block: any; onComplete?: () => void }>> = {
   'calculator': dynamic(() => import('@/components/blocks/CalculatorBlock'), { loading: () => <BlockSkeleton /> }),
   'slider-simulator': dynamic(() => import('@/components/blocks/SliderSimulatorBlock'), { loading: () => <BlockSkeleton /> }),

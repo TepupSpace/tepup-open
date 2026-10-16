@@ -16,9 +16,9 @@ export default function MarketingFooter() {
             className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"
             aria-label="Liên kết chân trang"
           >
-            <a href="/#gioi-thieu" className="text-gray-600 hover:text-gray-900">
+            <Link href="/#gioi-thieu" className="text-gray-600 hover:text-gray-900">
               Giới thiệu
-            </a>
+            </Link>
             <Link
               href="/contributor-guide"
               className="text-gray-600 hover:text-gray-900"

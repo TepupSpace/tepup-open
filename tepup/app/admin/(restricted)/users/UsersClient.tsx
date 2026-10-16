@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { User, Search } from 'lucide-react';
 import { useAnnouncer } from '@/components/blocks/useAnnouncer';
 
@@ -38,15 +38,17 @@ export default function UsersClient() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [total, setTotal] = useState(0);
   const [search, setSearch] = useState('');
+  // Ô tìm kiếm chỉ có hiệu lực khi bấm tìm (không tìm theo từng phím gõ).
+  const [appliedSearch, setAppliedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [message, announce] = useAnnouncer();
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setIsLoading(true);
     const params = new URLSearchParams({ page: String(page) });
-    if (search) params.set('search', search);
+    if (appliedSearch) params.set('search', appliedSearch);
     if (roleFilter) params.set('role', roleFilter);
 
     try {
@@ -59,16 +61,18 @@ export default function UsersClient() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [page, appliedSearch, roleFilter]);
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter]);
+  }, [fetchUsers]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
+    // Trang 1 với từ khoá mới. Nếu cả hai không đổi thì effect không chạy lại, nên tải lại ở đây.
+    if (page === 1 && search === appliedSearch) fetchUsers();
     setPage(1);
-    fetchUsers();
+    setAppliedSearch(search);
   };
 
   const displayName = (u: UserData) => u.username || u.name || 'Chưa đặt tên';

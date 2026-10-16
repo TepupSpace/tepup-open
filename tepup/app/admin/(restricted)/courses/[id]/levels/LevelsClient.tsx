@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from '@/components/ui/AppLink';
 import {
   moveLevel,
@@ -98,19 +98,7 @@ export default function LevelsClient({
   const [lessonName, setLessonName] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [courseId]);
-
-  // Disarm the grip on any mouse release — pressing a handle and letting go without
-  // dragging would otherwise leave that row `draggable` for the next stray gesture.
-  useEffect(() => {
-    const disarm = () => setHandleArmed(null);
-    document.addEventListener('mouseup', disarm);
-    return () => document.removeEventListener('mouseup', disarm);
-  }, []);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/courses/${courseId}`);
       const data = await res.json();
@@ -130,7 +118,19 @@ export default function LevelsClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Disarm the grip on any mouse release — pressing a handle and letting go without
+  // dragging would otherwise leave that row `draggable` for the next stray gesture.
+  useEffect(() => {
+    const disarm = () => setHandleArmed(null);
+    document.addEventListener('mouseup', disarm);
+    return () => document.removeEventListener('mouseup', disarm);
+  }, []);
 
   function toggleLevel(levelId: string) {
     const newExpanded = new Set(expandedLevels);

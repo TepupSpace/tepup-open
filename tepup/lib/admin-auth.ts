@@ -1,6 +1,6 @@
 import { auth } from './auth';
 import { redirect } from 'next/navigation';
-import { hasMinRole, isContributorOrAbove, canReviewContent } from './role-utils';
+import { isContributorOrAbove, canReviewContent } from './role-utils';
 
 export async function requireAuth() {
   const session = await auth();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react';
@@ -60,13 +60,7 @@ export default function LibraryDocumentClient({
     sections: [{ paragraphs: [''] }],
   });
 
-  useEffect(() => {
-    if (!isNew) {
-      fetchDocument();
-    }
-  }, [id, isNew]);
-
-  async function fetchDocument() {
+  const fetchDocument = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/library/${id}`);
       const data = await res.json();
@@ -92,7 +86,13 @@ export default function LibraryDocumentClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    if (!isNew) {
+      fetchDocument();
+    }
+  }, [fetchDocument, isNew]);
 
   /** Báo lỗi kiểm tra: hiện trong vùng role="alert" và đưa focus tới ô cần sửa. */
   function fail(msg: string, field: ErrorField, focusId: string) {

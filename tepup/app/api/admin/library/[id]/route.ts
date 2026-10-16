@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { revalidateLibrary } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
@@ -73,7 +74,7 @@ export async function PUT(
       );
     }
 
-    const updateData: any = {
+    const updateData: Prisma.LibraryDocumentUpdateInput = {
       title: title.trim(),
       description: description.trim(),
       content: content,

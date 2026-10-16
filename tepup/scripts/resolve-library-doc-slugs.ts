@@ -71,6 +71,7 @@ function resolve(
     }
 
     // Bỏ hẳn documentSlug, giống hệt cách migrate ban đầu làm.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructure drops documentSlug from the stored block on purpose
     const { documentSlug: _drop, ...rest } = block;
     changed = true;
     return { ...rest, documentId: id };

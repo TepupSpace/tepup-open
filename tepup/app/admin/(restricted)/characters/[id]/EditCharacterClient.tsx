@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save } from 'lucide-react';
@@ -40,11 +40,7 @@ export default function EditCharacterClient({
     isActive: true,
   });
 
-  useEffect(() => {
-    fetchCharacter();
-  }, [id]);
-
-  async function fetchCharacter() {
+  const fetchCharacter = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/characters/${id}`);
       const data = await res.json();
@@ -72,7 +68,11 @@ export default function EditCharacterClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    fetchCharacter();
+  }, [fetchCharacter]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

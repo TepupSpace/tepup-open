@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save } from 'lucide-react';
@@ -41,11 +41,7 @@ export default function EditCategoryClient({
     isActive: true,
   });
 
-  useEffect(() => {
-    fetchCategory();
-  }, [id]);
-
-  async function fetchCategory() {
+  const fetchCategory = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/categories/${id}`);
       const data = await res.json();
@@ -68,7 +64,11 @@ export default function EditCategoryClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    fetchCategory();
+  }, [fetchCategory]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

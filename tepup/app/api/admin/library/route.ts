@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { Prisma } from '@prisma/client';
 import { revalidateLibrary } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
     const search = searchParams.get('search') || undefined;
     const category = searchParams.get('category') || undefined;
 
-    const where: any = {};
+    const where: Prisma.LibraryDocumentWhereInput = {};
 
     if (search) {
       where.OR = [
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
     }
 
     // Check if sections have at least one non-empty paragraph
-    const hasValidContent = content.sections.some((section: any) =>
+    const hasValidContent = content.sections.some((section: { paragraphs?: string[] }) =>
       section.paragraphs && section.paragraphs.some((p: string) => p.trim() !== '')
     );
 
@@ -128,7 +129,9 @@ export async function POST(request: Request) {
 
     revalidateLibrary();
     return NextResponse.json({ data: document }, { status: 201 });
-  } catch (error: any) {
+  } catch (caught) {
+    // Lỗi của Prisma có `code` (vd. P2002) và `meta`; lỗi khác thì các trường này undefined.
+    const error = caught as { message?: string; code?: string; meta?: unknown };
     console.error('❌ Error creating library document:', error);
     console.error('Error details:', {
       message: error.message,

@@ -9,6 +9,8 @@
  * đã cài thì người học không có cách nào tải lại để thoát ra. Nên mọi request đều
  * đi thẳng ra mạng: nội dung luôn mới, đổi lại mất mạng là trang trắng.
  */
+// Không đọc ở đâu cả: đổi chuỗi này là đổi nội dung file, buộc trình duyệt cài lại service worker.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- cố ý: dấu phiên bản của file
 const VERSION = 'tepup-sw-v1-no-cache';
 
 self.addEventListener('install', () => {

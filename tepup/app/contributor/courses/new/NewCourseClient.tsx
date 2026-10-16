@@ -27,7 +27,8 @@ export default function NewCourseClient() {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [categoryId, setCategoryId] = useState('');
-  const [icon, setIcon] = useState('book-open');
+  // Biểu tượng mặc định; người đóng góp chưa chọn được (admin đổi sau).
+  const icon = 'book-open';
 
   useEffect(() => {
     fetch('/api/contributor/categories')

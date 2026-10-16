@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save, Layers, BookOpen, ChevronRight } from 'lucide-react';
@@ -73,11 +73,7 @@ export default function EditStoryClient({
     isActive: true,
   });
 
-  useEffect(() => {
-    Promise.all([fetchCharacters(), fetchCourses(), fetchStory()]);
-  }, [id]);
-
-  async function fetchCharacters() {
+  const fetchCharacters = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/characters');
       const data = await res.json();
@@ -87,9 +83,9 @@ export default function EditStoryClient({
     } catch (err) {
       console.error('Error fetching characters:', err);
     }
-  }
+  }, []);
 
-  async function fetchCourses() {
+  const fetchCourses = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/courses');
       const data = await res.json();
@@ -99,9 +95,9 @@ export default function EditStoryClient({
     } catch (err) {
       console.error('Error fetching courses:', err);
     }
-  }
+  }, []);
 
-  async function fetchStory() {
+  const fetchStory = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/stories/${id}`);
       const data = await res.json();
@@ -132,7 +128,11 @@ export default function EditStoryClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    Promise.all([fetchCharacters(), fetchCourses(), fetchStory()]);
+  }, [fetchCharacters, fetchCourses, fetchStory]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

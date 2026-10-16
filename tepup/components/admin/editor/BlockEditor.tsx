@@ -57,6 +57,8 @@ export type {
 } from './types';
 
 /** Map block type to its editor component */
+// Each editor takes its own block type; a string-keyed map can't tie the key to the prop type.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous component map
 const BLOCK_EDITOR_MAP: Record<string, React.ComponentType<{ block: any; onChange: (b: any) => void }>> = {
   'text': TextBlockEditor,
   'image': ImageBlockEditor,

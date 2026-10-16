@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { use, useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save, BookMarked } from 'lucide-react';
@@ -72,11 +72,7 @@ export default function EditCourseClient({
     isActive: true,
   });
 
-  useEffect(() => {
-    Promise.all([fetchCategories(), fetchStories(), fetchCourse()]);
-  }, [id]);
-
-  async function fetchCategories() {
+  const fetchCategories = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/categories');
       const data = await res.json();
@@ -86,9 +82,9 @@ export default function EditCourseClient({
     } catch (err) {
       console.error('Error fetching categories:', err);
     }
-  }
+  }, []);
 
-  async function fetchStories() {
+  const fetchStories = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/stories');
       const data = await res.json();
@@ -98,9 +94,9 @@ export default function EditCourseClient({
     } catch (err) {
       console.error('Error fetching stories:', err);
     }
-  }
+  }, []);
 
-  async function fetchCourse() {
+  const fetchCourse = useCallback(async () => {
     try {
       const res = await fetch(`/api/admin/courses/${id}`);
       const data = await res.json();
@@ -131,7 +127,11 @@ export default function EditCourseClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [id]);
+
+  useEffect(() => {
+    Promise.all([fetchCategories(), fetchStories(), fetchCourse()]);
+  }, [fetchCategories, fetchCourse, fetchStories]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

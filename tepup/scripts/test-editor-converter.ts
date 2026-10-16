@@ -6,9 +6,9 @@ import { inlineToHtml, htmlToInline, type InlineContent } from '@/lib/editor/inl
 import { toBlockNote, toContentBlocks } from '@/lib/editor/blocknote-converter';
 import type { ContentBlock } from '@/lib/types/content';
 
-function norm(v: any): any {
+function norm(v: unknown): unknown {
   if (Array.isArray(v)) return v.map(norm);
-  if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map((k) => [k, norm(v[k])]));
+  if (v && typeof v === 'object') return Object.fromEntries(Object.keys(v).sort().map((k) => [k, norm((v as Record<string, unknown>)[k])]));
   return v;
 }
 let pass = 0, fail = 0;

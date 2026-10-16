@@ -1,5 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script run with node
 const { PrismaClient } = require("@prisma/client");
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script run with node
 const { PrismaPg } = require("@prisma/adapter-pg");
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- CommonJS script run with node
 const pg = require("pg");
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 3 });
 const adapter = new PrismaPg(pool);

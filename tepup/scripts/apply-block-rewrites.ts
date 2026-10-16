@@ -53,15 +53,18 @@ type Rewrite = {
   after: string;
 };
 
+/** Một object/mảng trong JSON của block, truy cập bằng tên trường hoặc chỉ số. */
+type JsonContainer = Record<string | number, unknown>;
+
 /** Đi theo đường dẫn kiểu `pairs[0].right` / `cards[2].back.text` tới ô chứa chuỗi. */
-function resolvePath(block: any, path: string): { holder: any; key: string | number } {
+function resolvePath(block: unknown, path: string): { holder: JsonContainer | undefined; key: string | number } {
   const parts = path.split('.').flatMap((seg) => {
     const m = seg.match(/^(\w+)\[(\d+)\]$/);
     return m ? [m[1], Number(m[2])] : [seg];
   });
-  let cur = block;
-  for (const part of parts.slice(0, -1)) cur = cur?.[part as keyof typeof cur];
-  return { holder: cur, key: parts[parts.length - 1] as string | number };
+  let cur: unknown = block;
+  for (const part of parts.slice(0, -1)) cur = (cur as JsonContainer | undefined)?.[part];
+  return { holder: cur as JsonContainer | undefined, key: parts[parts.length - 1] as string | number };
 }
 
 async function main() {
@@ -91,7 +94,7 @@ async function main() {
     if (!row) throw new Error(`Không tìm thấy ${k}`);
     backups.push({ source, id, blocks: row.blocks });
 
-    const blocks = structuredClone(row.blocks) as any[];
+    const blocks = structuredClone(row.blocks) as unknown[];
     for (const r of items) {
       const { holder, key } = resolvePath(blocks[r.blockIndex], r.path);
       const current = holder?.[key as keyof typeof holder];
@@ -103,7 +106,7 @@ async function main() {
         console.error(`  hiện tại: ${current}`);
         process.exit(1);
       }
-      holder[key] = r.after;
+      holder![key] = r.after;
       console.log(`  ✓ ${r.where} · block #${r.blockIndex} · ${r.path}  (${r.before.length} → ${r.after.length})`);
     }
     pending.push({ source, id, blocks, count: items.length, where: items[0].where });

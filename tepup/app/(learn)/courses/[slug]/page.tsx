@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from '@/components/ui/AppLink';
 import BackButton from '@/components/BackButton';
 import LearningPath from '@/components/LearningPath';
 import { getCourseBySlug } from '@/lib/services/content-service';
@@ -16,9 +15,6 @@ import {
   Scale,
   Coins,
   GraduationCap,
-  Headphones,
-  Store,
-  Briefcase,
   Landmark,
 } from 'lucide-react';
 
@@ -41,12 +37,6 @@ export async function generateStaticParams() {
   return [];
 }
 
-
-const characterIconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  'graduation-cap': GraduationCap,
-  'briefcase': Briefcase,
-  'store': Store,
-};
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
   lightbulb: Lightbulb,

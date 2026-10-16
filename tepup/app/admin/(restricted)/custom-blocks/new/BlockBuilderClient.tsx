@@ -68,12 +68,14 @@ function BlockPreview({ config }: { config: CustomBlockTypeConfig }) {
     return () => observer.disconnect();
   }, [label, key]);
 
-  // Reset status when config changes
-  useEffect(() => {
+  // Reset status when config changes (during render, as React recommends, not in an effect).
+  const [prevConfig, setPrevConfig] = useState(config);
+  if (config !== prevConfig) {
+    setPrevConfig(config);
     setStatus('loading');
     setErrorMsg('');
     setKey(k => k + 1);
-  }, [config]);
+  }
 
   // Timeout fallback: 60s
   useEffect(() => {

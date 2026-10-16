@@ -6,7 +6,7 @@ import { requireAdminSession, validateRequired, validateSlugUnique, getNextSortO
 // GET /api/admin/courses - List all courses
 export async function GET(request: Request) {
   try {
-    const { session, error } = await requireAdminSession();
+    const { error } = await requireAdminSession();
     if (error) return error;
 
     const { searchParams } = new URL(request.url);

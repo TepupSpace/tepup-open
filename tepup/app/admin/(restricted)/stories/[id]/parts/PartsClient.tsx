@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from '@/components/ui/AppLink';
 import {
   Plus,
@@ -76,11 +76,7 @@ export default function PartsClient({
   const [chapterSlug, setChapterSlug] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    fetchData();
-  }, [storyId]);
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     try {
       // Fetch story info
       const storyRes = await fetch(`/api/admin/stories/${storyId}`);
@@ -101,7 +97,11 @@ export default function PartsClient({
     } finally {
       setLoading(false);
     }
-  }
+  }, [storyId]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   function togglePart(partId: string) {
     const newExpanded = new Set(expandedParts);

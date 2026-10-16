@@ -50,6 +50,12 @@ type Violation = {
   text: string;
 };
 
+// Dữ liệu trong database chưa được kiểm, nên mọi trường đều có thể thiếu hoặc sai kiểu.
+type RawBlock = { type?: unknown; pairs?: unknown; cards?: unknown } | null | undefined;
+type RawPair = { left?: unknown; right?: unknown } | null | undefined;
+type RawFace = { kind?: unknown; text?: unknown } | null | undefined;
+type RawCard = { front?: RawFace; back?: RawFace } | null | undefined;
+
 function auditBlocks(
   blocks: unknown,
   source: Violation['source'],
@@ -59,11 +65,11 @@ function auditBlocks(
   if (!Array.isArray(blocks)) return [];
   const out: Violation[] = [];
 
-  blocks.forEach((block: any, blockIndex: number) => {
+  blocks.forEach((block: RawBlock, blockIndex: number) => {
     const base = { source, recordId, where, blockIndex };
 
     if (block?.type === 'pair-match' && Array.isArray(block.pairs)) {
-      block.pairs.forEach((pair: any, i: number) => {
+      block.pairs.forEach((pair: RawPair, i: number) => {
         const left = String(pair?.left ?? '');
         const right = String(pair?.right ?? '');
 
@@ -84,7 +90,7 @@ function auditBlocks(
     }
 
     if (block?.type === 'flip-card' && Array.isArray(block.cards)) {
-      block.cards.forEach((card: any, i: number) => {
+      block.cards.forEach((card: RawCard, i: number) => {
         for (const side of ['front', 'back'] as const) {
           const face = card?.[side];
           if (face?.kind !== 'text') continue;
