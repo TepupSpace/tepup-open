@@ -8,7 +8,7 @@ import { Compass } from 'lucide-react';
 export default function NotFound() {
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-white">
-      <div className="text-center max-w-md">
+      <main id="main-content" className="text-center max-w-md">
         <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mx-auto mb-5">
           <Compass className="w-7 h-7 text-blue-500" aria-hidden="true" />
         </div>
@@ -22,7 +22,7 @@ export default function NotFound() {
         >
           Về trang khoá học
         </Link>
-      </div>
+      </main>
     </div>
   );
 }

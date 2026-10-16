@@ -176,7 +176,7 @@ const SECTIONS: { label: string; node: React.ReactNode }[] = [
 export default function BlockDemoPage() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-10">
         <Link
           href="/contributor-guide"
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors mb-6"
@@ -193,12 +193,12 @@ export default function BlockDemoPage() {
         <div className="space-y-8">
           {SECTIONS.map((s) => (
             <section key={s.label}>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-blue-500 mb-2">{s.label}</h2>
+              <h2 className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2">{s.label}</h2>
               <div className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">{s.node}</div>
             </section>
           ))}
         </div>
-      </div>
+      </main>
     </div>
   );
 }

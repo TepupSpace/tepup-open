@@ -61,6 +61,20 @@ export function record(testInfo: TestInfo, kind: string, label: string, data: un
 
 /** axe-core against the rendered page (incl. cross-origin iframes), WCAG 2.2 A/AA + best practice. */
 export async function runAxe(page: Page, testInfo: TestInfo, label: string) {
+  // Let entrance animations (fade-ins) finish first: axe measures colours as they are at that
+  // moment, so half-faded text reported false contrast failures. Endless animations
+  // (spinners) are skipped, and the wait is capped.
+  await page.evaluate(() =>
+    Promise.race([
+      Promise.all(
+        document
+          .getAnimations()
+          .filter((a) => a.effect?.getComputedTiming().iterations !== Infinity)
+          .map((a) => a.finished.catch(() => undefined)),
+      ),
+      new Promise((r) => setTimeout(r, 5000)),
+    ]),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-practice'])
     .analyze();

@@ -176,7 +176,7 @@ export default function StoryShowcase({ characters }: StoryShowcaseProps) {
 
         <Link className="ch-story__cta" href={`/story/${active.slug}`}>
           Khám phá hành trình
-          <IconArrowRight color="#E03E28" />
+          <IconArrowRight color="#DA3C27" />
         </Link>
       </div>
 

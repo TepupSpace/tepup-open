@@ -31,9 +31,12 @@ export default async function LessonRouteView({
   const exitHref = `/courses/${data.course.slug}`;
 
   const hiddenBadge = isHidden ? (
-    <div className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900 shadow-md ring-1 ring-amber-300">
+    <aside
+      aria-label="Trạng thái bài học"
+      className="pointer-events-none fixed bottom-4 left-1/2 z-50 -translate-x-1/2 rounded-full bg-amber-100 px-4 py-2 text-xs font-semibold text-amber-900 shadow-md ring-1 ring-amber-300"
+    >
       Bài này đang ẩn — người học không thấy
-    </div>
+    </aside>
   ) : null;
 
   // No content authored yet. Say so — never invent placeholder lessons, which is

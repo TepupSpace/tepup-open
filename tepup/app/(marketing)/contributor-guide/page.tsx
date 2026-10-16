@@ -25,7 +25,7 @@ export const metadata = {
 export default function ContributorGuidePage() {
   return (
     <div className="bg-gray-50">
-      <main className="max-w-3xl mx-auto px-4 py-12">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 py-12">
         {/* Hero */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-2xl mb-4">
@@ -164,7 +164,7 @@ export default function ContributorGuidePage() {
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
                 <Star className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Contributor <span className="text-gray-400 font-normal">(Cấp 0)</span></h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Contributor <span className="text-gray-600 font-normal">(Cấp 0)</span></h3>
                   <p className="text-gray-600 text-xs">Mới tạo tài khoản. Tạo bản nháp, gửi duyệt.</p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export default function ContributorGuidePage() {
               <div className="flex items-start gap-3 p-3 bg-teal-50 rounded-lg">
                 <Star className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Trusted Contributor <span className="text-gray-400 font-normal">(Cấp 1)</span></h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Trusted Contributor <span className="text-gray-600 font-normal">(Cấp 1)</span></h3>
                   <p className="text-gray-600 text-xs">Được ban quản trị xét duyệt, thường sau khoảng <strong>5 bài được duyệt</strong>. Là sự ghi nhận của ban quản trị. Hiện quyền soạn và gửi duyệt giống Contributor; việc đề xuất chỉnh sửa bài đã có trên web đang được phát triển, chưa có trên giao diện.</p>
                 </div>
               </div>
@@ -180,7 +180,7 @@ export default function ContributorGuidePage() {
               <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
                 <Star className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Reviewer <span className="text-gray-400 font-normal">(Cấp 2)</span></h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Reviewer <span className="text-gray-600 font-normal">(Cấp 2)</span></h3>
                   <p className="text-gray-600 text-xs">Do Admin chỉ định. Duyệt hoặc từ chối đóng góp của người khác.</p>
                 </div>
               </div>
@@ -188,7 +188,7 @@ export default function ContributorGuidePage() {
               <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
                 <Crown className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Admin <span className="text-gray-400 font-normal">(Cấp 3)</span></h3>
+                  <h3 className="font-semibold text-gray-900 text-sm">Admin <span className="text-gray-600 font-normal">(Cấp 3)</span></h3>
                   <p className="text-gray-600 text-xs">Toàn quyền quản lý nội dung và người dùng.</p>
                 </div>
               </div>
@@ -279,7 +279,7 @@ export default function ContributorGuidePage() {
                   </p>
                   <Link
                     href="/feature-request"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-lg hover:bg-amber-700 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-700 text-white text-xs font-medium rounded-lg hover:bg-amber-800 transition-colors"
                   >
                     <Lightbulb className="w-3.5 h-3.5" />
                     Đề xuất tính năng mới
@@ -337,7 +337,7 @@ export default function ContributorGuidePage() {
           <p className="text-gray-600 mb-6">Tạo tài khoản ẩn danh và bắt đầu chia sẻ kiến thức.</p>
           <Link
             href="/register-contributor"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-500 text-white font-semibold rounded-xl hover:bg-teal-600 transition-all"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-700 text-white font-semibold rounded-xl hover:bg-teal-800 transition-all"
           >
             Đăng ký ngay
             <ArrowRight className="w-5 h-5" />

@@ -1,5 +1,5 @@
 /* ============================================================================
-   Landing v2 — nền giấy, cam #E03E28, dàn nhân vật cắt ghép.
+   Landing v2 — nền giấy, cam #DA3C27, dàn nhân vật cắt ghép.
 
    Nguồn: tepup-demo-v2/demo-landing-v2.html (2 section đầu) và Figma
    "Web Design - Tepup" node 140:5491 (các section sau).
@@ -23,7 +23,8 @@
   --paper: #e8e8e8;
   --ink: #313131;
   --ink-900: #141414;
-  --o: #e03e28;
+  /* #e03e28 tối đi 2,5%: chữ cam trên nền trắng đạt 4,5:1 (WCAG AA), nhìn gần như không khác. */
+  --o: #da3c27;
   --teal: #2cab8b;
   --blue: #3187d7;
   --purple: #aa76cf;

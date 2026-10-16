@@ -250,7 +250,7 @@ export default function HeroScroller() {
           <div className="lp-stage">
             <div className="lp-redline">
               <svg viewBox="0 0 1606.41 571.906" fill="none" preserveAspectRatio="none" aria-hidden="true">
-                <path pathLength={1} d={REDLINE_PATH} stroke="#E03E28" strokeWidth={2.5} />
+                <path pathLength={1} d={REDLINE_PATH} stroke="#DA3C27" strokeWidth={2.5} />
               </svg>
             </div>
 

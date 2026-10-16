@@ -11,8 +11,11 @@
   --ink: #313131;
   --ink-strong: #141414;
   --muted: #666;
-  --red: #e03e28;
+  /* #e03e28 tối đi 2,5%: chữ đỏ trên nền trắng đạt 4,5:1 (WCAG AA). */
+  --red: #da3c27;
   --pink: #e65983;
+  /* Hồng cho chữ trên nền giấy: tiêu đề 36px là chữ lớn, cần 3:1 (#e65983 chỉ 2,8:1). */
+  --pink-text: #d8527a;
   --blue: #3187d7;
   --purple: #aa76cf;
   --green: #2cab8b;
@@ -188,7 +191,7 @@
   line-height: normal;
 }
 .ch-story__head h2 em {
-  color: var(--pink);
+  color: var(--pink-text);
 }
 .ch-shelf__head h2 em {
   color: rgb(var(--tone));

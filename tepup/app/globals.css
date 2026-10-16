@@ -294,6 +294,8 @@ html {
 .tepup-lesson-editor [data-content-type="heading"] { --level: 1.875rem; }     /* level 1 = text-3xl */
 .tepup-lesson-editor [data-content-type="heading"][data-level="2"] { --level: 1.5rem; }
 .tepup-lesson-editor [data-content-type="heading"][data-level="3"] { --level: 1.5rem; }
+/* Trích dẫn: màu xám mặc định của BlockNote (#7d797a) chỉ đạt 4,29:1; dùng gray-600 của bảng màu (chế độ tối tự đổi theo). */
+.tepup-lesson-editor .bn-block-content[data-content-type="quote"] blockquote { color: var(--color-gray-600); }
 /* BlockNote reads --prev-level while a block is changing type; without these the
    heading size would jump mid-edit. */
 .tepup-lesson-editor [data-prev-level="1"] { --prev-level: 1.875rem; }
