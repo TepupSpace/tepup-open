@@ -182,7 +182,7 @@ export default function BlockDemoPage() {
           className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4" />
-          Quay lại Contributor Guide
+          Quay lại Hướng dẫn đóng góp
         </Link>
 
         <h1 className="text-2xl font-bold text-gray-900 mb-1">Thư viện block tương tác</h1>

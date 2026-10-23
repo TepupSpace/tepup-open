@@ -410,6 +410,36 @@ export async function deleteEntry(id: string) {
   await prisma.libraryEntry.delete({ where: { id } });
 }
 
+// --- Transaction variants (history: the route locks the row, records a ContentRevision
+// and writes in ONE transaction). Same rules as createEntry/updateEntry above. -----------
+
+/** Validates an entry write (meta, link rules, duplicate source). Throws EntryValidationError. */
+export async function prepareEntryWrite(input: EntryInput, selfId?: string) {
+  return validate(input, selfId);
+}
+
+export type PreparedEntryWrite = Awaited<ReturnType<typeof prepareEntryWrite>>;
+
+/** createEntry inside the caller's transaction; `prepared` from prepareEntryWrite(input). */
+export async function createEntryInTx(tx: Prisma.TransactionClient, input: EntryInput, prepared: PreparedEntryWrite) {
+  const entry = await tx.libraryEntry.create({ data: writeData(input, prepared.meta, prepared.sourceKey) });
+  await writeLinks(tx, entry.id, input);
+  return entry;
+}
+
+/** updateEntry inside the caller's transaction; `prepared` from prepareEntryWrite(input, id). */
+export async function updateEntryInTx(
+  tx: Prisma.TransactionClient,
+  id: string,
+  input: EntryInput,
+  prepared: PreparedEntryWrite,
+) {
+  const entry = await tx.libraryEntry.update({ where: { id }, data: writeData(input, prepared.meta, prepared.sourceKey) });
+  // Liên kết đi ra được thay nguyên bộ; liên kết đi vào (do mục khác tạo) giữ nguyên.
+  await writeLinks(tx, id, input);
+  return entry;
+}
+
 /** Admin: tìm mục theo tiêu đề/slug, lọc theo loại. Dùng cho danh sách và bộ chọn. */
 export async function searchEntriesAdmin(opts: { q?: string; type?: EntryType; take?: number }) {
   const where: Prisma.LibraryEntryWhereInput = {};

@@ -4,7 +4,7 @@ import { rateLimit, clientIp } from '@/lib/security/rate-limit';
 import { sourceKeyOf } from '@/lib/library/source-key';
 
 // GET /api/tv/search?q= — bộ chọn "Chèn tham chiếu" trong trình soạn thảo (admin và
-// cộng tác viên đều dùng; cộng tác viên không gọi được /api/admin/**). Chỉ trả về
+// người đóng góp đều dùng; người đóng góp không gọi được /api/admin/**). Chỉ trả về
 // mục đang hiển thị công khai, đúng những gì ai cũng xem được ở /thu-vien.
 export async function GET(request: Request) {
   // Tìm kiếm chạm DB mỗi lần gõ; giới hạn theo IP như các API công khai khác.

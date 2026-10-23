@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import type { Prisma } from '@prisma/client';
+import type { Prisma, UserRole } from '@prisma/client';
+import { getLiveTarget, isEditProposalType, isProposalStale } from '@/lib/services/proposal-service';
 import { prisma } from '@/lib/prisma';
 import { getContributorSession } from '@/lib/admin-auth';
 import { prepareContributionData } from '@/lib/ai-import/normalize';
@@ -8,6 +9,19 @@ import {
   isSupportedContributionType,
   validateContributionData,
 } from '@/lib/schemas/content-validation';
+
+/**
+ * The escalation note and who escalated are for admins (proposal §6.13: "Chuyển quản trị
+ * viên"); the author only learns that it was escalated.
+ */
+function forAuthor<T extends { escalationNote: string | null; escalatedById: string | null; escalatedAt: Date | null }>(
+  c: T
+): Omit<T, 'escalationNote' | 'escalatedById' | 'escalatedAt'> & { escalated: boolean } {
+  const { escalationNote: _note, escalatedById: _by, escalatedAt, ...rest } = c;
+  void _note;
+  void _by;
+  return { ...rest, escalated: escalatedAt !== null };
+}
 
 export async function GET(
   req: NextRequest,
@@ -32,7 +46,49 @@ export async function GET(
     return NextResponse.json({ error: 'Không tìm thấy' }, { status: 404 });
   }
 
-  return NextResponse.json(contribution);
+  // Edit proposals: what they edit (name for the banner, links) and whether the live version
+  // moved on since the base ("Bài đã thay đổi"). Null when the target is gone or no longer
+  // visible to the author (hidden-content rule): the editor then says so.
+  let target: {
+    type: string;
+    id: string;
+    name: string;
+    href: string;
+    hubHref: string;
+    entryType?: string;
+    liveUpdatedAt: string | null;
+    stale: boolean;
+  } | null = null;
+  if (isEditProposalType(contribution.type)) {
+    const live = await getLiveTarget(
+      { id: session.user.id, role: session.user.role as UserRole },
+      contribution.type,
+      contribution.targetId
+    );
+    if (live) {
+      target = {
+        type: live.type,
+        id: live.id,
+        name: live.name,
+        href: live.href,
+        hubHref: live.hubHref,
+        entryType: live.entryType,
+        liveUpdatedAt: live.updatedAt?.toISOString() ?? null,
+        stale: isProposalStale(contribution, live),
+      };
+    }
+  }
+
+  // Proposal made from a claimed reader suggestion: show its text next to the editor.
+  // Suggestions are identity-free; only the text fields are sent.
+  const suggestion = contribution.suggestionId
+    ? await prisma.suggestion.findUnique({
+        where: { id: contribution.suggestionId },
+        select: { quote: true, proposal: true, reason: true, createdAt: true },
+      })
+    : null;
+
+  return NextResponse.json({ ...forAuthor(contribution), target, suggestion });
 }
 
 export async function PUT(
@@ -59,6 +115,8 @@ export async function PUT(
     );
   }
 
+  // Only `data` and `message` are read: targetId, baseSnapshot and baseUpdatedAt are set by
+  // the server (create, rebase) and never taken from a save (proposal §6.2).
   const body = await req.json().catch(() => null);
   const { data, message } = body ?? {};
 
@@ -103,7 +161,7 @@ export async function PUT(
     },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json(forAuthor(updated));
 }
 
 export async function DELETE(

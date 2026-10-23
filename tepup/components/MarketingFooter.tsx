@@ -1,4 +1,5 @@
 import Link from '@/components/ui/AppLink';
+import LicenceFooterLine from '@/components/LicenceFooterLine';
 
 export default function MarketingFooter() {
   return (
@@ -34,7 +35,8 @@ export default function MarketingFooter() {
           </nav>
         </div>
 
-        <p className="mt-8 text-xs text-gray-500">
+        <LicenceFooterLine className="mt-8 text-xs text-gray-600" />
+        <p className="mt-2 text-xs text-gray-500">
           © {new Date().getFullYear()} Tepup. Kiến thức công dân thực dụng bằng
           tiếng Việt.
         </p>

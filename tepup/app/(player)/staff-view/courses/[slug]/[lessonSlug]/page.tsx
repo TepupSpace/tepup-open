@@ -2,6 +2,7 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { isContributorOrAbove } from '@/lib/role-utils';
 import { getLessonPageForViewer } from '@/lib/services/content-service';
 import LessonRouteView from '@/components/learn/LessonRouteView';
 
@@ -24,7 +25,8 @@ interface StaffLessonPageProps {
 const loadLesson = cache(async (slug: string, lessonSlug: string) => {
   const session = await auth();
   const viewer = session?.user ? { id: session.user.id, role: session.user.role } : null;
-  return getLessonPageForViewer(slug, lessonSlug, viewer);
+  const result = await getLessonPageForViewer(slug, lessonSlug, viewer);
+  return result ? { ...result, viewerRole: viewer?.role ?? null } : null;
 });
 
 // Tiêu đề riêng cho từng trang: trình thông báo route của Next chỉ đọc khi
@@ -43,5 +45,14 @@ export default async function StaffLessonRoute({ params }: StaffLessonPageProps)
   const result = await loadLesson(slug, lessonSlug);
   if (!result) notFound();
 
-  return <LessonRouteView data={result.page} isHidden={result.isHidden} />;
+  // Staff view: signed-in contributors and above get the hub link (never on the public route).
+  // Learners are signed in too but can't open /contributor, so they get no link.
+  const showHub = !!result.viewerRole && isContributorOrAbove(result.viewerRole);
+  return (
+    <LessonRouteView
+      data={result.page}
+      isHidden={result.isHidden}
+      staffHubHref={showHub ? `/contributor/lessons/${result.page.lesson.id}` : undefined}
+    />
+  );
 }

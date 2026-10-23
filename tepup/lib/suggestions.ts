@@ -39,3 +39,34 @@ export const SUGGESTION_TRANSITIONS: Record<SuggestionStatusValue, SuggestionSta
   APPLIED: [],
   REJECTED: [],
 };
+
+// --- Claiming accepted suggestions (proposal §6.9) ---
+
+/** A claim with no submitted proposal lapses after this many days; the suggestion is free again. */
+export const CLAIM_TTL_DAYS = 14;
+
+/** Statuses of a linked proposal (Contribution.suggestionId) that keep a claim alive past the TTL. */
+export const CLAIM_KEEPING_STATUSES = ['PENDING_REVIEW', 'CHANGES_REQUESTED'] as const;
+
+/**
+ * Is this claim still active? Active = someone claimed it AND (the claim is younger than
+ * CLAIM_TTL_DAYS, OR a linked proposal has been submitted and is still open:
+ * PENDING_REVIEW / CHANGES_REQUESTED). A draft alone doesn't keep a claim: it lapses after
+ * 14 days without a submitted proposal. Pure: the caller looks up `hasSubmittedProposal`.
+ */
+export function isClaimActive(
+  s: { claimedById: string | null; claimedAt: Date | string | null },
+  opts: { hasSubmittedProposal?: boolean; now?: Date } = {}
+): boolean {
+  if (!s.claimedById) return false;
+  if (opts.hasSubmittedProposal) return true;
+  if (!s.claimedAt) return false;
+  const at = typeof s.claimedAt === 'string' ? new Date(s.claimedAt) : s.claimedAt;
+  const now = opts.now ?? new Date();
+  return now.getTime() - at.getTime() < CLAIM_TTL_DAYS * 24 * 60 * 60 * 1000;
+}
+
+/** Cut-off date: claims made before it have expired (unless a submitted proposal keeps them). */
+export function claimCutoff(now: Date = new Date()): Date {
+  return new Date(now.getTime() - CLAIM_TTL_DAYS * 24 * 60 * 60 * 1000);
+}

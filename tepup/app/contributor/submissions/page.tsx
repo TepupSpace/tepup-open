@@ -1,18 +1,14 @@
 import { requireContributor } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import Link from '@/components/ui/AppLink';
-import { Send, CheckCircle, XCircle, Clock, MessageSquare, Eye, Hourglass, ExternalLink } from 'lucide-react';
+import { Send, CheckCircle, XCircle, Clock, MessageSquare, Eye, Hourglass, ExternalLink, AlertTriangle } from 'lucide-react';
 import { getCoursesForContributions } from '@/lib/services/contribution-service';
+import { contributionTypeLabel } from '@/lib/contribution-labels';
+import { describeProposalTargets } from '@/lib/services/proposal-service';
+import type { UserRole } from '@prisma/client';
+import SectionTabs, { MY_CONTRIBUTIONS_TABS } from '@/components/contributor/SectionTabs';
 
 export const metadata = { title: 'Đã gửi duyệt' };
-
-const TYPE_LABELS: Record<string, string> = {
-  NEW_COURSE: 'Khóa học mới',
-  NEW_LEVEL: 'Cấp độ mới',
-  NEW_LESSON: 'Bài học mới',
-  EDIT_LESSON_CONTENT: 'Chỉnh sửa bài học',
-  EDIT_COURSE: 'Chỉnh sửa khóa học',
-};
 
 const STATUS_STYLES: Record<string, { label: string; className: string; icon: typeof Send }> = {
   PENDING_REVIEW: { label: 'Chờ duyệt', className: 'bg-blue-100 text-blue-700', icon: Clock },
@@ -44,9 +40,14 @@ export default async function SubmissionsPage() {
     orderBy: { submittedAt: 'desc' },
   });
   const courses = await getCoursesForContributions(contributions);
+  const targets = await describeProposalTargets(
+    { id: session.user.id, role: session.user.role as UserRole },
+    contributions
+  );
 
   return (
     <div>
+      <SectionTabs label="Đóng góp của tôi" tabs={MY_CONTRIBUTIONS_TABS} current="/contributor/submissions" />
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Đã gửi duyệt</h1>
 
       {contributions.length === 0 ? (
@@ -58,7 +59,9 @@ export default async function SubmissionsPage() {
         <div className="space-y-3">
           {contributions.map((contribution) => {
             const data = contribution.data as Record<string, unknown>;
-            const courseName = (data?.course as Record<string, unknown>)?.name as string || 'Chưa đặt tên';
+            const target = targets.get(contribution.id);
+            const courseName =
+              target?.name || ((data?.course as Record<string, unknown>)?.name as string) || 'Chưa đặt tên';
             const latestReview = contribution.reviews[0];
             // Approval creates the course HIDDEN; an admin activates it later.
             const course = courses.get(contribution.id);
@@ -92,10 +95,24 @@ export default async function SubmissionsPage() {
                         {statusStyle?.label || contribution.status}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {TYPE_LABELS[contribution.type] || contribution.type}
+                        {contributionTypeLabel(contribution.type)}
                       </span>
                     </div>
-                    <h2 className="font-semibold text-gray-900">{courseName}</h2>
+                    <h2 className="font-semibold text-gray-900">
+                      {target?.hubHref ? (
+                        <Link href={target.hubHref} className="hover:underline">
+                          {courseName}
+                        </Link>
+                      ) : (
+                        courseName
+                      )}
+                    </h2>
+                    {target?.stale && (
+                      <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                        <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                        Bài đã thay đổi kể từ khi bạn bắt đầu đề xuất
+                      </p>
+                    )}
                     <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-gray-500">
                       {contribution.submittedAt && (
                         <span className="flex items-center gap-1">

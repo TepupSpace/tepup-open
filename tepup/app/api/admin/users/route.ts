@@ -9,11 +9,15 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const role = searchParams.get('role');
   const search = searchParams.get('search');
-  const page = parseInt(searchParams.get('page') || '1');
+  const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1);
   const limit = 20;
+
+  // Deleted accounts (tombstones) are hidden unless asked for: ?deleted=1 includes them.
+  const includeDeleted = searchParams.get('deleted') === '1';
 
   const where: Record<string, unknown> = {};
   if (role) where.role = role;
+  if (!includeDeleted) where.deletedAt = null;
   if (search) {
     where.OR = [
       { username: { contains: search, mode: 'insensitive' } },
@@ -32,6 +36,8 @@ export async function GET(req: NextRequest) {
         email: true,
         role: true,
         isBanned: true,
+        deletedAt: true,
+        publicHandle: true,
         createdAt: true,
         _count: { select: { contributions: true } },
       },

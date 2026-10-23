@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { revalidateContent } from '@/lib/cache';
+import { revalidateContent, revalidateLibrary } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+import { rebuildUsage } from '@/lib/library/usage-service';
+import { blocksSnapshot, lockCourse, lockLessonContent, recordRevision } from '@/lib/services/revision-service';
+import { buildOutline, recordOutlineRevision } from '@/lib/services/outline-service';
+import { audit } from '@/lib/services/audit-service';
 
 // GET /api/admin/lessons/[id] - Get single lesson
 export async function GET(
@@ -59,7 +63,11 @@ export async function PUT(
     }
 
     const { id } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    // A JSON `null`, array or malformed body is a client error, not a 500.
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Dữ liệu không hợp lệ' }, { status: 400 });
+    }
     const { name, sortOrder } = body;
 
     if (!name || name.trim() === '') {
@@ -69,12 +77,33 @@ export async function PUT(
       );
     }
 
-    const lesson = await prisma.lesson.update({
-      where: { id },
-      data: {
-        name: name.trim(),
-        sortOrder: sortOrder ?? undefined,
-      },
+    const existing = await prisma.lesson.findUnique({ where: { id }, select: { courseId: true } });
+    if (!existing) {
+      return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
+    }
+
+    const lesson = await prisma.$transaction(async (tx) => {
+      // Outline history (proposal §12): lesson names and order are part of the outline.
+      await lockCourse(tx, existing.courseId);
+      const outlineBefore = await buildOutline(tx, existing.courseId);
+      const updated = await tx.lesson.update({
+        where: { id },
+        data: {
+          name: name.trim(),
+          sortOrder: sortOrder ?? undefined,
+        },
+      });
+      const before = outlineBefore?.lessons.find((l) => l.id === id);
+      if (before && (before.name !== updated.name || before.sortOrder !== updated.sortOrder)) {
+        await recordOutlineRevision(tx, existing.courseId, {
+          source: 'ADMIN_PUBLISH',
+          actorId: session.user.id,
+          authorId: session.user.id,
+          previous: outlineBefore,
+          autoPatrol: true,
+        });
+      }
+      return updated;
     });
 
     revalidateContent();
@@ -101,10 +130,55 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await prisma.lesson.delete({
-      where: { id },
+    const found = await prisma.$transaction(async (tx) => {
+      const found = await tx.lesson.findUnique({ where: { id }, select: { courseId: true } });
+      if (!found) return false;
+      // The outline changes: lock order Course → Lesson → content, like every outline writer.
+      await lockCourse(tx, found.courseId);
+      // History outlives the lesson: keep its last content as a DELETED revision
+      // (revisions have no FK to Lesson, so the delete leaves them in place).
+      const live = await lockLessonContent(tx, id);
+      // Re-read under the locks: it may have been deleted (or moved) while we waited.
+      const lesson = await tx.lesson.findUnique({ where: { id }, select: { name: true, courseId: true } });
+      if (!lesson || lesson.courseId !== found.courseId) return false;
+      if (live) {
+        await recordRevision(tx, {
+          targetType: 'LESSON',
+          targetId: id,
+          courseId: lesson.courseId,
+          label: lesson.name,
+          snapshot: blocksSnapshot(live.title, live.blocks),
+          source: 'DELETED',
+          actorId: session.user.id,
+          autoPatrol: true,
+        });
+      }
+      const outlineBefore = await buildOutline(tx, lesson.courseId);
+      // Drop this lesson from library entries' "Xuất hiện trong".
+      await rebuildUsage(tx, 'LESSON', id, []);
+      await tx.lesson.delete({ where: { id } });
+      await recordOutlineRevision(tx, lesson.courseId, {
+        source: 'ADMIN_PUBLISH',
+        actorId: session.user.id,
+        previous: outlineBefore,
+        autoPatrol: true,
+      });
+      await audit(tx, {
+        actorId: session.user.id,
+        action: 'LESSON_DELETED',
+        targetType: 'LESSON',
+        targetId: id,
+        details: { name: lesson.name, courseId: lesson.courseId },
+      });
+      return true;
     });
+    if (!found) {
+      return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
+    }
 
+    // A deleted lesson must disappear for learners now, not after the cache TTL.
+    revalidateContent();
+    revalidateLibrary();
     return NextResponse.json({ message: 'Lesson deleted' });
   } catch (error) {
     console.error('Error deleting lesson:', error);

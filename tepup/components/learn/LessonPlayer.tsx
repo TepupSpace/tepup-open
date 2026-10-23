@@ -30,6 +30,10 @@ interface LessonPlayerProps {
   next?: NextItemLink | null;
   /** Library reference reader (previews + side panels) on? Server flag, see lib/library/flags.ts. */
   references?: boolean;
+  /** Extra header controls. Staff view only (signed-in); the public ISR route never passes it. */
+  headerExtra?: React.ReactNode;
+  /** Notices above the content (flags, endorsements). Same for every visitor: cache-safe. */
+  notices?: React.ReactNode;
 }
 
 /**
@@ -103,6 +107,8 @@ export default function LessonPlayer({
   exitHref,
   next = null,
   references = false,
+  headerExtra = null,
+  notices = null,
 }: LessonPlayerProps) {
   // Every /tv/<slug> in the content, so the reader fetches all previews in one request.
   const refSlugs = useMemo(() => [...collectTvSlugs(blocks).keys()], [blocks]);
@@ -516,6 +522,7 @@ export default function LessonPlayer({
           >
             <PencilLine className="w-5 h-5 text-gray-500" aria-hidden="true" />
           </button>
+          {headerExtra}
         </div>
       </header>
 
@@ -536,6 +543,7 @@ export default function LessonPlayer({
         {/* Đúng một h1 mỗi màn (màn hỏi xem lại có h1 riêng). Nằm ngoài
             contentRef để không phá bộ chọn :first-child bên dưới. */}
         <h1 ref={headingRef} tabIndex={-1} className="sr-only">{title}</h1>
+        {notices && <div className="max-w-3xl mx-auto px-4 pt-4">{notices}</div>}
         <div ref={contentRef} className="max-w-3xl mx-auto px-4 py-8 [&>div:first-child>*]:mt-0">
           {revealed.map(({ block, index }, pos) => {
             const isLast = pos === revealed.length - 1;

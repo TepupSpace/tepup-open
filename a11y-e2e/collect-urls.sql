@@ -53,5 +53,17 @@ SELECT json_build_object(
     'library', (SELECT id FROM "LibraryEntry" ORDER BY slug LIMIT 1),
     'lesson', (SELECT lc."lessonId" FROM "LessonContent" lc WHERE lc.blocks::text LIKE '%"question"%' LIMIT 1),
     'chapter', (SELECT cc."chapterId" FROM "ChapterContent" cc WHERE jsonb_array_length(cc.blocks::jsonb) > 3 LIMIT 1)
+  ),
+  -- Contributor-system pages (tests/contributor-system.spec.ts): any record of each kind.
+  'contrib', json_build_object(
+    'course', (SELECT id FROM "Course" ORDER BY "sortOrder" LIMIT 1),
+    'lesson', (SELECT "lessonId" FROM "LessonContent" ORDER BY "updatedAt" DESC LIMIT 1),
+    'chapter', (SELECT "chapterId" FROM "ChapterContent" ORDER BY "updatedAt" DESC LIMIT 1),
+    'library', (SELECT id FROM "LibraryEntry" WHERE "isActive" ORDER BY slug LIMIT 1),
+    'lessonEdit', (SELECT id FROM "Contribution" WHERE type = 'EDIT_LESSON_CONTENT' ORDER BY "createdAt" DESC LIMIT 1),
+    'chapterEdit', (SELECT id FROM "Contribution" WHERE type = 'EDIT_CHAPTER_CONTENT' ORDER BY "createdAt" DESC LIMIT 1),
+    'entryEdit', (SELECT id FROM "Contribution" WHERE type = 'EDIT_LIBRARY_ENTRY' ORDER BY "createdAt" DESC LIMIT 1),
+    'outlineEdit', (SELECT id FROM "Contribution" WHERE type = 'EDIT_COURSE' ORDER BY "createdAt" DESC LIMIT 1),
+    'reviewRequest', (SELECT id FROM "ReviewRequest" ORDER BY "createdAt" DESC LIMIT 1)
   )
 );

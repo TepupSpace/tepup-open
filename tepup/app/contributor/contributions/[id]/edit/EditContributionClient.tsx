@@ -19,11 +19,29 @@ import {
   FileText,
 } from 'lucide-react';
 import NotionBlockEditor from '@/components/admin/editor/NotionBlockEditor';
+import OutlineProposalEditor from '@/components/contributor/OutlineProposalEditor';
+import LibraryEntryProposalForm, {
+  asEntryFormValue,
+  entryFormToSaved,
+} from '@/components/contributor/proposal/LibraryEntryProposalForm';
+import {
+  ProposalBanner,
+  StaleNotice,
+  SuggestionPanel,
+  targetNoun,
+  type RebaseResult,
+  type SuggestionInfo,
+} from '@/components/contributor/proposal/ProposalPanels';
+import { outlineOfSnapshot } from '@/components/contributor/proposal/outline-utils';
 import { useDraftAutosave } from '@/lib/hooks/useDraftAutosave';
 import { useUnsavedChangesGuard } from '@/lib/hooks/useUnsavedChangesGuard';
 import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import { slugify } from '@/lib/utils/slug';
+import { LICENCE_SUBMIT_NOTE } from '@/lib/licence';
+import type { EntryType } from '@/lib/library/schemas';
 import type { ContentBlock } from '@/lib/types/content';
+
+const AUTOSAVE_HELP = 'Tự lưu vài giây sau khi bạn ngừng gõ (Ctrl+S để lưu ngay).';
 
 interface LessonData {
   name: string;
@@ -51,6 +69,12 @@ interface CourseData {
   levels: LevelData[];
 }
 
+/** EDIT_LESSON_CONTENT / EDIT_CHAPTER_CONTENT data. */
+interface BlocksData {
+  title?: string;
+  blocks: ContentBlock[];
+}
+
 interface ReviewInfo {
   action: string;
   feedback?: string | null;
@@ -58,9 +82,21 @@ interface ReviewInfo {
   reviewer?: { username?: string | null; name?: string | null } | null;
 }
 
-/** What autosave compares and what a save sends. */
+/** What GET /api/contributor/contributions/[id] says about an edit proposal's target. */
+interface TargetInfo {
+  type: string;
+  id: string;
+  name: string;
+  href: string;
+  hubHref: string;
+  entryType?: EntryType;
+  liveUpdatedAt: string | null;
+  stale: boolean;
+}
+
+/** What autosave compares and what a save sends. `data` has the contribution type's shape. */
 interface EditorValue {
-  data: CourseData;
+  data: unknown;
   message: string;
 }
 
@@ -75,6 +111,7 @@ interface LocalBackup {
 type EditStep = 'overview' | { level: number } | { level: number; lesson: number };
 
 const EDITABLE = ['DRAFT', 'CHANGES_REQUESTED'];
+const EDIT_TYPES = ['EDIT_LESSON_CONTENT', 'EDIT_CHAPTER_CONTENT', 'EDIT_LIBRARY_ENTRY', 'EDIT_COURSE'];
 const backupKey = (id: string) => `tepup:contribution-backup:${id}`;
 
 function readBackup(id: string): LocalBackup | null {
@@ -105,24 +142,35 @@ function clearBackup(id: string) {
 }
 
 /**
- * What gets saved: empty lines dropped from every lesson (they'd be blank steps for
- * learners), so the server's "Block #N" counts the same blocks as the editor's gutter.
- * The editor itself keeps them while you type.
+ * What gets saved: empty lines dropped from lesson/chapter blocks (they'd be blank steps for
+ * learners), so the server's "Block #N" counts the same blocks as the editor's gutter. The
+ * editor itself keeps them while you type. Library entries drop empty fields.
  */
-function toSaved(data: CourseData, message: string): EditorValue {
-  return {
-    data: {
-      ...data,
-      levels: data.levels.map((level) => ({
-        ...level,
-        lessons: level.lessons.map((lesson) => ({
-          ...lesson,
-          content: { ...lesson.content, blocks: trimEmptyBlocks(lesson.content.blocks ?? []).blocks },
+function toSaved(type: string, data: unknown, message: string): EditorValue {
+  if (type === 'NEW_COURSE') {
+    const d = data as CourseData;
+    return {
+      data: {
+        ...d,
+        levels: d.levels.map((level) => ({
+          ...level,
+          lessons: level.lessons.map((lesson) => ({
+            ...lesson,
+            content: { ...lesson.content, blocks: trimEmptyBlocks(lesson.content.blocks ?? []).blocks },
+          })),
         })),
-      })),
-    },
-    message,
-  };
+      },
+      message,
+    };
+  }
+  if (type === 'EDIT_LESSON_CONTENT' || type === 'EDIT_CHAPTER_CONTENT') {
+    const d = data as BlocksData;
+    return { data: { ...d, blocks: trimEmptyBlocks(d.blocks ?? []).blocks }, message };
+  }
+  if (type === 'EDIT_LIBRARY_ENTRY') {
+    return { data: entryFormToSaved(asEntryFormValue(data)), message };
+  }
+  return { data, message };
 }
 
 /** Readable text of a rejected save: `details` are strings (structure check) or {path, message}. */
@@ -153,16 +201,25 @@ export default function EditContributionClient() {
   const params = useParams();
   const id = params.id as string;
 
-  const [data, setData] = useState<CourseData | null>(null);
+  const [type, setType] = useState('');
+  const [data, setData] = useState<unknown>(null);
   const [message, setMessage] = useState('');
   const [contributionStatus, setContributionStatus] = useState('');
   const [latestReview, setLatestReview] = useState<ReviewInfo | null>(null);
   const [serverUpdatedAt, setServerUpdatedAt] = useState<string | null>(null);
+  // Edit proposals: the target, the base the proposal started from, a linked reader suggestion.
+  const [target, setTarget] = useState<TargetInfo | null>(null);
+  const [baseSnapshot, setBaseSnapshot] = useState<unknown>(null);
+  const [baseUpdatedAt, setBaseUpdatedAt] = useState<string | null>(null);
+  const [suggestion, setSuggestion] = useState<SuggestionInfo | null>(null);
+  const [rebasing, setRebasing] = useState(false);
+  const [rebaseError, setRebaseError] = useState('');
+  const [rebaseResult, setRebaseResult] = useState<RebaseResult | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [step, setStep] = useState<EditStep>('overview');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [submitError, setSubmitError] = useState('');
+  const [needsLicence, setNeedsLicence] = useState(false);
   // A local copy found on load: restored automatically, or offered when the server moved on.
   const [restoredAt, setRestoredAt] = useState<string | null>(null);
   const [offeredBackup, setOfferedBackup] = useState<LocalBackup | null>(null);
@@ -173,10 +230,12 @@ export default function EditContributionClient() {
   const [saveAnnouncement, setSaveAnnouncement] = useState('');
   const headingRef = useRef<HTMLHeadingElement>(null);
   const restoredRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [discardError, setDiscardError] = useState('');
+  const rebaseResultRef = useRef<HTMLDivElement>(null);
 
+  const isEdit = EDIT_TYPES.includes(type);
   const editable = EDITABLE.includes(contributionStatus);
-  const value = useMemo(() => (data ? toSaved(data, message) : null), [data, message]);
+  const value = useMemo(() => (data && type ? toSaved(type, data, message) : null), [type, data, message]);
 
   // The last save the server rejected as invalid. Saving the same content again would
   // be rejected the same way, so autosave's retries don't hit the server (no error spam);
@@ -226,23 +285,13 @@ export default function EditContributionClient() {
   }, [autosave.status, saveNow]);
 
   /** When the control the user pressed disappeared, put focus on the panel that replaced it. */
-  const refocusIfLost = useCallback((target?: () => HTMLElement | null | undefined) => {
+  const refocusIfLost = useCallback((focusTarget?: () => HTMLElement | null | undefined) => {
     requestAnimationFrame(() => {
       const active = document.activeElement;
       if (active && active !== document.body && active.isConnected) return;
-      const el = target?.() ?? contentRef.current?.querySelector<HTMLElement>('h2');
-      el?.focus();
+      focusTarget?.()?.focus();
     });
   }, []);
-
-  // Switching panels from inside the content area ("Sửa", "Quay lại") removes the pressed button.
-  // Not on first render: loading the page must not move focus.
-  const shownStepRef = useRef(step);
-  useEffect(() => {
-    if (shownStepRef.current === step) return;
-    shownStepRef.current = step;
-    refocusIfLost();
-  }, [step, refocusIfLost]);
 
   // Load the contribution, then any copy this browser kept of edits the server never accepted.
   useEffect(() => {
@@ -254,12 +303,18 @@ export default function EditContributionClient() {
       })
       .then((contribution) => {
         if (cancelled) return;
-        const serverData = contribution.data as CourseData;
+        const t = contribution.type as string;
+        const serverData = contribution.data as unknown;
         const serverMessage = typeof contribution.message === 'string' ? contribution.message : '';
-        const serverValue = toSaved(serverData, serverMessage);
+        const serverValue = toSaved(t, serverData, serverMessage);
+        setType(t);
         setContributionStatus(contribution.status);
         setLatestReview(Array.isArray(contribution.reviews) ? contribution.reviews[0] ?? null : null);
         setServerUpdatedAt(contribution.updatedAt ?? null);
+        setTarget(contribution.target ?? null);
+        setBaseSnapshot(contribution.baseSnapshot ?? null);
+        setBaseUpdatedAt(contribution.baseUpdatedAt ?? null);
+        setSuggestion(contribution.suggestion ?? null);
 
         const backup = EDITABLE.includes(contribution.status) ? readBackup(id) : null;
         const differs = backup && JSON.stringify(backup.value) !== JSON.stringify(serverValue);
@@ -318,6 +373,7 @@ export default function EditContributionClient() {
     setData(offeredBackup.value.data);
     setMessage(offeredBackup.value.message ?? '');
     setRestoredAt(offeredBackup.savedAt);
+    setDiscardError('');
     setOfferedBackup(null);
     setEditorKey((k) => k + 1);
     refocusIfLost(() => restoredRef.current);
@@ -331,10 +387,20 @@ export default function EditContributionClient() {
 
   const discardRestored = async () => {
     if (!window.confirm('Bỏ các thay đổi chưa lưu và quay về bản đã lưu trên máy chủ?')) return;
+    setDiscardError('');
     const res = await fetch(`/api/contributor/contributions/${id}`).catch(() => null);
     const contribution = res && res.ok ? await res.json().catch(() => null) : null;
-    if (!contribution) return;
-    const serverData = contribution.data as CourseData;
+    if (!contribution) {
+      // Nothing was discarded: say so, so nobody assumes the local copy is gone.
+      setDiscardError(
+        res?.status === 401
+          ? 'Phiên đăng nhập đã hết hạn — các thay đổi trên máy này vẫn được giữ. Hãy đăng nhập lại rồi thử lại.'
+          : 'Không thể tải bản đã lưu — các thay đổi trên máy này vẫn được giữ. Thử lại sau.'
+      );
+      restoredRef.current?.focus();
+      return;
+    }
+    const serverData = contribution.data as unknown;
     const serverMessage = typeof contribution.message === 'string' ? contribution.message : '';
     clearBackup(id);
     rejectedRef.current = null;
@@ -342,9 +408,47 @@ export default function EditContributionClient() {
     setMessage(serverMessage);
     setServerUpdatedAt(contribution.updatedAt ?? null);
     setRestoredAt(null);
+    setDiscardError('');
     setEditorKey((k) => k + 1);
-    resetBaseline(toSaved(serverData, serverMessage));
+    resetBaseline(toSaved(type, serverData, serverMessage));
     refocusIfLost(() => headingRef.current);
+  };
+
+  // "Cập nhật theo bản mới": save what's on screen first (the rebase keeps the server copy of
+  // the data), then move the base to the live version and show what changed live.
+  const rebase = async () => {
+    if (rebasing) return;
+    setRebasing(true);
+    setRebaseError('');
+    try {
+      const saved = await saveNow();
+      if (!saved) {
+        setRebaseError('Chưa cập nhật được: bản mới nhất của bạn chưa lưu được (xem lỗi phía trên).');
+        return;
+      }
+      const res = await fetch(`/api/contributor/contributions/${id}/rebase`, { method: 'POST' });
+      const body = await res.json().catch(() => null);
+      if (!res.ok) {
+        setRebaseError(body?.error || 'Không cập nhật được theo bản mới. Vui lòng thử lại.');
+        return;
+      }
+      setBaseSnapshot(body.newBase);
+      setBaseUpdatedAt(body.baseUpdatedAt ?? null);
+      setTarget((t) => (t ? { ...t, stale: false, liveUpdatedAt: body.baseUpdatedAt ?? null } : t));
+      if (body.updatedAt) setServerUpdatedAt(body.updatedAt);
+      if (body.outlineAdjusted && body.data) {
+        // The server added/removed outline rows to match the live course: show its copy.
+        setData(body.data);
+        resetBaseline(toSaved(type, body.data, message));
+        setEditorKey((k) => k + 1);
+      }
+      setRebaseResult({ oldBase: body.oldBase, newBase: body.newBase, outlineAdjusted: body.outlineAdjusted });
+      requestAnimationFrame(() => rebaseResultRef.current?.focus());
+    } catch {
+      setRebaseError('Mất kết nối — chưa cập nhật được. Vui lòng thử lại.');
+    } finally {
+      setRebasing(false);
+    }
   };
 
   // Save what's on screen FIRST, then submit: submit sends the server copy for review,
@@ -353,6 +457,7 @@ export default function EditContributionClient() {
     if (isSubmitting) return;
     setIsSubmitting(true);
     setSubmitError('');
+    setNeedsLicence(false);
     try {
       const saved = await saveNow();
       if (!saved) {
@@ -362,6 +467,11 @@ export default function EditContributionClient() {
       const res = await fetch(`/api/contributor/contributions/${id}/submit`, { method: 'POST' });
       if (!res.ok) {
         const d = await res.json().catch(() => null);
+        if (res.status === 403 && d?.needsLicence) {
+          setNeedsLicence(true);
+          setSubmitError(d.error || 'Bạn cần đồng ý giấy phép nội dung trước khi gửi.');
+          return;
+        }
         setSubmitError(describeSaveError(d).replace(/^Chưa lưu được/, 'Chưa gửi duyệt được'));
         return;
       }
@@ -373,82 +483,6 @@ export default function EditContributionClient() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  // Level operations
-  const addLevel = () => {
-    if (!data) return;
-    setData({
-      ...data,
-      levels: [
-        ...data.levels,
-        { name: `Cấp độ ${data.levels.length + 1}`, sortOrder: data.levels.length, lessons: [] },
-      ],
-    });
-  };
-
-  const removeLevel = (idx: number) => {
-    if (!data) return;
-    if (!window.confirm('Xóa cấp độ này cùng mọi bài học trong đó?')) return;
-    setData({
-      ...data,
-      levels: data.levels.filter((_, i) => i !== idx).map((l, i) => ({ ...l, sortOrder: i })),
-    });
-    setStep('overview');
-  };
-
-  const updateLevelName = (idx: number, name: string) => {
-    if (!data) return;
-    const newLevels = [...data.levels];
-    newLevels[idx] = { ...newLevels[idx], name };
-    setData({ ...data, levels: newLevels });
-  };
-
-  // Lesson operations
-  const addLesson = (levelIdx: number) => {
-    if (!data) return;
-    const newLevels = [...data.levels];
-    const level = newLevels[levelIdx];
-    newLevels[levelIdx] = {
-      ...level,
-      lessons: [
-        ...level.lessons,
-        {
-          name: `Bài ${level.lessons.length + 1}`,
-          sortOrder: level.lessons.length,
-          content: { title: '', blocks: [] },
-        },
-      ],
-    };
-    setData({ ...data, levels: newLevels });
-  };
-
-  const removeLesson = (levelIdx: number, lessonIdx: number) => {
-    if (!data) return;
-    if (!window.confirm('Xóa bài học này?')) return;
-    const newLevels = [...data.levels];
-    newLevels[levelIdx] = {
-      ...newLevels[levelIdx],
-      lessons: newLevels[levelIdx].lessons
-        .filter((_, i) => i !== lessonIdx)
-        .map((l, i) => ({ ...l, sortOrder: i })),
-    };
-    setData({ ...data, levels: newLevels });
-    if (typeof step === 'object' && 'lesson' in step && step.level === levelIdx) {
-      setStep({ level: levelIdx });
-    }
-    refocusIfLost();
-  };
-
-  const updateLesson = (levelIdx: number, lessonIdx: number, patch: (l: LessonData) => LessonData) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const newLevels = [...prev.levels];
-      const lessons = [...newLevels[levelIdx].lessons];
-      lessons[lessonIdx] = patch(lessons[lessonIdx]);
-      newLevels[levelIdx] = { ...newLevels[levelIdx], lessons };
-      return { ...prev, levels: newLevels };
-    });
   };
 
   if (loadError && !data) {
@@ -475,6 +509,9 @@ export default function EditContributionClient() {
   const showFeedback =
     contributionStatus === 'CHANGES_REQUESTED' && latestReview?.action === 'CHANGES_REQUESTED' && latestReview.feedback;
   const reviewerName = latestReview?.reviewer?.username || latestReview?.reviewer?.name || 'Người duyệt';
+  const heading = isEdit
+    ? `Đề xuất sửa ${targetNoun(type)}: ${target?.name ?? '(không còn xem được)'}`
+    : (data as CourseData).course?.name || 'Khóa học chưa đặt tên';
 
   return (
     <div>
@@ -489,7 +526,7 @@ export default function EditContributionClient() {
             Bản nháp
           </Link>
           <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-gray-900 break-words">
-            {data.course.name || 'Khóa học chưa đặt tên'}
+            {heading}
           </h1>
           {editable && <SaveStatus status={autosave.status} lastSavedAt={autosave.lastSavedAt} isDirty={isDirty} />}
           <p className="sr-only" aria-live="polite">
@@ -497,29 +534,35 @@ export default function EditContributionClient() {
           </p>
         </div>
         {editable && (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => void manualSave()}
-              // aria-disabled, not disabled: the pressed button keeps focus while saving.
-              aria-disabled={autosave.status === 'saving' || undefined}
-              aria-keyshortcuts="Control+S"
-              title="Bản nháp cũng tự lưu vài giây sau khi bạn ngừng gõ. Phím tắt: Ctrl+S."
-              className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-500 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium aria-disabled:opacity-60 aria-disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
-            >
-              <Save className="w-4 h-4" aria-hidden="true" />
-              {autosave.status === 'saving' ? 'Đang lưu...' : 'Lưu'}
-            </button>
-            <button
-              type="button"
-              onClick={submit}
-              aria-disabled={isSubmitting || undefined}
-              title="Lưu bản mới nhất rồi gửi cho người duyệt"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium aria-disabled:opacity-60 aria-disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-            >
-              <Send className="w-4 h-4" aria-hidden="true" />
-              {isSubmitting ? 'Đang gửi...' : contributionStatus === 'CHANGES_REQUESTED' ? 'Gửi lại' : 'Gửi duyệt'}
-            </button>
+          <div className="flex flex-col items-end gap-1">
+            <p id="licence-submit-note" className="text-xs text-gray-600">
+              {LICENCE_SUBMIT_NOTE}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void manualSave()}
+                // aria-disabled, not disabled: the pressed button keeps focus while saving.
+                aria-disabled={autosave.status === 'saving' || undefined}
+                aria-keyshortcuts="Control+S"
+                title="Bản nháp cũng tự lưu vài giây sau khi bạn ngừng gõ. Phím tắt: Ctrl+S."
+                className="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-500 text-gray-700 rounded-xl hover:bg-gray-50 text-sm font-medium aria-disabled:opacity-60 aria-disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+              >
+                <Save className="w-4 h-4" aria-hidden="true" />
+                {autosave.status === 'saving' ? 'Đang lưu...' : 'Lưu'}
+              </button>
+              <button
+                type="button"
+                onClick={submit}
+                aria-disabled={isSubmitting || undefined}
+                aria-describedby="licence-submit-note"
+                title="Lưu bản mới nhất rồi gửi cho người duyệt"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium aria-disabled:opacity-60 aria-disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+              >
+                <Send className="w-4 h-4" aria-hidden="true" />
+                {isSubmitting ? 'Đang gửi...' : contributionStatus === 'CHANGES_REQUESTED' ? 'Gửi lại' : 'Gửi duyệt'}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -563,6 +606,9 @@ export default function EditContributionClient() {
           <button type="button" onClick={() => void discardRestored()} className="text-teal-800 underline underline-offset-2">
             Bỏ, dùng bản đã lưu
           </button>
+          <p role="alert" className="w-full text-red-700 empty:hidden">
+            {discardError}
+          </p>
         </div>
       )}
 
@@ -605,142 +651,458 @@ export default function EditContributionClient() {
         }
       >
         {submitError}
+        {needsLicence && (
+          <>
+            {' '}
+            <Link href="/contributor/settings" className="font-medium underline underline-offset-2">
+              Mở Cài đặt để đồng ý giấy phép
+            </Link>
+          </>
+        )}
       </div>
 
-      {/* Stacks on small screens: the structure goes above the form. */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
-        {/* Left sidebar - course structure */}
-        <div className="w-full lg:w-72 lg:flex-shrink-0">
-          <nav aria-label="Cấu trúc khóa học" className="bg-white rounded-xl border border-gray-100 p-4 lg:sticky lg:top-6">
-            {/* Course overview */}
+      {isEdit ? (
+        <EditProposalBody
+          type={type}
+          data={data}
+          setData={setData}
+          message={message}
+          setMessage={setMessage}
+          editable={editable}
+          editorKey={editorKey}
+          target={target}
+          baseSnapshot={baseSnapshot}
+          baseUpdatedAt={baseUpdatedAt}
+          suggestion={suggestion}
+          stale={!!target?.stale}
+          rebasing={rebasing}
+          rebaseError={rebaseError}
+          rebaseResult={rebaseResult}
+          rebaseResultRef={rebaseResultRef}
+          onRebase={() => void rebase()}
+          onDismissRebase={() => {
+            setRebaseResult(null);
+            refocusIfLost(() => headingRef.current);
+          }}
+        />
+      ) : (
+        <NewCourseEditor
+          data={data as CourseData}
+          setData={(next) =>
+            setData((prev: unknown) => (typeof next === 'function' ? next(prev as CourseData) : next))
+          }
+          message={message}
+          setMessage={setMessage}
+          editable={editable}
+          editorKey={editorKey}
+        />
+      )}
+    </div>
+  );
+}
+
+// --- Edit proposals (lesson, chapter, library entry, course outline) ---
+
+function EditProposalBody({
+  type,
+  data,
+  setData,
+  message,
+  setMessage,
+  editable,
+  editorKey,
+  target,
+  baseSnapshot,
+  baseUpdatedAt,
+  suggestion,
+  stale,
+  rebasing,
+  rebaseError,
+  rebaseResult,
+  rebaseResultRef,
+  onRebase,
+  onDismissRebase,
+}: {
+  type: string;
+  data: unknown;
+  setData: React.Dispatch<React.SetStateAction<unknown>>;
+  message: string;
+  setMessage: (m: string) => void;
+  editable: boolean;
+  editorKey: number;
+  target: TargetInfo | null;
+  baseSnapshot: unknown;
+  baseUpdatedAt: string | null;
+  suggestion: SuggestionInfo | null;
+  stale: boolean;
+  rebasing: boolean;
+  rebaseError: string;
+  rebaseResult: RebaseResult | null;
+  rebaseResultRef: React.RefObject<HTMLDivElement | null>;
+  onRebase: () => void;
+  onDismissRebase: () => void;
+}) {
+  const noun = targetNoun(type);
+  let editor: React.ReactNode;
+  if (type === 'EDIT_LESSON_CONTENT' || type === 'EDIT_CHAPTER_CONTENT') {
+    const d = data as BlocksData;
+    editor = (
+      <div className="space-y-4">
+        <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+          <label htmlFor="proposal-title" className="block text-sm font-medium text-gray-700 mb-1">
+            Tiêu đề nội dung
+          </label>
+          <input
+            id="proposal-title"
+            type="text"
+            value={d.title ?? ''}
+            disabled={!editable}
+            maxLength={300}
+            onChange={(e) => {
+              const title = e.target.value;
+              setData((prev: unknown) => ({ ...(prev as BlocksData), title }));
+            }}
+            className={inputClass}
+          />
+        </div>
+        <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-6">
+          {editable ? (
+            <NotionBlockEditor
+              key={`proposal-${editorKey}`}
+              mode="contributor"
+              heading={<h2 className="text-sm font-semibold text-gray-700">Nội dung {noun}</h2>}
+              help={<p>{AUTOSAVE_HELP}</p>}
+              blocks={d.blocks ?? []}
+              // Functional update: the editor may call an onChange from an earlier render.
+              onChange={(blocks) => setData((prev: unknown) => ({ ...(prev as BlocksData), blocks }))}
+            />
+          ) : (
+            <>
+              <h2 className="text-sm font-semibold text-gray-700 mb-3">Nội dung {noun}</h2>
+              <p className="text-sm text-gray-600">
+                {trimEmptyBlocks(d.blocks ?? []).blocks.length} block. Đề xuất không còn sửa được nên trình soạn bị ẩn.
+              </p>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  } else if (type === 'EDIT_LIBRARY_ENTRY') {
+    editor = (
+      <LibraryEntryProposalForm
+        key={`entry-${editorKey}`}
+        value={asEntryFormValue(data)}
+        entryType={target?.entryType ?? null}
+        selfId={target?.id ?? null}
+        readOnly={!editable}
+        onChange={setData}
+      />
+    );
+  } else {
+    editor = (
+      <OutlineProposalEditor
+        key={`outline-${editorKey}`}
+        value={data}
+        base={outlineOfSnapshot(baseSnapshot)}
+        readOnly={!editable}
+        onChange={(next) => {
+          if (editable) setData(next);
+        }}
+      />
+    );
+  }
+
+  return (
+    <>
+      {target ? (
+        <ProposalBanner type={type} name={target.name} href={target.href} baseUpdatedAt={baseUpdatedAt} />
+      ) : (
+        <div className="mb-4 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Nội dung gốc của đề xuất này không còn tồn tại, hoặc bạn không còn quyền xem nó.
+        </div>
+      )}
+      <StaleNotice
+        ref={rebaseResultRef}
+        type={type}
+        stale={stale}
+        editable={editable}
+        busy={rebasing}
+        error={rebaseError}
+        result={rebaseResult}
+        onRebase={onRebase}
+        onDismissResult={onDismissRebase}
+      />
+      <div className={suggestion ? 'grid grid-cols-1 gap-4 lg:grid-cols-[1fr_18rem]' : ''}>
+        <div className="min-w-0 space-y-4">
+          {editor}
+          <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+            <label htmlFor="contribution-message" className="block text-sm font-medium text-gray-700 mb-1">
+              Lời nhắn cho người duyệt <span className="font-normal text-gray-600">(tuỳ chọn)</span>
+            </label>
+            <textarea
+              id="contribution-message"
+              value={message}
+              disabled={!editable}
+              maxLength={2000}
+              onChange={(e) => setMessage(e.target.value)}
+              aria-describedby="contribution-message-hint"
+              rows={3}
+              placeholder="VD: sửa gì và vì sao, nguồn tham khảo, điều bạn muốn người duyệt xem kỹ…"
+              className={`${inputClass} resize-y`}
+            />
+            <p id="contribution-message-hint" className="mt-1 text-xs text-gray-600">
+              Tối đa 2000 ký tự ({message.length}/2000).
+            </p>
+          </div>
+        </div>
+        {suggestion && <SuggestionPanel suggestion={suggestion} />}
+      </div>
+    </>
+  );
+}
+
+// --- NEW_COURSE ---
+
+function NewCourseEditor({
+  data,
+  setData,
+  message,
+  setMessage,
+  editable,
+  editorKey,
+}: {
+  data: CourseData;
+  setData: (next: CourseData | ((prev: CourseData) => CourseData)) => void;
+  message: string;
+  setMessage: (m: string) => void;
+  editable: boolean;
+  editorKey: number;
+}) {
+  const [step, setStep] = useState<EditStep>('overview');
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  /** When the control the user pressed disappeared, put focus on the panel that replaced it. */
+  const refocusIfLost = useCallback(() => {
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body && active.isConnected) return;
+      contentRef.current?.querySelector<HTMLElement>('h2')?.focus();
+    });
+  }, []);
+
+  // Switching panels from inside the content area ("Sửa", "Quay lại") removes the pressed button.
+  // Not on first render: loading the page must not move focus.
+  const shownStepRef = useRef(step);
+  useEffect(() => {
+    if (shownStepRef.current === step) return;
+    shownStepRef.current = step;
+    refocusIfLost();
+  }, [step, refocusIfLost]);
+
+  // Level operations
+  const addLevel = () => {
+    setData({
+      ...data,
+      levels: [
+        ...data.levels,
+        { name: `Cấp độ ${data.levels.length + 1}`, sortOrder: data.levels.length, lessons: [] },
+      ],
+    });
+  };
+
+  const removeLevel = (idx: number) => {
+    if (!window.confirm('Xóa cấp độ này cùng mọi bài học trong đó?')) return;
+    setData({
+      ...data,
+      levels: data.levels.filter((_, i) => i !== idx).map((l, i) => ({ ...l, sortOrder: i })),
+    });
+    setStep('overview');
+  };
+
+  const updateLevelName = (idx: number, name: string) => {
+    const newLevels = [...data.levels];
+    newLevels[idx] = { ...newLevels[idx], name };
+    setData({ ...data, levels: newLevels });
+  };
+
+  // Lesson operations
+  const addLesson = (levelIdx: number) => {
+    const newLevels = [...data.levels];
+    const level = newLevels[levelIdx];
+    newLevels[levelIdx] = {
+      ...level,
+      lessons: [
+        ...level.lessons,
+        {
+          name: `Bài ${level.lessons.length + 1}`,
+          sortOrder: level.lessons.length,
+          content: { title: '', blocks: [] },
+        },
+      ],
+    };
+    setData({ ...data, levels: newLevels });
+  };
+
+  const removeLesson = (levelIdx: number, lessonIdx: number) => {
+    if (!window.confirm('Xóa bài học này?')) return;
+    const newLevels = [...data.levels];
+    newLevels[levelIdx] = {
+      ...newLevels[levelIdx],
+      lessons: newLevels[levelIdx].lessons
+        .filter((_, i) => i !== lessonIdx)
+        .map((l, i) => ({ ...l, sortOrder: i })),
+    };
+    setData({ ...data, levels: newLevels });
+    if (typeof step === 'object' && 'lesson' in step && step.level === levelIdx) {
+      setStep({ level: levelIdx });
+    }
+    refocusIfLost();
+  };
+
+  const updateLesson = (levelIdx: number, lessonIdx: number, patch: (l: LessonData) => LessonData) => {
+    setData((prev) => {
+      const newLevels = [...prev.levels];
+      const lessons = [...newLevels[levelIdx].lessons];
+      lessons[lessonIdx] = patch(lessons[lessonIdx]);
+      newLevels[levelIdx] = { ...newLevels[levelIdx], lessons };
+      return { ...prev, levels: newLevels };
+    });
+  };
+
+  return (
+    /* Stacks on small screens: the structure goes above the form. */
+    <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
+      {/* Left sidebar - course structure */}
+      <div className="w-full lg:w-72 lg:flex-shrink-0">
+        <nav aria-label="Cấu trúc khóa học" className="bg-white rounded-xl border border-gray-100 p-4 lg:sticky lg:top-6">
+          {/* Course overview */}
+          <button
+            type="button"
+            onClick={() => setStep('overview')}
+            aria-current={step === 'overview' ? 'true' : undefined}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
+              step === 'overview' ? 'bg-teal-50 text-teal-800' : 'text-gray-700 hover:bg-gray-50'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" aria-hidden="true" />
+            Thông tin khóa học
+          </button>
+
+          {/* Levels */}
+          <div className="space-y-1">
+            {data.levels.map((level, levelIdx) => (
+              <div key={levelIdx}>
+                <button
+                  type="button"
+                  onClick={() => setStep({ level: levelIdx })}
+                  aria-current={
+                    typeof step === 'object' && step.level === levelIdx && !('lesson' in step) ? 'true' : undefined
+                  }
+                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
+                    typeof step === 'object' && 'level' in step && step.level === levelIdx && !('lesson' in step)
+                      ? 'bg-teal-50 text-teal-800 font-medium'
+                      : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Layers className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span className="truncate">{level.name}</span>
+                  <span className="text-xs text-gray-600 ml-auto">
+                    {level.lessons.length}
+                    <span className="sr-only"> bài học</span>
+                  </span>
+                </button>
+
+                {/* Lessons under this level */}
+                {typeof step === 'object' && 'level' in step && step.level === levelIdx && (
+                  <div className="ml-6 mt-1 space-y-0.5">
+                    {level.lessons.map((lesson, lessonIdx) => (
+                      <button
+                        type="button"
+                        key={lessonIdx}
+                        onClick={() => setStep({ level: levelIdx, lesson: lessonIdx })}
+                        aria-current={
+                          typeof step === 'object' && 'lesson' in step && step.lesson === lessonIdx ? 'true' : undefined
+                        }
+                        className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
+                          typeof step === 'object' && 'lesson' in step && step.lesson === lessonIdx
+                            ? 'bg-teal-50 text-teal-800 font-medium'
+                            : 'text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
+                        <span className="truncate">{lesson.name}</span>
+                      </button>
+                    ))}
+                    {editable && (
+                      <button
+                        type="button"
+                        onClick={() => addLesson(levelIdx)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-teal-700 hover:bg-teal-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                      >
+                        <Plus className="w-3.5 h-3.5" aria-hidden="true" />
+                        Thêm bài học
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {editable && (
             <button
               type="button"
-              onClick={() => setStep('overview')}
-              aria-current={step === 'overview' ? 'true' : undefined}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm font-medium mb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
-                step === 'overview' ? 'bg-teal-50 text-teal-800' : 'text-gray-700 hover:bg-gray-50'
-              }`}
+              onClick={addLevel}
+              className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-teal-700 hover:bg-teal-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
             >
-              <BookOpen className="w-4 h-4" aria-hidden="true" />
-              Thông tin khóa học
+              <Plus className="w-4 h-4" aria-hidden="true" />
+              Thêm cấp độ
             </button>
-
-            {/* Levels */}
-            <div className="space-y-1">
-              {data.levels.map((level, levelIdx) => (
-                <div key={levelIdx}>
-                  <button
-                    type="button"
-                    onClick={() => setStep({ level: levelIdx })}
-                    aria-current={
-                      typeof step === 'object' && step.level === levelIdx && !('lesson' in step) ? 'true' : undefined
-                    }
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
-                      typeof step === 'object' && 'level' in step && step.level === levelIdx && !('lesson' in step)
-                        ? 'bg-teal-50 text-teal-800 font-medium'
-                        : 'text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    <Layers className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-                    <span className="truncate">{level.name}</span>
-                    <span className="text-xs text-gray-600 ml-auto">
-                      {level.lessons.length}
-                      <span className="sr-only"> bài học</span>
-                    </span>
-                  </button>
-
-                  {/* Lessons under this level */}
-                  {typeof step === 'object' && 'level' in step && step.level === levelIdx && (
-                    <div className="ml-6 mt-1 space-y-0.5">
-                      {level.lessons.map((lesson, lessonIdx) => (
-                        <button
-                          type="button"
-                          key={lessonIdx}
-                          onClick={() => setStep({ level: levelIdx, lesson: lessonIdx })}
-                          aria-current={
-                            typeof step === 'object' && 'lesson' in step && step.lesson === lessonIdx ? 'true' : undefined
-                          }
-                          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-left text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 ${
-                            typeof step === 'object' && 'lesson' in step && step.lesson === lessonIdx
-                              ? 'bg-teal-50 text-teal-800 font-medium'
-                              : 'text-gray-600 hover:bg-gray-50'
-                          }`}
-                        >
-                          <FileText className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
-                          <span className="truncate">{lesson.name}</span>
-                        </button>
-                      ))}
-                      {editable && (
-                        <button
-                          type="button"
-                          onClick={() => addLesson(levelIdx)}
-                          className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-teal-700 hover:bg-teal-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
-                        >
-                          <Plus className="w-3.5 h-3.5" aria-hidden="true" />
-                          Thêm bài học
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {editable && (
-              <button
-                type="button"
-                onClick={addLevel}
-                className="w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-teal-700 hover:bg-teal-50 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
-              >
-                <Plus className="w-4 h-4" aria-hidden="true" />
-                Thêm cấp độ
-              </button>
-            )}
-          </nav>
-        </div>
-
-        {/* Right content area */}
-        <div ref={contentRef} className="flex-1 min-w-0">
-          {step === 'overview' && (
-            <CourseOverviewEditor
-              data={data}
-              message={message}
-              readOnly={!editable}
-              onChange={(course) => setData({ ...data, course })}
-              onMessageChange={setMessage}
-            />
           )}
+        </nav>
+      </div>
 
-          {typeof step === 'object' && 'level' in step && !('lesson' in step) && data.levels[step.level] && (
-            <LevelEditor
-              level={data.levels[step.level]}
-              levelIdx={step.level}
-              readOnly={!editable}
-              onNameChange={(name) => updateLevelName(step.level, name)}
-              onRemove={() => removeLevel(step.level)}
-              onAddLesson={() => addLesson(step.level)}
-              onEditLesson={(lessonIdx) => setStep({ level: step.level, lesson: lessonIdx })}
-              onRemoveLesson={(lessonIdx) => removeLesson(step.level, lessonIdx)}
-            />
-          )}
+      {/* Right content area */}
+      <div ref={contentRef} className="flex-1 min-w-0">
+        {step === 'overview' && (
+          <CourseOverviewEditor
+            data={data}
+            message={message}
+            readOnly={!editable}
+            onChange={(course) => setData({ ...data, course })}
+            onMessageChange={setMessage}
+          />
+        )}
 
-          {typeof step === 'object' && 'lesson' in step && data.levels[step.level]?.lessons[step.lesson] && (
-            <LessonEditor
-              // One editor instance per lesson: NotionBlockEditor only reads `blocks` on mount.
-              key={`${step.level}-${step.lesson}-${editorKey}`}
-              lesson={data.levels[step.level].lessons[step.lesson]}
-              readOnly={!editable}
-              onNameChange={(name) => updateLesson(step.level, step.lesson, (l) => ({ ...l, name }))}
-              onTitleChange={(title) =>
-                updateLesson(step.level, step.lesson, (l) => ({ ...l, content: { ...l.content, title } }))
-              }
-              onBlocksChange={(blocks) =>
-                updateLesson(step.level, step.lesson, (l) => ({ ...l, content: { ...l.content, blocks } }))
-              }
-              onBack={() => setStep({ level: step.level })}
-            />
-          )}
-        </div>
+        {typeof step === 'object' && 'level' in step && !('lesson' in step) && data.levels[step.level] && (
+          <LevelEditor
+            level={data.levels[step.level]}
+            levelIdx={step.level}
+            readOnly={!editable}
+            onNameChange={(name) => updateLevelName(step.level, name)}
+            onRemove={() => removeLevel(step.level)}
+            onAddLesson={() => addLesson(step.level)}
+            onEditLesson={(lessonIdx) => setStep({ level: step.level, lesson: lessonIdx })}
+            onRemoveLesson={(lessonIdx) => removeLesson(step.level, lessonIdx)}
+          />
+        )}
+
+        {typeof step === 'object' && 'lesson' in step && data.levels[step.level]?.lessons[step.lesson] && (
+          <LessonEditor
+            // One editor instance per lesson: NotionBlockEditor only reads `blocks` on mount.
+            key={`${step.level}-${step.lesson}-${editorKey}`}
+            lesson={data.levels[step.level].lessons[step.lesson]}
+            readOnly={!editable}
+            onNameChange={(name) => updateLesson(step.level, step.lesson, (l) => ({ ...l, name }))}
+            onTitleChange={(title) =>
+              updateLesson(step.level, step.lesson, (l) => ({ ...l, content: { ...l.content, title } }))
+            }
+            onBlocksChange={(blocks) =>
+              updateLesson(step.level, step.lesson, (l) => ({ ...l, content: { ...l.content, blocks } }))
+            }
+            onBack={() => setStep({ level: step.level })}
+          />
+        )}
       </div>
     </div>
   );
@@ -1041,23 +1403,22 @@ function LessonEditor({
 
       {/* Block Editor */}
       <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-6">
-        <h3 className="text-sm font-semibold text-gray-700 mb-3">Nội dung bài học</h3>
         {readOnly ? (
-          <p className="text-sm text-gray-500">
-            {trimEmptyBlocks(lesson.content.blocks ?? []).blocks.length} block. Đóng góp không còn sửa được nên trình
-            soạn bị ẩn.
-          </p>
+          <>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Nội dung bài học</h3>
+            <p className="text-sm text-gray-500">
+              {trimEmptyBlocks(lesson.content.blocks ?? []).blocks.length} block. Đóng góp không còn sửa được nên trình
+              soạn bị ẩn.
+            </p>
+          </>
         ) : (
           <NotionBlockEditor
             mode="contributor"
+            heading={<h3 className="text-sm font-semibold text-gray-700">Nội dung bài học</h3>}
+            help={<p>{AUTOSAVE_HELP}</p>}
             blocks={lesson.content.blocks}
             onChange={onBlocksChange}
           />
-        )}
-        {!readOnly && (
-          <p className="mt-3 text-xs text-gray-600">
-            Tự lưu vài giây sau khi bạn ngừng gõ (Ctrl+S để lưu ngay).
-          </p>
         )}
       </div>
     </div>

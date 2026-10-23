@@ -5,6 +5,7 @@ import BackButton from '@/components/BackButton';
 import LearningPath from '@/components/LearningPath';
 import { getCourseBySlug } from '@/lib/services/content-service';
 import RelatedStories, { RelatedStoriesSkeleton } from '@/components/RelatedStories';
+import CourseCredits from '@/components/learn/CourseCredits';
 import {
   Lightbulb,
   Binary,
@@ -121,6 +122,11 @@ export default async function CoursePage({ params }: CoursePageProps) {
           <Suspense fallback={<RelatedStoriesSkeleton />}>
             <RelatedStories courseSlug={slug} />
           </Suspense>
+
+          {/* Tác giả, người đóng góp, người thẩm định (cached, giống nhau cho mọi người xem). */}
+          <div className="lg:col-span-3">
+            <CourseCredits courseId={course.id} />
+          </div>
         </div>
       </main>
     </div>

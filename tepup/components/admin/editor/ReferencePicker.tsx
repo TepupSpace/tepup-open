@@ -18,7 +18,7 @@ export interface PickedEntry {
 /**
  * Ô tìm mục thư viện để chèn tham chiếu `/tv/<slug>` (docs/design-reference-library.md §5.1).
  * Dùng ở nút "Tham chiếu" trên thanh định dạng BlockNote và trong ngăn sửa block.
- * Tìm qua /api/tv/search (công khai) nên chạy được cả ở chế độ cộng tác viên. Quản trị
+ * Tìm qua /api/tv/search (công khai) nên chạy được cả ở Khu đóng góp. Quản trị
  * viên còn tạo được mục mới ngay tại đây (QuickCreateEntry) khi chưa có mục cần dùng.
  */
 export default function ReferencePicker({

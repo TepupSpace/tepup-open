@@ -4,6 +4,7 @@ import { signOut, useSession } from 'next-auth/react';
 import { ExternalLink, LogOut, User } from 'lucide-react';
 import Link from '@/components/ui/AppLink';
 import ReaderSettings from '@/components/reader/ReaderSettings';
+import NotificationBell from '@/components/notifications/NotificationBell';
 
 export default function AdminHeader() {
   const { data: session } = useSession();
@@ -29,6 +30,7 @@ export default function AdminHeader() {
 
         {/* Tuỳ chọn đọc (sáng/tối, phông, cỡ chữ): admin và trình soạn bài đều theo. */}
         <ReaderSettings />
+        <NotificationBell />
 
         {/* User menu */}
         <div className="flex items-center gap-3">

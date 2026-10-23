@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { revalidateContent } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+import { lockCourse } from '@/lib/services/revision-service';
+import { buildOutline, recordOutlineRevision } from '@/lib/services/outline-service';
 
 interface ReorderLevel {
   id: string;
@@ -30,7 +32,11 @@ export async function PUT(
     }
 
     const { id: courseId } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    // A JSON `null`, array or malformed body is a client error, not a 500.
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Dữ liệu không hợp lệ' }, { status: 400 });
+    }
     const levels = body?.levels as ReorderLevel[] | undefined;
 
     if (!Array.isArray(levels)) {
@@ -66,23 +72,44 @@ export async function PUT(
       );
     }
 
-    await prisma.$transaction([
-      ...levels.map((level, levelIndex) =>
-        prisma.level.update({
-          where: { id: level.id },
-          data: { sortOrder: levelIndex },
-        })
-      ),
-      ...levels.flatMap((level) =>
-        level.lessonIds.map((lessonId, lessonIndex) =>
-          prisma.lesson.update({
-            where: { id: lessonId },
-            // levelId too: a lesson listed under another level has been dragged there.
-            data: { sortOrder: lessonIndex, levelId: level.id },
-          })
-        )
-      ),
-    ]);
+    await prisma.$transaction(
+      async (tx) => {
+        // Outline history (proposal §12): order and level membership are part of the outline.
+        await lockCourse(tx, courseId);
+        const outlineBefore = await buildOutline(tx, courseId);
+        const levelNow = new Map(outlineBefore?.levels.map((l) => [l.id, l]) ?? []);
+        const lessonNow = new Map(outlineBefore?.lessons.map((l) => [l.id, l]) ?? []);
+        let changed = false;
+        // Only rows whose order or level actually changes are written.
+        for (const [levelIndex, level] of levels.entries()) {
+          if (levelNow.get(level.id)?.sortOrder !== levelIndex) {
+            await tx.level.update({ where: { id: level.id }, data: { sortOrder: levelIndex } });
+            changed = true;
+          }
+          for (const [lessonIndex, lessonId] of level.lessonIds.entries()) {
+            const now = lessonNow.get(lessonId);
+            if (now?.sortOrder !== lessonIndex || now?.levelId !== level.id) {
+              await tx.lesson.update({
+                where: { id: lessonId },
+                // levelId too: a lesson listed under another level has been dragged there.
+                data: { sortOrder: lessonIndex, levelId: level.id },
+              });
+              changed = true;
+            }
+          }
+        }
+        if (changed) {
+          await recordOutlineRevision(tx, courseId, {
+            source: 'ADMIN_PUBLISH',
+            actorId: session.user.id,
+            authorId: session.user.id,
+            previous: outlineBefore,
+            autoPatrol: true,
+          });
+        }
+      },
+      { timeout: 30_000 }
+    );
 
     revalidateContent();
     return NextResponse.json({ message: 'Đã lưu thứ tự' });

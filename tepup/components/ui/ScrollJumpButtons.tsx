@@ -24,7 +24,7 @@ function scroller(): HTMLElement {
  * Nút "Lên đầu trang" / "Xuống cuối trang" cho trang dài, góc dưới bên trái (bên phải là
  * nút chat). Chỉ hiện nút có ích: lên khi đã cuộn xuống, xuống khi còn xa cuối trang.
  * Né thanh tab và chân trang dính trên điện thoại (`above-bottom-chrome`). Không hiện ở
- * trang quản trị/cộng tác viên (trình soạn có thanh công cụ riêng ở góc).
+ * trang quản trị/Khu đóng góp (trình soạn có thanh công cụ riêng ở góc).
  */
 export default function ScrollJumpButtons() {
   const pathname = usePathname() ?? '';

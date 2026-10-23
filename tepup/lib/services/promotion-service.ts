@@ -14,7 +14,7 @@ export async function checkAndPromote(userId: string): Promise<UserRole | null> 
     select: { role: true, createdAt: true },
   });
 
-  if (!user || user.role !== 'CONTRIBUTOR') return null;
+  if (!user || user.role !== 'AUTHOR') return null;
 
   const approvedCount = await prisma.contribution.count({
     where: { contributorId: userId, status: 'APPROVED' },
@@ -27,9 +27,9 @@ export async function checkAndPromote(userId: string): Promise<UserRole | null> 
   if (approvedCount >= PROMOTE_THRESHOLD && accountAgeDays >= PROMOTE_DAYS) {
     await prisma.user.update({
       where: { id: userId },
-      data: { role: 'TRUSTED_CONTRIBUTOR' },
+      data: { role: 'TRUSTED_AUTHOR' },
     });
-    return 'TRUSTED_CONTRIBUTOR';
+    return 'TRUSTED_AUTHOR';
   }
 
   return null;

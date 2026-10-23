@@ -7,6 +7,10 @@ export interface Item { id: string; url: string; name: string; types: string[] }
 export interface Urls {
   courses: string[]; lessons: Item[]; characters: string[]; stories: string[]; chapters: Item[];
   admin: Record<'category' | 'character' | 'course' | 'story' | 'library' | 'lesson' | 'chapter', string | null>;
+  /** Contributor-system records (collect-urls.sql); missing on databases without them. */
+  contrib?: Partial<
+    Record<'course' | 'lesson' | 'chapter' | 'library' | 'lessonEdit' | 'chapterEdit' | 'entryEdit' | 'outlineEdit' | 'reviewRequest', string | null>
+  >;
 }
 
 /** Written by run.sh from the local database (collect-urls.sql). */

@@ -57,13 +57,16 @@ An AI chat panel (Groq) is available on every page, with a neutral assistant (`l
 
 ## Roles and contribution workflow
 
-Roles (`UserRole`): `USER` < `CONTRIBUTOR` < `TRUSTED_CONTRIBUTOR` < `REVIEWER` < `ADMIN`. Helpers in [`lib/role-utils.ts`](../tepup/lib/role-utils.ts) and [`lib/admin-auth.ts`](../tepup/lib/admin-auth.ts). Accounts can be banned by admins.
+Roles (`UserRole`): `USER` < `AUTHOR` < `TRUSTED_AUTHOR` < `REVIEWER` < `ADMIN`. Helpers in [`lib/role-utils.ts`](../tepup/lib/role-utils.ts) and [`lib/admin-auth.ts`](../tepup/lib/admin-auth.ts). Accounts can be banned by admins.
 
-- **Sign-up** (`/register-contributor`) takes a username and password only — no email — and creates a `CONTRIBUTOR`.
+- **Sign-up** (`/register-contributor`) takes a username and password only — no email — and creates a `AUTHOR`.
 - **Contribute:** a contributor drafts a `Contribution` (status `DRAFT`), then submits it (`PENDING_REVIEW`).
 - **Review:** a `REVIEWER` or `ADMIN` approves, rejects, or requests changes (feedback is required for the latter two). Nobody can review their own contribution. Each decision writes a `Review` row.
-- **Publish:** approval runs `publishContribution`, which re-validates the content and creates new courses hidden (`isActive: false`) until an admin activates them. It lives in [`lib/services/contribution-service.ts`](../tepup/lib/services/contribution-service.ts). Implemented types: `NEW_COURSE` and `EDIT_LESSON_CONTENT`. (`NEW_LEVEL`, `NEW_LESSON`, `EDIT_COURSE` are defined but not yet supported.)
-- **Promotion:** manual. Admins grant `TRUSTED_CONTRIBUTOR` and `REVIEWER` in Admin → Users; automatic promotion was removed.
+- **Publish:** approval runs `publishContribution` in one transaction. It re-validates the content, creates new courses hidden (`isActive: false`) until an admin activates them, and refreshes the cache. It lives in [`lib/services/contribution-service.ts`](../tepup/lib/services/contribution-service.ts). Implemented types: `NEW_COURSE` and `EDIT_LESSON_CONTENT`. (`NEW_LEVEL`, `NEW_LESSON`, `EDIT_COURSE` are defined but not yet supported.)
+  - An `EDIT_LESSON_CONTENT` names its lesson (`targetId`) and remembers the live version it started from. Approval is refused when the lesson has changed since, unless the reviewer explicitly overrides.
+  - It works through the API only; there is no contributor screen for proposing edits yet.
+- **History:** every replacement of a lesson's content, and a deleted lesson's last content, is kept in `LessonContentRevision` (no UI yet).
+- **Promotion:** manual. Admins grant `TRUSTED_AUTHOR` and `REVIEWER` in Admin → Users; automatic promotion was removed.
 
 **Anonymous suggestions:** learners, with no account needed, can suggest a fix on any published lesson or chapter. They use the pencil button in the lesson header, or "Góp ý sửa" after selecting text.
 - Suggestions go to the `Suggestion` table and appear in the reviewer queue on the review pages. They never change content directly.

@@ -10,6 +10,12 @@ import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import type { ContentBlock } from '@/lib/types/content';
 import type { DraftDTO, LessonDraftMeta } from '@/lib/types/drafts';
 import Spinner from '@/components/ui/Spinner';
+import { Users } from 'lucide-react';
+import {
+  LessonReviewRequestsPanel,
+  SendToReviewerDialog,
+  useLessonReviewRequests,
+} from '@/components/review-requests/LessonReviewRequests';
 
 interface LessonInfo {
   id: string;
@@ -59,6 +65,10 @@ export default function LessonContentClient({
   // NotionBlockEditor builds itself once from `blocks`; bumping the key rebuilds it
   // (after discarding a draft, or to drop empty lines once published).
   const [editorKey, setEditorKey] = useState(0);
+  // "Gửi người duyệt" (proposal §6.15): open requests and their opinions in the side panel.
+  const reviewRequests = useLessonReviewRequests(lessonId);
+  const [sendOpen, setSendOpen] = useState(false);
+  const [preparingSend, setPreparingSend] = useState(false);
 
   // What gets saved never contains empty lines (blank steps for learners). The editor
   // itself keeps them while you type, so the line you're on isn't deleted under you.
@@ -203,6 +213,8 @@ export default function LessonContentClient({
         setEditorKey((k) => k + 1);
       }
       autosave.resetBaseline(snapshot);
+      // Publishing closes open review requests (and may record an endorsed version).
+      void reviewRequests.reload();
       setNotice(
         (goLive ? 'Đã xuất bản và hiển thị bài học cho người học.' : 'Đã xuất bản.') +
           ' Người học sẽ thấy nội dung mới trong vài phút.' +
@@ -213,6 +225,47 @@ export default function LessonContentClient({
       setError('Đã xảy ra lỗi khi xuất bản');
     } finally {
       setPublishing(false);
+    }
+  }
+
+  // Save the draft first (so nothing typed is lost), then choose reviewers. The request
+  // snapshots the editor's CURRENT title and blocks; later edits don't change it.
+  async function openSendToReviewer() {
+    if (!loaded || publishing || preparingSend) return;
+    setPreparingSend(true);
+    setError('');
+    setNotice('');
+    try {
+      await autosave.saveNow();
+      await reviewRequests.reload();
+      setSendOpen(true);
+    } finally {
+      setPreparingSend(false);
+    }
+  }
+
+  async function sendToReviewers(reviewerIds: string[], message: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/admin/lessons/${lessonId}/review-requests`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: value.title, blocks: value.blocks, message, reviewerIds }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const details: string[] = Array.isArray(data?.details)
+          ? data.details.map((d: unknown) =>
+              typeof d === 'string' ? d : `${(d as { path?: string }).path ?? ''}: ${(d as { message?: string }).message ?? ''}`
+            )
+          : [];
+        return [data?.error || 'Không thể gửi yêu cầu duyệt', ...details].join('\n');
+      }
+      setSendOpen(false);
+      setNotice(`Đã gửi cho ${reviewerIds.length} người duyệt. Ý kiến của họ sẽ hiện ở khung "Người duyệt".`);
+      void reviewRequests.reload();
+      return null;
+    } catch {
+      return 'Không thể gửi yêu cầu duyệt';
     }
   }
 
@@ -266,7 +319,27 @@ export default function LessonContentClient({
               : 'Đưa nội dung đang soạn lên cho người học xem; trang cập nhật trong vài phút. Khác với "Lưu nháp": bản nháp chỉ người quản trị thấy.'
         }
         onDiscardDraft={hasDraft ? () => void discardDraft() : undefined}
+        extraActions={
+          <button
+            type="button"
+            onClick={() => void openSendToReviewer()}
+            // aria-disabled, not disabled: keeps keyboard focus on the button while it saves.
+            aria-disabled={!loaded || publishing || preparingSend}
+            title="Lưu nháp rồi gửi bản đang soạn cho người duyệt góp ý (không xuất bản)"
+            className="flex items-center gap-2 px-4 py-2 shrink-0 bg-white text-gray-700 border border-gray-500 rounded-xl hover:bg-gray-50 aria-disabled:opacity-50 aria-disabled:cursor-not-allowed transition-colors whitespace-nowrap"
+          >
+            <Users className="w-4 h-4" aria-hidden="true" />
+            <span>{preparingSend ? 'Đang lưu…' : 'Gửi người duyệt'}</span>
+          </button>
+        }
       />
+      {sendOpen && (
+        <SendToReviewerDialog
+          candidates={reviewRequests.candidates}
+          onClose={() => setSendOpen(false)}
+          onSend={sendToReviewers}
+        />
+      )}
 
       <div className="max-w-6xl">
         {/* Error / notice: vùng luôn có mặt, chỉ đổi nội dung, để trình đọc màn hình đọc được. */}
@@ -290,8 +363,15 @@ export default function LessonContentClient({
           <div className="lg:col-span-2">
             <NotionBlockEditor key={editorKey} blocks={blocks} onChange={setBlocks} />
           </div>
-          {/* Metadata */}
-          <div className="lg:col-span-1">
+          {/* Metadata. The reviewer panel sits ABOVE the (sticky) meta panel, so the sticky
+              panel never slides over it while the editor scrolls. */}
+          <div className="lg:col-span-1 space-y-6">
+            <LessonReviewRequestsPanel
+              lessonId={lessonId}
+              requests={reviewRequests.requests}
+              loaded={reviewRequests.loaded}
+              error={reviewRequests.error}
+            />
             <LessonMetaPanel meta={meta} onChange={setMeta} />
           </div>
         </div>

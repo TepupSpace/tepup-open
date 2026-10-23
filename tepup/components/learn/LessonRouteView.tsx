@@ -4,6 +4,10 @@ import { getCourseBySlug } from '@/lib/services/content-service';
 import { itemAfter, type NextItemLink } from '@/lib/utils/next-item';
 import type { LessonPage } from '@/lib/types/content';
 import { tvReferencesEnabled } from '@/lib/library/flags';
+import { Wrench } from 'lucide-react';
+import { getLessonNotices } from '@/lib/services/lesson-notices';
+import LessonNotices from '@/components/learn/LessonNotices';
+import { TERMS } from '@/lib/terms';
 
 /**
  * Bài kế tiếp trong cả khoá (vượt qua ranh giới cấp độ), theo đúng thứ tự và bộ
@@ -24,11 +28,26 @@ async function nextLessonLink(data: LessonPage): Promise<NextItemLink | null> {
 export default async function LessonRouteView({
   data,
   isHidden = false,
+  staffHubHref,
 }: {
   data: LessonPage;
   isHidden?: boolean;
+  /** Staff view only: link to the lesson's contributor hub (propose, discuss, history, flags). */
+  staffHubHref?: string;
 }) {
   const exitHref = `/courses/${data.course.slug}`;
+  // Cached and identical for every visitor (flags, public endorsements).
+  const notices = await getLessonNotices(data.lesson.id);
+  const staffLink = staffHubHref ? (
+    <Link
+      href={staffHubHref}
+      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+      aria-label={`${TERMS.lessonTools} cho bài này`}
+      title={TERMS.lessonTools}
+    >
+      <Wrench className="w-5 h-5 text-gray-500" aria-hidden="true" />
+    </Link>
+  ) : null;
 
   const hiddenBadge = isHidden ? (
     <aside
@@ -48,6 +67,13 @@ export default async function LessonRouteView({
         <div className="text-center max-w-md">
           <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.lesson.name}</h1>
           <p className="text-gray-500 mb-6">Bài học này chưa có nội dung.</p>
+          {staffHubHref && (
+            <p className="mb-6">
+              <Link href={staffHubHref} className="text-teal-800 underline">
+                {TERMS.lessonTools} cho bài này
+              </Link>
+            </p>
+          )}
           <Link
             href={exitHref}
             className="inline-block px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
@@ -70,6 +96,8 @@ export default async function LessonRouteView({
         exitHref={exitHref}
         next={await nextLessonLink(data)}
         references={tvReferencesEnabled()}
+        headerExtra={staffLink}
+        notices={<LessonNotices notices={notices} />}
       />
     </>
   );

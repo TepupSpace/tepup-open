@@ -18,7 +18,15 @@ You may share and adapt it for any purpose, including commercially, as long as y
   - `docs/` course material.
 - **Illustrations and images created for TepUp** in `tepup/public/**`, `tepup/scripts/**/assets/`, `tepup/scripts/courses-hub-assets/` and `tepup-design-system/assets/`.
 
+- **Content contributed through the website and stored in the database**: lessons, story chapters, library entries, course outlines, and edits to any of them, whether written in the contributor editor or the admin editor. Contributors agree to this licence when they create an account, and every submitted contribution records the licence version they agreed to.
+
 The **software** — code, configuration, and the code parts of scripts — is under the MIT licence in [`LICENSE`](LICENSE).
+
+## Credit
+
+- **"TepUp contributors"** is the credit line for reuse. It stands for the people listed on each course page under "Tác giả và người đóng góp": the course creator, its maintainers, and everyone with an approved contribution to the course.
+- **Each contributor chooses how they are credited**, and can change it at any time in their settings: their username, or a random pseudonym such as `Cộng tác viên #k7m2q`. The pseudonym is the default. It is never derived from the username or the account, as CC BY-SA 4.0 allows.
+- **Credit follows the account, not the username.** If an account is deleted, its published work stays (as on Wikipedia) and is credited to its pseudonym from then on, never to the old username, which someone else may register later.
 
 ## Not covered by this licence
 

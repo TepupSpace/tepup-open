@@ -7,65 +7,96 @@ import FocusTrap from 'focus-trap-react';
 import {
   LayoutDashboard,
   FileEdit,
-  Send,
-  PlusCircle,
+  Search,
   CheckSquare,
   BookOpen,
   Settings,
-  Bot,
   ChevronLeft,
   Menu,
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { canReviewContent } from '@/lib/role-utils';
 import { useMediaQuery } from '@/lib/hooks/useMediaQuery';
+import { TERMS } from '@/lib/terms';
 import type { UserRole } from '@prisma/client';
 
-const allMenuItems = [
+/**
+ * Few items, grouped by task (onboarding feedback 2026-10-20). Each item covers several
+ * pages (`routes`), reached through the tabs at the top of those pages (SectionTabs).
+ * `reviewers` = global reviewers or holders of a course role (computed in the layout);
+ * the pages themselves check permissions again. Notifications live in the header bell,
+ * "Tạo khóa học mới" is a button on the "Tìm bài để sửa" pages and the dashboard.
+ */
+type Audience = 'all' | 'reviewers';
+type MenuItem = { title: string; href: string; icon: typeof LayoutDashboard; show: Audience; routes: string[] };
+const allMenuItems: MenuItem[] = [
+  { title: 'Tổng quan', href: '/contributor', icon: LayoutDashboard, show: 'all', routes: ['/contributor'] },
   {
-    title: 'Bảng điều khiển',
-    href: '/contributor',
-    icon: LayoutDashboard,
-    minRole: 'CONTRIBUTOR' as UserRole,
-  },
-  {
-    title: 'Bản nháp',
+    title: 'Đóng góp của tôi',
     href: '/contributor/drafts',
     icon: FileEdit,
-    minRole: 'CONTRIBUTOR' as UserRole,
+    show: 'all',
+    routes: ['/contributor/drafts', '/contributor/submissions', '/contributor/contributions'],
   },
   {
-    title: 'Đã gửi',
-    href: '/contributor/submissions',
-    icon: Send,
-    minRole: 'CONTRIBUTOR' as UserRole,
+    title: 'Tìm bài để sửa',
+    href: '/contributor/courses',
+    icon: Search,
+    show: 'all',
+    routes: [
+      '/contributor/courses',
+      '/contributor/suggestions',
+      '/contributor/lessons',
+      '/contributor/chapters',
+      '/contributor/library',
+      '/contributor/ai-guide',
+    ],
   },
   {
-    title: 'Tạo khóa học mới',
-    href: '/contributor/courses/new',
-    icon: PlusCircle,
-    minRole: 'CONTRIBUTOR' as UserRole,
-  },
-  {
-    title: 'Dùng AI của bạn',
-    href: '/contributor/ai-guide',
-    icon: Bot,
-    minRole: 'CONTRIBUTOR' as UserRole,
-  },
-  {
-    title: 'Duyệt nội dung',
+    title: 'Việc duyệt',
     href: '/contributor/reviews',
     icon: CheckSquare,
-    minRole: 'REVIEWER' as UserRole,
+    show: 'reviewers',
+    routes: [
+      '/contributor/reviews',
+      '/contributor/review-requests',
+      '/contributor/recent-changes',
+      '/contributor/flags',
+      '/contributor/maintain',
+    ],
   },
 ];
+
+const bottomItems: MenuItem[] = [
+  { title: 'Hướng dẫn', href: '/contributor-guide', icon: BookOpen, show: 'all', routes: ['/contributor-guide'] },
+  { title: 'Cài đặt', href: '/contributor/settings', icon: Settings, show: 'all', routes: ['/contributor/settings'] },
+];
+
+/** Length of the longest route of `item` that contains `pathname` (0 = none). '/contributor' matches only itself. */
+function matchLength(item: MenuItem, pathname: string): number {
+  let best = 0;
+  for (const r of item.routes) {
+    const hit = r === '/contributor' ? pathname === r : pathname === r || pathname.startsWith(r + '/');
+    if (hit && r.length > best) best = r.length;
+  }
+  return best;
+}
 
 const linkBase =
   'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700';
 const linkActive = 'bg-teal-50 text-teal-800';
 const linkIdle = 'text-gray-600 hover:bg-gray-50';
 
-export default function ContributorSidebar() {
+// `isTrustedReviewer` is still passed by the layout; the "Yêu cầu duyệt" tab uses the same rule
+// on the server (ReviewSectionTabs), so the sidebar no longer needs it.
+export default function ContributorSidebar({
+  hasCourseRole = false,
+}: {
+  /** Maintainer or trusted reviewer of at least one course. */
+  hasCourseRole?: boolean;
+  /** Trusted reviewer of at least one course (receives "Gửi người duyệt"). */
+  isTrustedReviewer?: boolean;
+}) {
   const pathname = usePathname();
   // Desktop (lg+): the sidebar is always visible, `collapsed` narrows it to icons.
   // Mobile: it is a drawer, closed by default and closed again after every navigation.
@@ -86,15 +117,43 @@ export default function ContributorSidebar() {
   const drawerHidden = !isDesktop && !mobileOpen;
   const navRef = useRef<HTMLElement>(null);
   const { data: session } = useSession();
-  const userRole = (session?.user?.role || 'CONTRIBUTOR') as UserRole;
+  const userRole = (session?.user?.role || 'AUTHOR') as UserRole;
 
-  const menuItems = allMenuItems.filter((item) => {
-    if (item.minRole === 'REVIEWER') return canReviewContent(userRole);
-    return true;
-  });
+  const globalReviewer = canReviewContent(userRole);
+  const menuItems = allMenuItems.filter((item) => item.show === 'all' || globalReviewer || hasCourseRole);
+
+  // The item whose routes contain the current page most specifically is the active one.
+  let activeHref: string | undefined;
+  let bestLength = 0;
+  for (const item of [...menuItems, ...bottomItems]) {
+    const len = matchLength(item, pathname);
+    if (len > bestLength) {
+      bestLength = len;
+      activeHref = item.href;
+    }
+  }
 
   // Collapsed on desktop: only the icons show, the labels stay for screen readers.
   const labelClass = `font-medium ${collapsed ? 'lg:sr-only' : ''}`;
+
+  const renderItem = (item: MenuItem) => {
+    const isActive = item.href === activeHref;
+    const Icon = item.icon;
+    return (
+      <li key={item.href}>
+        <Link
+          href={item.href}
+          onClick={closeMobile}
+          aria-current={isActive ? 'page' : undefined}
+          className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
+          title={collapsed ? item.title : undefined}
+        >
+          <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
+          <span className={labelClass}>{item.title}</span>
+        </Link>
+      </li>
+    );
+  };
 
   return (
     <>
@@ -133,14 +192,14 @@ export default function ContributorSidebar() {
           {/* Sidebar */}
           <aside
             id="contributor-sidebar"
-            aria-label="Thanh bên cộng tác viên"
+            aria-label={`Thanh bên ${TERMS.area}`}
             inert={drawerHidden}
-            className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transition-all duration-300 lg:translate-x-0 ${
+            className={`fixed top-0 left-0 h-full w-64 flex flex-col bg-white border-r border-gray-200 z-50 transition-all duration-300 lg:translate-x-0 ${
               mobileOpen ? 'translate-x-0' : '-translate-x-full'
             } ${collapsed ? 'lg:w-20' : 'lg:w-64'}`}
           >
             {/* Logo */}
-            <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+            <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
               <Link
                 href="/contributor"
                 onClick={closeMobile}
@@ -150,7 +209,7 @@ export default function ContributorSidebar() {
                   <span className="text-white font-bold text-xl" aria-hidden="true">T</span>
                   <span className="sr-only">Tepup</span>
                 </span>
-                <span className={`font-bold text-gray-900 ${collapsed ? 'lg:sr-only' : ''}`}>Cộng tác viên</span>
+                <span className={`font-bold text-gray-900 ${collapsed ? 'lg:sr-only' : ''}`}>{TERMS.area}</span>
               </Link>
               <button
                 type="button"
@@ -167,51 +226,15 @@ export default function ContributorSidebar() {
               </button>
             </div>
 
-            {/* Navigation */}
-            <nav ref={navRef} aria-label="Khu cộng tác viên" className="p-4 space-y-1">
-              {menuItems.map((item) => {
-                const isActive =
-                  pathname === item.href ||
-                  (item.href !== '/contributor' && pathname.startsWith(item.href));
-                const Icon = item.icon;
-
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={closeMobile}
-                    aria-current={isActive ? 'page' : undefined}
-                    className={`${linkBase} ${isActive ? linkActive : linkIdle}`}
-                    title={collapsed ? item.title : undefined}
-                  >
-                    <Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                    <span className={labelClass}>{item.title}</span>
-                  </Link>
-                );
-              })}
+            {/* Navigation: takes the free height and scrolls on its own, so it never runs under
+                the bottom group (the bottom group is in normal flow, not absolute). */}
+            <nav ref={navRef} aria-label={TERMS.area} className="flex-1 min-h-0 overflow-y-auto p-4">
+              <ul className="space-y-1">{menuItems.map(renderItem)}</ul>
             </nav>
 
-            {/* Bottom links */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 space-y-1">
-              <Link
-                href="/contributor-guide"
-                onClick={closeMobile}
-                className={`${linkBase} ${linkIdle}`}
-                title={collapsed ? 'Hướng dẫn' : undefined}
-              >
-                <BookOpen className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                <span className={labelClass}>Hướng dẫn</span>
-              </Link>
-              <Link
-                href="/contributor/settings"
-                onClick={closeMobile}
-                aria-current={pathname === '/contributor/settings' ? 'page' : undefined}
-                className={`${linkBase} ${pathname === '/contributor/settings' ? linkActive : linkIdle}`}
-                title={collapsed ? 'Cài đặt' : undefined}
-              >
-                <Settings className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
-                <span className={labelClass}>Cài đặt</span>
-              </Link>
+            {/* Bottom group */}
+            <div className="flex-shrink-0 p-4 border-t border-gray-200">
+              <ul className="space-y-1">{bottomItems.map(renderItem)}</ul>
             </div>
           </aside>
         </div>

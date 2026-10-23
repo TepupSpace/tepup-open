@@ -4,6 +4,9 @@ import { revalidateContent, revalidateLibrary } from '@/lib/cache';
 import { rebuildUsage } from '@/lib/library/usage-service';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+import { blocksSnapshot, lockCourse, lockLessonContent, recordRevision } from '@/lib/services/revision-service';
+import { buildOutline, recordOutlineRevision } from '@/lib/services/outline-service';
+import { closeReviewRequestsOnPublish } from '@/lib/services/review-request-service';
 import { lessonSlugInCourse } from '@/lib/api-helpers';
 import { prepareBlocksForSave } from '@/lib/ai-import/normalize';
 import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
@@ -81,6 +84,16 @@ export async function GET(
   }
 }
 
+/** Thrown inside the publish transaction when live content is newer than the editor's base. */
+class PublishConflict extends Error {
+  constructor(readonly liveUpdatedAt: Date) {
+    super('publish conflict');
+  }
+}
+
+/** The lesson was deleted while this publish waited for its locks. */
+class LessonGone extends Error {}
+
 // PUT /api/admin/lessons/[id]/content - Update lesson content ("Xuất bản")
 // Optional body fields: baseUpdatedAt (live content.updatedAt the editor loaded) and
 // force. A newer live version returns 409 unless force; a successful publish deletes
@@ -96,9 +109,16 @@ export async function PUT(
     }
 
     const { id: lessonId } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    // A JSON `null`, array or malformed body is a client error, not a 500.
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Dữ liệu không hợp lệ' }, { status: 400 });
+    }
     const { title, blocks, meta } = body;
     const baseUpdatedAt = parseIsoDate(body.baseUpdatedAt);
+    // The editor sends `baseUpdatedAt: null` when it loaded a lesson with no content yet:
+    // content published since then is a conflict too. (Old clients omit the field.)
+    const baseWasEmpty = body.baseUpdatedAt === null && Object.prototype.hasOwnProperty.call(body, 'baseUpdatedAt');
     const force = body.force === true;
 
     if (!title || title.trim() === '') {
@@ -127,19 +147,10 @@ export async function PUT(
     const safeBlocks = cleaned.value as Prisma.InputJsonValue;
 
     // Check if lesson exists
-    const lesson = await prisma.lesson.findUnique({
-      where: { id: lessonId },
-      include: { content: { select: { updatedAt: true } } },
-    });
+    const lesson = await prisma.lesson.findUnique({ where: { id: lessonId } });
 
     if (!lesson) {
       return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
-    }
-
-    // Someone else (or an approved contribution) published after this editor loaded.
-    // Old clients send no baseUpdatedAt and skip the check.
-    if (!force && isPublishConflict(lesson.content?.updatedAt, baseUpdatedAt)) {
-      return NextResponse.json(publishConflictBody(lesson.content!.updatedAt), { status: 409 });
     }
 
     // An empty slug field means "leave it alone", not "clear it" — a lesson without
@@ -152,14 +163,39 @@ export async function PUT(
       : null;
 
     const content = await prisma.$transaction(async (tx) => {
+      // Visibility/order are part of the course outline, which has its own history and
+      // serialises on the Course row. Lock order: Course first, then the lesson content.
+      const mayChangeOutline =
+        !!meta && (typeof meta.isActive === 'boolean' || Number.isFinite(meta.sortOrder));
+      if (mayChangeOutline) await lockCourse(tx, lesson.courseId);
+
+      // Someone else (or an approved contribution) published after this editor loaded.
+      // Checked under the row lock, so two publishers can't both pass it.
+      // Old clients send no baseUpdatedAt and skip the check.
+      const live = await lockLessonContent(tx, lessonId);
+      if (!force && live && (isPublishConflict(live.updatedAt, baseUpdatedAt) || (baseWasEmpty && !baseUpdatedAt))) {
+        throw new PublishConflict(live.updatedAt);
+      }
+      // Re-read under the locks: the outline may have changed since the read above.
+      const current = await tx.lesson.findUnique({
+        where: { id: lessonId },
+        select: { isActive: true, sortOrder: true },
+      });
+      if (!current) throw new LessonGone();
+      const outlineChanges =
+        !!meta &&
+        ((typeof meta.isActive === 'boolean' && meta.isActive !== current.isActive) ||
+          (Number.isFinite(meta.sortOrder) && meta.sortOrder !== current.sortOrder));
+      const outlineBefore = outlineChanges ? await buildOutline(tx, lesson.courseId) : null;
+
       // Update lesson metadata (slug / visibility / order) when provided.
       if (meta) {
         await tx.lesson.update({
           where: { id: lessonId },
           data: {
             slug: slug ?? lesson.slug,
-            isActive: typeof meta.isActive === 'boolean' ? meta.isActive : lesson.isActive,
-            sortOrder: Number.isFinite(meta.sortOrder) ? meta.sortOrder : lesson.sortOrder,
+            isActive: typeof meta.isActive === 'boolean' ? meta.isActive : current.isActive,
+            sortOrder: Number.isFinite(meta.sortOrder) ? meta.sortOrder : current.sortOrder,
           },
         });
       }
@@ -178,6 +214,32 @@ export async function PUT(
         },
       });
 
+      // History: record the version just published (revision-service.ts). Admin changes
+      // are auto-patrolled (proposal §6.18).
+      const savedTitle = title.trim();
+      const revisionId = await recordRevision(tx, {
+        targetType: 'LESSON',
+        targetId: lessonId,
+        courseId: lesson.courseId,
+        label: lesson.name,
+        snapshot: blocksSnapshot(savedTitle, safeBlocks),
+        source: 'ADMIN_PUBLISH',
+        actorId: session.user.id,
+        authorId: session.user.id,
+        previous: live && blocksSnapshot(live.title, live.blocks),
+        autoPatrol: true,
+      });
+      if (outlineChanges) {
+        await recordOutlineRevision(tx, lesson.courseId, {
+          source: 'ADMIN_PUBLISH',
+          actorId: session.user.id,
+          previous: outlineBefore,
+          autoPatrol: true,
+        });
+      }
+      // "Gửi người duyệt" requests for this lesson close on publish.
+      await closeReviewRequestsOnPublish(tx, lessonId, { title: savedTitle, blocks: safeBlocks }, revisionId);
+
       // Published: the draft has served its purpose.
       await deleteDraft('LESSON', lessonId, tx);
       // "Xuất hiện trong" of every library entry this lesson links to (lib/library/usage-service.ts).
@@ -189,6 +251,12 @@ export async function PUT(
     revalidateLibrary();
     return NextResponse.json({ data: content });
   } catch (error) {
+    if (error instanceof PublishConflict) {
+      return NextResponse.json(publishConflictBody(error.liveUpdatedAt), { status: 409 });
+    }
+    if (error instanceof LessonGone) {
+      return NextResponse.json({ error: 'Lesson not found' }, { status: 404 });
+    }
     console.error('Error updating lesson content:', error);
     return NextResponse.json(
       { error: 'Failed to update lesson content' },

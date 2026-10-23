@@ -19,6 +19,10 @@ import {
   Lightbulb,
   Puzzle,
   Bot,
+  ClipboardCheck,
+  History,
+  Bell,
+  ScrollText,
 } from 'lucide-react';
 import { useId, useRef, useState, useSyncExternalStore } from 'react';
 import FocusTrap from 'focus-trap-react';
@@ -35,12 +39,30 @@ const menuGroups = [
         title: 'Bảng điều khiển',
         href: '/admin',
         icon: LayoutDashboard,
-        minRole: 'USER' as const,
+        minRole: 'LEARNER' as const,
       },
       {
         title: 'Duyệt nội dung',
         href: '/admin/reviews',
         icon: CheckSquare,
+        minRole: 'REVIEWER' as const,
+      },
+      {
+        title: 'Yêu cầu duyệt',
+        href: '/admin/review-requests',
+        icon: ClipboardCheck,
+        minRole: 'REVIEWER' as const,
+      },
+      {
+        title: 'Thay đổi gần đây',
+        href: '/admin/recent-changes',
+        icon: History,
+        minRole: 'REVIEWER' as const,
+      },
+      {
+        title: 'Thông báo',
+        href: '/admin/notifications',
+        icon: Bell,
         minRole: 'REVIEWER' as const,
       },
     ],
@@ -115,6 +137,12 @@ const menuGroups = [
         icon: Lightbulb,
         minRole: 'ADMIN' as const,
       },
+      {
+        title: 'Nhật ký quản trị',
+        href: '/admin/audit-log',
+        icon: ScrollText,
+        minRole: 'ADMIN' as const,
+      },
     ],
   },
 ];
@@ -154,7 +182,7 @@ export default function AdminSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { data: session } = useSession();
-  const userRole = (session?.user?.role || 'USER') as UserRole;
+  const userRole = (session?.user?.role || 'LEARNER') as UserRole;
   const asideId = useId();
   const navId = useId();
   const groupId = useId();
@@ -225,12 +253,12 @@ export default function AdminSidebar() {
           // Closed drawer on a small screen is off-screen: keep it out of the Tab order and
           // the accessibility tree (WCAG 2.4.3, 2.4.11).
           inert={!isDesktop && !mobileOpen}
-          className={`fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          className={`fixed top-0 left-0 h-full w-64 flex flex-col bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           } lg:translate-x-0 ${collapsed ? 'lg:w-20' : ''}`}
         >
           {/* Logo */}
-          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-200">
+          <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
             <Link
               href="/admin"
               onClick={closeDrawer}
@@ -272,7 +300,7 @@ export default function AdminSidebar() {
           <nav
             id={navId}
             aria-label="Quản trị"
-            className="p-4 space-y-4 h-[calc(100%-9rem)] overflow-y-auto"
+            className="flex-1 min-h-0 p-4 space-y-4 overflow-y-auto"
           >
             {visibleGroups.map((group, groupIndex) => {
               const labelId = `${groupId}-${groupIndex}`;
@@ -324,8 +352,8 @@ export default function AdminSidebar() {
             })}
           </nav>
 
-          {/* Settings at bottom - all users */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 bg-white">
+          {/* Settings at bottom - all users. In normal flow after the scrolling nav, so they never overlap. */}
+          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
             <Link
               href="/admin/settings"
               onClick={closeDrawer}

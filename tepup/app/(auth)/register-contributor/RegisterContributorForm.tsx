@@ -6,9 +6,11 @@ import Link from '@/components/ui/AppLink';
 import { useRouter } from 'next/navigation';
 import { Lock, User, ArrowLeft, BookOpen, KeyRound } from 'lucide-react';
 import { PASSWORD_MIN_LENGTH } from '@/lib/security/password-policy';
+import { LICENCE_CHECKBOX_LABEL, LICENCE_SUMMARY } from '@/lib/licence';
 import PasswordToggle from '../PasswordToggle';
+import { TERMS } from '@/lib/terms';
 
-type Field = 'username' | 'password' | 'confirmPassword';
+type Field = 'username' | 'password' | 'confirmPassword' | 'licence';
 
 const inputClass =
   'w-full pl-10 py-3 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-700 focus:border-transparent transition-all aria-[invalid=true]:border-red-600';
@@ -20,6 +22,7 @@ export default function RegisterContributorForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [licenceAccepted, setLicenceAccepted] = useState(false);
   const [error, setError] = useState('');
   // Which field the error is about: gets aria-invalid and points at the message.
   const [errorField, setErrorField] = useState<Field | null>(null);
@@ -54,18 +57,33 @@ export default function RegisterContributorForm() {
       return;
     }
 
+    if (!licenceAccepted) {
+      fail('Bạn cần đồng ý giấy phép nội dung để tạo tài khoản', 'licence');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, mode: 'contributor' }),
+        body: JSON.stringify({ username, password, mode: 'contributor', licenceAccepted }),
       });
 
       const data = await response.json().catch(() => null);
 
       if (!response.ok) {
         const text: string = data?.error || 'Đã xảy ra lỗi khi đăng ký';
-        fail(text, /^Tên tài khoản/.test(text) ? 'username' : /^Mật khẩu/.test(text) ? 'password' : null);
+        fail(
+          text,
+          /^Tên tài khoản/.test(text)
+            ? 'username'
+            : /^Mật khẩu/.test(text)
+              ? 'password'
+              : /giấy phép/.test(text)
+                ? 'licence'
+                : null
+        );
         return;
       }
 
@@ -121,8 +139,8 @@ export default function RegisterContributorForm() {
                 <span className="sr-only">Tepup</span>
               </span>
             </Link>
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">Đóng góp ẩn danh</h1>
-            <p className="mt-2 text-gray-600">Tạo tài khoản cộng tác viên — không cần email, hoàn toàn ẩn danh</p>
+            <h1 className="mt-4 text-2xl font-bold text-gray-900">{TERMS.signUp}</h1>
+            <p className="mt-2 text-gray-600">Tạo tài khoản để đóng góp ẩn danh — không cần email, không cần tên thật</p>
           </div>
 
           {/* Form */}
@@ -235,6 +253,42 @@ export default function RegisterContributorForm() {
                 </p>
               </div>
 
+              {/* Content licence (proposal §6.11): three-line summary + required consent. */}
+              <fieldset className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700">
+                <legend className="px-1 font-medium text-gray-900">Giấy phép nội dung</legend>
+                <ul id="licence-summary" className="list-disc pl-5 space-y-1">
+                  {LICENCE_SUMMARY.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+                <p className="mt-2">
+                  <Link
+                    href="/contributor-guide"
+                    className="text-teal-800 underline hover:text-teal-900"
+                  >
+                    Đọc giải thích về giấy phép và cách ghi công
+                  </Link>
+                </p>
+                <div className="mt-3 flex items-start gap-2">
+                  <input
+                    id="licence-accepted"
+                    type="checkbox"
+                    checked={licenceAccepted}
+                    onChange={(e) => {
+                      setLicenceAccepted(e.target.checked);
+                      if (error) fail('', null);
+                    }}
+                    required
+                    aria-invalid={errorField === 'licence' || undefined}
+                    aria-describedby={describedBy('licence', 'licence-summary')}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-teal-700"
+                  />
+                  <label htmlFor="licence-accepted" className="font-medium text-gray-900">
+                    {LICENCE_CHECKBOX_LABEL}
+                  </label>
+                </div>
+              </fieldset>
+
               {/* Submit */}
               <button
                 type="submit"
@@ -242,7 +296,7 @@ export default function RegisterContributorForm() {
                 aria-disabled={isLoading || undefined}
                 className="w-full py-3 bg-teal-700 text-white font-semibold rounded-xl hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all"
               >
-                {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản cộng tác viên'}
+                {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
               </button>
             </form>
 

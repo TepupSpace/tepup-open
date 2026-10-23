@@ -7,7 +7,8 @@ import { prisma } from '../prisma';
 import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 import { CONTENT_TAG } from '../cache';
-import { canReviewContent, isContributorOrAbove } from '../role-utils';
+import { isContributorOrAbove } from '../role-utils';
+import { canOnCourse } from '../permissions/course-roles';
 import type { UserRole } from '@prisma/client';
 import type {
   CategoryDisplay,
@@ -180,14 +181,16 @@ async function getCourseBySlugInternal(slug: string): Promise<CourseDisplay | nu
   });
 
   if (!course) return null;
-  return mapCourseToDisplay(course);
+  // A level with no visible lesson isn't shown: its name would otherwise leak to learners
+  // (e.g. a level inserted by an approved outline proposal, holding only hidden new lessons).
+  return mapCourseToDisplay({ ...course, levels: course.levels.filter((l) => l.lessons.length > 0) });
 }
 
 // Cached version. React `cache` dedupes it within one render: the course route's layout
 // (which turns a missing course into a real 404) and its page both call it in parallel.
 export const getCourseBySlug = cache((slug: string) => unstable_cache(
   () => getCourseBySlugInternal(slug),
-  ['course-by-slug-v2', slug], // v2: hidden courses are filtered now; don't serve old cached rows
+  ['course-by-slug-v3', slug], // v3: levels without visible lessons are dropped
   { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
 )())
 
@@ -233,14 +236,42 @@ export async function getLessonPageForViewer(
   const isHidden = !row.isActive || !row.level.course.isActive;
 
   // Chỉ bài ẩn mới cần tra tác giả khoá — query công khai không đụng tới createdById.
-  if (isHidden && !canReviewContent(viewer.role)) {
-    const owned = await prisma.course.count({
-      where: { id: row.level.course.id, createdById: viewer.id },
-    });
-    if (!owned) return null;
-  }
+  if (isHidden && !(await maySeeHiddenInCourse(row.level.course.id, viewer))) return null;
 
   return { page: mapLessonRow(row), isHidden };
+}
+
+/**
+ * Quy tắc nội dung ẩn: Reviewer/Admin xem mọi khoá; trưởng khóa học / người duyệt tin cậy
+ * xem khoá của họ; contributor xem khoá do mình tạo (lib/permissions/course-roles.ts).
+ */
+async function maySeeHiddenInCourse(courseId: string, viewer: { id: string; role: UserRole }): Promise<boolean> {
+  return canOnCourse(viewer, courseId, 'SEE_HIDDEN');
+}
+
+/**
+ * Bài học theo id kèm nội dung đang chạy, nếu người dùng (đã đăng nhập, contributor trở
+ * lên) được phép xem — cùng quy tắc bài ẩn như getLessonPageForViewer. Null khi bài không
+ * tồn tại HOẶC bị ẩn với họ: API trả 404 cho cả hai, để không lộ là có bài ẩn.
+ * Không cache.
+ */
+export async function getLessonForViewerById(lessonId: string, viewer: { id: string; role: UserRole }) {
+  if (!isContributorOrAbove(viewer.role)) return null;
+  const lesson = await prisma.lesson.findUnique({
+    where: { id: lessonId },
+    select: {
+      id: true,
+      name: true,
+      isActive: true,
+      courseId: true,
+      course: { select: { isActive: true } },
+      content: { select: { title: true, blocks: true, updatedAt: true } },
+    },
+  });
+  if (!lesson) return null;
+  const isHidden = !lesson.isActive || !lesson.course.isActive;
+  if (isHidden && !(await maySeeHiddenInCourse(lesson.courseId, viewer))) return null;
+  return lesson;
 }
 
 function findLessonRow(courseSlug: string, lessonSlug: string, includeHidden: boolean) {

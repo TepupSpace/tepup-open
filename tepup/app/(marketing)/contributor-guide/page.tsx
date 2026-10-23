@@ -80,7 +80,7 @@ export default function ContributorGuidePage() {
               <div>
                 <h3 className="font-semibold text-gray-900 mb-1">Hoàn toàn ẩn danh</h3>
                 <p className="text-gray-600 text-sm">
-                  Không ai biết bạn là ai — kể cả Admin. Đóng góp của bạn chỉ hiển thị dưới username bạn chọn.
+                  Không ai biết bạn là ai — kể cả quản trị viên. Đóng góp của bạn chỉ hiển thị dưới username bạn chọn.
                 </p>
               </div>
             </div>
@@ -116,7 +116,7 @@ export default function ContributorGuidePage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">Gửi duyệt (Submit for Review)</h3>
-                  <p className="text-gray-600 text-sm">Khi hoàn thành, bạn gửi bản nháp để Reviewer kiểm tra.</p>
+                  <p className="text-gray-600 text-sm">Khi hoàn thành, bạn gửi bản nháp để người duyệt kiểm tra.</p>
                 </div>
               </div>
 
@@ -129,8 +129,8 @@ export default function ContributorGuidePage() {
                   <Eye className="w-5 h-5 text-amber-600" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">Review</h3>
-                  <p className="text-gray-600 text-sm">Reviewer kiểm tra nội dung: chính xác, phù hợp, chất lượng. Thường trong vòng vài giờ đến vài ngày.</p>
+                  <h3 className="font-semibold text-gray-900">Duyệt (Review)</h3>
+                  <p className="text-gray-600 text-sm">Người duyệt kiểm tra nội dung: chính xác, phù hợp, chất lượng. Thường trong vòng vài giờ đến vài ngày.</p>
                 </div>
               </div>
 
@@ -144,54 +144,94 @@ export default function ContributorGuidePage() {
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">Được duyệt → chờ kích hoạt → lên web</h3>
-                  <p className="text-gray-600 text-sm">Khi được duyệt, khóa học mới được tạo ở trạng thái ẩn. Quản trị viên kiểm tra lần cuối rồi kích hoạt, lúc đó người học mới thấy. Trang &ldquo;Đã gửi&rdquo; cho biết khóa học đang chờ kích hoạt hay đã lên web. Nếu Reviewer yêu cầu chỉnh sửa, góp ý hiện ngay trong trình soạn để bạn sửa và gửi lại.</p>
+                  <p className="text-gray-600 text-sm">Khi được duyệt, khóa học mới được tạo ở trạng thái ẩn. Quản trị viên kiểm tra lần cuối rồi kích hoạt, lúc đó người học mới thấy. Trang &ldquo;Đã gửi&rdquo; cho biết khóa học đang chờ kích hoạt hay đã lên web. Nếu người duyệt yêu cầu chỉnh sửa, góp ý hiện ngay trong trình soạn để bạn sửa và gửi lại.</p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Section 4: Trust Levels */}
+        {/* Section 4: Access levels and course roles */}
         <section className="mb-10">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">4</span>
-            Cấp độ tin cậy (Trust Levels)
+            Cấp truy cập và vai trò trong khóa học
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
-            <p className="text-gray-600 text-sm mb-4">Bạn bắt đầu ở cấp Contributor. Ban quản trị xem xét thăng cấp dựa trên các đóng góp đã được duyệt.</p>
+            <p className="text-gray-700 text-sm mb-3">
+              Ai viết, duyệt hay chăm sóc nội dung cho TepUp đều là <strong>người đóng góp</strong>. Quyền của mỗi người được mô tả
+              bằng hai lớp tách biệt:
+            </p>
+            <ul className="text-gray-700 text-sm list-disc pl-5 space-y-1 mb-4">
+              <li>
+                <strong>Cấp truy cập</strong>: áp dụng trên toàn trang. Bạn bắt đầu ở cấp <strong>Người soạn thảo</strong>; ban quản trị xem
+                xét thăng cấp dựa trên các đóng góp đã được duyệt.
+              </li>
+              <li>
+                <strong>Vai trò trong khóa học</strong>: chỉ áp dụng cho <strong>một khóa cụ thể</strong> và được giao thêm, độc lập với
+                cấp truy cập.
+              </li>
+            </ul>
 
-            <div className="space-y-3">
+            <h3 className="font-semibold text-gray-900 mb-2">Cấp truy cập</h3>
+            <div className="space-y-3 mb-6">
               <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                <Star className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" />
+                <Star className="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Contributor <span className="text-gray-600 font-normal">(Cấp 0)</span></h3>
+                  <h4 className="font-semibold text-gray-900 text-sm">Người soạn thảo <span className="text-gray-600 font-normal">(Author, cấp 0)</span></h4>
                   <p className="text-gray-600 text-xs">Mới tạo tài khoản. Tạo bản nháp, gửi duyệt.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-teal-50 rounded-lg">
-                <Star className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" />
+                <Star className="w-5 h-5 text-teal-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Trusted Contributor <span className="text-gray-600 font-normal">(Cấp 1)</span></h3>
-                  <p className="text-gray-600 text-xs">Được ban quản trị xét duyệt, thường sau khoảng <strong>5 bài được duyệt</strong>. Là sự ghi nhận của ban quản trị. Hiện quyền soạn và gửi duyệt giống Contributor; việc đề xuất chỉnh sửa bài đã có trên web đang được phát triển, chưa có trên giao diện.</p>
+                  <h4 className="font-semibold text-gray-900 text-sm">Người soạn thảo tin cậy <span className="text-gray-600 font-normal">(Trusted author, cấp 1)</span></h4>
+                  <p className="text-gray-600 text-xs">Được ban quản trị xét duyệt, thường sau khoảng <strong>5 bài được duyệt</strong>. Là sự ghi nhận của ban quản trị: được mở nhiều đề xuất cùng lúc hơn (30 thay vì 10), đề xuất được xếp trước trong hàng chờ duyệt, và có thể được mời làm trưởng khóa học một khóa học.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-lg">
-                <Star className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                <Star className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Reviewer <span className="text-gray-600 font-normal">(Cấp 2)</span></h3>
-                  <p className="text-gray-600 text-xs">Do Admin chỉ định. Duyệt hoặc từ chối đóng góp của người khác.</p>
+                  <h4 className="font-semibold text-gray-900 text-sm">Người duyệt <span className="text-gray-600 font-normal">(Reviewer, cấp 2)</span></h4>
+                  <p className="text-gray-600 text-xs">Do quản trị viên chỉ định. Duyệt hoặc từ chối đóng góp của người khác cho mọi khóa học.</p>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 p-3 bg-amber-50 rounded-lg">
-                <Crown className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+                <Crown className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" aria-hidden="true" />
                 <div>
-                  <h3 className="font-semibold text-gray-900 text-sm">Admin <span className="text-gray-600 font-normal">(Cấp 3)</span></h3>
+                  <h4 className="font-semibold text-gray-900 text-sm">Quản trị viên <span className="text-gray-600 font-normal">(Admin, cấp 3)</span></h4>
                   <p className="text-gray-600 text-xs">Toàn quyền quản lý nội dung và người dùng.</p>
                 </div>
               </div>
+            </div>
+
+            <h3 className="font-semibold text-gray-900 mb-2">Vai trò trong một khóa học</h3>
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Star className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-sm">Trưởng khóa học <span className="text-gray-600 font-normal">(Course lead)</span></h4>
+                  <p className="text-gray-600 text-xs">
+                    Duyệt đề xuất cho khóa đó, nhận góp ý của người học, ẩn/hiện bài và khôi phục phiên bản cũ.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                <Star className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                <div>
+                  <h4 className="font-semibold text-gray-900 text-sm">Người duyệt tin cậy <span className="text-gray-600 font-normal">(Trusted reviewer)</span></h4>
+                  <p className="text-gray-600 text-xs">
+                    Thường là chuyên gia được mời. Duyệt đề xuất cho khóa đó và cho ý kiến về bài nhóm TepUp gửi nhờ duyệt; họ tự chọn có
+                    công khai thông tin chuyên môn với người học hay không.
+                  </p>
+                </div>
+              </div>
+              <p className="text-gray-600 text-xs">
+                Quản trị viên giao vai trò trong khóa học. Không ai được tự duyệt đóng góp của mình.
+              </p>
             </div>
           </div>
         </section>
@@ -251,6 +291,15 @@ export default function ContributorGuidePage() {
               </div>
             </div>
 
+            {/* Bring-your-own-AI guide (signed-in area) */}
+            <p className="text-sm text-gray-700 mb-6">
+              Muốn soạn nhanh hơn?{' '}
+              <Link href="/contributor/ai-guide" className="text-teal-800 underline font-medium">
+                Dùng AI của bạn để soạn bài
+              </Link>{' '}
+              <span className="text-gray-600">(cần đăng nhập)</span>
+            </p>
+
             {/* Nên / Tránh */}
             <h3 className="font-semibold text-gray-900 mb-2">Nên</h3>
             <ul className="text-gray-700 text-sm space-y-1 mb-4">
@@ -290,10 +339,41 @@ export default function ContributorGuidePage() {
           </div>
         </section>
 
-        {/* Section 6: FAQ */}
-        <section className="mb-10">
+        {/* Section 6: Giấy phép, ghi công, lịch sử (the public footer links to #ghi-cong) */}
+        <section id="ghi-cong" className="mb-10 scroll-mt-6">
           <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
             <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">6</span>
+            Giấy phép, ghi công và lịch sử
+          </h2>
+          <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 text-sm text-gray-700">
+            <p>
+              Nội dung trên TepUp được phát hành theo giấy phép{' '}
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/deed.vi" className="text-teal-800 underline" rel="noopener noreferrer" target="_blank">
+                CC BY-SA 4.0
+              </a>
+              : ai cũng được chia sẻ và chỉnh sửa, miễn là ghi công và giữ cùng giấy phép. Khi đăng ký, bạn đồng ý phát hành nội dung
+              đóng góp theo giấy phép này.
+            </p>
+            <p>
+              <strong>Ghi công:</strong> mỗi khóa học có mục &ldquo;Tác giả và người đóng góp&rdquo;. Bạn chọn trong Cài đặt cách được ghi
+              công: tên tài khoản, hoặc bút danh ngẫu nhiên dạng &ldquo;Người đóng góp #k7m2q&rdquo; (mặc định). Bút danh không suy ra được
+              từ tên tài khoản.
+            </p>
+            <p>
+              <strong>Lịch sử:</strong> mọi thay đổi trên bài học, chương truyện, mục thư viện và mục lục khóa học đều được lưu lại. Trưởng
+              khóa học và người duyệt có thể xem từng phiên bản và khôi phục khi cần.
+            </p>
+            <p>
+              <strong>Xóa tài khoản:</strong> bạn có thể tự xóa tài khoản trong Cài đặt. Thông tin cá nhân bị xóa; nội dung đã xuất bản
+              vẫn ở lại (như Wikipedia) và được ghi công bằng bút danh của bạn.
+            </p>
+          </div>
+        </section>
+
+        {/* Section 7: FAQ */}
+        <section className="mb-10">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">7</span>
             Câu hỏi thường gặp
           </h2>
           <div className="space-y-3">
@@ -302,7 +382,7 @@ export default function ContributorGuidePage() {
                 <HelpCircle className="w-4 h-4 text-teal-600" />
                 Nếu bài bị từ chối thì sao?
               </h3>
-              <p className="text-gray-600 text-sm">Bạn sẽ nhận feedback cụ thể từ Reviewer về lý do từ chối. Sửa theo feedback rồi gửi lại — không giới hạn số lần.</p>
+              <p className="text-gray-600 text-sm">Bạn sẽ nhận góp ý cụ thể từ người duyệt về lý do từ chối. Sửa theo góp ý rồi gửi lại — không giới hạn số lần.</p>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-5">
@@ -318,7 +398,7 @@ export default function ContributorGuidePage() {
                 <HelpCircle className="w-4 h-4 text-teal-600" />
                 Ai review bài của tôi?
               </h3>
-              <p className="text-gray-600 text-sm">Reviewer (contributor đã được Admin tin tưởng giao quyền) hoặc Admin. Họ kiểm tra tính chính xác và chất lượng nội dung.</p>
+              <p className="text-gray-600 text-sm">Người duyệt hoặc quản trị viên; với đề xuất sửa một khóa học, cả trưởng khóa học và người duyệt tin cậy của khóa đó. Họ kiểm tra tính chính xác và chất lượng nội dung. Bạn có thể trao đổi với họ trong mục Thảo luận của đề xuất.</p>
             </div>
 
             <div className="bg-white rounded-xl border border-gray-100 p-5">

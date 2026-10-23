@@ -210,6 +210,19 @@ export default function EditCourseClient({
         </div>
       </div>
 
+      {/* Course roles, outline history, deleted lessons (separate pages). */}
+      <nav aria-label="Quản lý khóa học" className="mb-6 flex flex-wrap gap-3 text-sm">
+        <Link href={`/admin/courses/${id}/members`} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-800 hover:bg-gray-50">
+          Trưởng khóa học và người duyệt
+        </Link>
+        <Link href={`/admin/history/COURSE_OUTLINE/${id}`} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-800 hover:bg-gray-50">
+          Lịch sử mục lục
+        </Link>
+        <Link href={`/admin/courses/${id}/deleted`} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-gray-800 hover:bg-gray-50">
+          Bài đã xóa
+        </Link>
+      </nav>
+
       {/* Form */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <FormError message={error} />

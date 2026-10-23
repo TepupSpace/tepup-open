@@ -1,9 +1,10 @@
 import type { UserRole } from '@prisma/client';
+import { ROLE_LABEL } from './terms';
 
 const ROLE_LEVEL: Record<UserRole, number> = {
-  USER: -1,
-  CONTRIBUTOR: 0,
-  TRUSTED_CONTRIBUTOR: 1,
+  LEARNER: -1,
+  AUTHOR: 0,
+  TRUSTED_AUTHOR: 1,
   REVIEWER: 2,
   ADMIN: 3,
 };
@@ -13,7 +14,7 @@ export function hasMinRole(userRole: UserRole, requiredRole: UserRole): boolean 
 }
 
 export function isContributorOrAbove(role: UserRole): boolean {
-  return hasMinRole(role, 'CONTRIBUTOR');
+  return hasMinRole(role, 'AUTHOR');
 }
 
 export function canReviewContent(role: UserRole): boolean {
@@ -21,7 +22,7 @@ export function canReviewContent(role: UserRole): boolean {
 }
 
 export function canEditExistingContent(role: UserRole): boolean {
-  return hasMinRole(role, 'TRUSTED_CONTRIBUTOR');
+  return hasMinRole(role, 'TRUSTED_AUTHOR');
 }
 
 export function getRoleLevelNumber(role: UserRole): number {
@@ -29,14 +30,8 @@ export function getRoleLevelNumber(role: UserRole): number {
 }
 
 export function getRoleDisplayName(role: UserRole): string {
-  const names: Record<UserRole, string> = {
-    USER: 'Người dùng',
-    CONTRIBUTOR: 'Cộng tác viên',
-    TRUSTED_CONTRIBUTOR: 'Cộng tác viên tin cậy',
-    REVIEWER: 'Người duyệt',
-    ADMIN: 'Quản trị viên',
-  };
-  return names[role];
+  // Names live in lib/terms.ts (access levels are not "cộng tác viên").
+  return ROLE_LABEL[role];
 }
 
 /**
@@ -49,8 +44,8 @@ export function homePathForRole(role: UserRole | null | undefined): string {
       return '/admin';
     case 'REVIEWER':
       return '/admin/reviews';
-    case 'CONTRIBUTOR':
-    case 'TRUSTED_CONTRIBUTOR':
+    case 'AUTHOR':
+    case 'TRUSTED_AUTHOR':
       return '/contributor';
     default:
       return '/';

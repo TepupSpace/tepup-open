@@ -19,6 +19,8 @@ import { isAllowedMediaUrl, ALLOWED_MEDIA_HOSTS_LABEL } from '@/lib/security/saf
 import { checkExpr } from '@/lib/security/safe-expr';
 import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import type { ContentBlock } from '@/lib/types/content';
+import { validateLibraryEntryProposal } from './contribution-types/library-entry';
+import { validateCourseOutlineProposal } from './contribution-types/course-outline';
 
 export interface ContentIssue {
   path: string;
@@ -257,10 +259,20 @@ const courseContributionSchema = z.object({
     .max(50),
 });
 
-const lessonContentContributionSchema = z.object({ blocks: z.array(z.unknown()) });
+// EDIT_LESSON_CONTENT: tiêu đề nội dung (không bắt buộc; thiếu thì giữ tiêu đề đang chạy) và blocks.
+const lessonContentContributionSchema = z.object({
+  title: z.string().trim().max(CONTENT_LIMITS.short).optional(),
+  blocks: z.array(z.unknown()),
+});
 
 /** Các loại đóng góp mà hệ thống thật sự xuất bản được (xem contribution-service). */
-export const SUPPORTED_CONTRIBUTION_TYPES = ['NEW_COURSE', 'EDIT_LESSON_CONTENT'] as const;
+export const SUPPORTED_CONTRIBUTION_TYPES = [
+  'NEW_COURSE',
+  'EDIT_LESSON_CONTENT',
+  'EDIT_CHAPTER_CONTENT',
+  'EDIT_LIBRARY_ENTRY',
+  'EDIT_COURSE',
+] as const;
 export type SupportedContributionType = (typeof SUPPORTED_CONTRIBUTION_TYPES)[number];
 
 export function isSupportedContributionType(t: unknown): t is SupportedContributionType {
@@ -308,13 +320,19 @@ export function validateContributionData(
     return issues.empty ? { ok: true, value } : { ok: false, issues: issues.list };
   }
 
+  // Per-type validators live in lib/schemas/contribution-types/.
+  if (type === 'EDIT_LIBRARY_ENTRY') return validateLibraryEntryProposal(data);
+  if (type === 'EDIT_COURSE') return validateCourseOutlineProposal(data);
+
+  // EDIT_LESSON_CONTENT and EDIT_CHAPTER_CONTENT: { title?, blocks }.
   const parsed = lessonContentContributionSchema.safeParse(data);
   if (!parsed.success) {
     for (const iss of parsed.error.issues) issues.add(zodPath('data', iss.path), iss.message);
     return { ok: false, issues: issues.list };
   }
   const blocks = validateBlockList(parsed.data.blocks, 'data.blocks', issues, opts, 0);
-  return issues.empty ? { ok: true, value: { blocks } } : { ok: false, issues: issues.list };
+  const value = parsed.data.title ? { title: parsed.data.title, blocks } : { blocks };
+  return issues.empty ? { ok: true, value } : { ok: false, issues: issues.list };
 }
 
 // --- admin (trusted, but defence in depth) ---------------------------------

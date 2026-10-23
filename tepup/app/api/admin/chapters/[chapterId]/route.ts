@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
-import { revalidateContent } from '@/lib/cache';
+import { revalidateContent, revalidateLibrary } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
 import { chapterSlugInStory } from '@/lib/api-helpers';
+import { rebuildUsage } from '@/lib/library/usage-service';
+import { blocksSnapshot, lockChapterContent, recordRevision } from '@/lib/services/revision-service';
 
 // GET chapter by id
 export async function GET(
@@ -59,7 +61,10 @@ export async function PUT(
   const { chapterId } = await params;
 
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Dữ liệu không hợp lệ' }, { status: 400 });
+    }
     const { title, slug } = body;
 
     if (!title) {
@@ -113,18 +118,33 @@ export async function DELETE(
   const { chapterId } = await params;
 
   try {
-    // Delete content first (cascade should handle this but being explicit)
-    await prisma.chapterContent.delete({
-      where: { chapterId },
-    }).catch(() => {
-      // Ignore if no content exists
-    });
-
-    await prisma.chapter.delete({
-      where: { id: chapterId },
+    await prisma.$transaction(async (tx) => {
+      // History outlives the chapter: keep its last content as a DELETED revision
+      // (revisions have no FK to Chapter, so the delete leaves them in place).
+      const live = await lockChapterContent(tx, chapterId);
+      if (live) {
+        const chapter = await tx.chapter.findUnique({ where: { id: chapterId }, select: { title: true } });
+        await recordRevision(tx, {
+          targetType: 'CHAPTER',
+          targetId: chapterId,
+          label: chapter?.title || live.title,
+          snapshot: blocksSnapshot(live.title, live.blocks),
+          source: 'DELETED',
+          actorId: session.user.id,
+          autoPatrol: true,
+        });
+      }
+      // Drop this chapter from library entries' "Xuất hiện trong".
+      await rebuildUsage(tx, 'CHAPTER', chapterId, []);
+      // Delete content first (cascade should handle this but being explicit).
+      // deleteMany: no error when there is no content (an error would abort the transaction).
+      await tx.chapterContent.deleteMany({ where: { chapterId } });
+      await tx.chapter.delete({ where: { id: chapterId } });
     });
 
     revalidateContent();
+    // Library entries' "Xuất hiện trong" changed (rebuildUsage above).
+    revalidateLibrary();
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting chapter:', error);

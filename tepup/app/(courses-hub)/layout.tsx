@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { fraunces, beVietnam } from '@/lib/fonts/paper';
 import HubHeader from '@/components/courses-hub/HubHeader';
 import BottomTabBar from '@/components/mobile/BottomTabBar';
+import LicenceFooterLine from '@/components/LicenceFooterLine';
 import './courses-hub.css';
 
 /**
@@ -20,7 +21,16 @@ export default function CoursesHubLayout({ children }: { children: React.ReactNo
     <div className={`ch ${fraunces.variable} ${beVietnam.variable}`}>
       <HubHeader />
       {/* Chừa chỗ cho thanh tab dính ở đáy trên mobile. */}
-      <div className="ch-page pb-tab-bar md:pb-0">{children}</div>
+      <div className="ch-page pb-tab-bar md:pb-0">
+        {children}
+        {/* Same for every visitor (cache-safe). Colour from the hub's theme token. */}
+        <footer className="px-4 py-6 text-center">
+          <LicenceFooterLine
+            className="text-xs text-[color:var(--muted)]"
+            linkClassName="underline underline-offset-2 hover:text-[color:var(--ink-strong)]"
+          />
+        </footer>
+      </div>
       <BottomTabBar />
     </div>
   );

@@ -703,9 +703,6 @@ export default function LevelsClient({
                                 </span>
                                 <BookOpen className="w-4 h-4 text-gray-500" />
                                 <span className="text-gray-900">{lesson.name}</span>
-                                <span className="text-sm text-gray-500">
-                                  ({lesson._count.exercises} bài tập)
-                                </span>
                               </div>
                               <div className="flex items-center gap-2">
                                 <button

@@ -56,7 +56,8 @@ app/
   (auth)/               login, register(-contributor), banned, feature-request
   (marketing)/          contributor-guide (+ /block-demo showing every interactive block)
   admin/                layout = REVIEWER+ (contributors → /contributor); (restricted)/ = requireAdmin(); reviews/ & settings/ sit outside it
-  contributor/          contributor dashboard, drafts, submissions, reviews
+  contributor/          dashboard, drafts, submissions, reviews, courses (browse) + lesson/chapter/library hubs,
+                        maintain/[courseId], review-requests, history, recent-changes, suggestions, flags, notifications
   dev/blocks/           block preview playground
   api/                  route handlers: admin/**, contributor/**, ai/chat, library, register, user, progress, feature-requests
 components/
@@ -65,14 +66,17 @@ components/
   admin/editor/         BlockEditor, NotionBlockEditor (BlockNote), one *BlockEditor.tsx per type, EditorSaveBar
   review/               ContributionPreview, SuggestionQueue
 lib/
-  services/             content- (reads, cached), library-, contribution- (publish), promotion-service
+  services/             content- (reads, cached), library-, contribution- (publish core) + publishers/, proposal-,
+                        revision-, outline-, review-request-, notification-, discussion-, account-, audit-, credits-service
+  permissions/          course-roles.ts: canOnCourse / canDecideContribution (maintainers, trusted reviewers)
+  diff/                 block, entry and outline diffs (tests in tests/unit/diff.test.ts)
   types/content.ts      ContentBlock union: the source of truth for block shapes
   schemas/              blocks.ts (zod, incl. STRICT_BLOCK_SCHEMAS), content-validation.ts
   security/             sanitize-html, safe-url, safe-expr, rate-limit, password-policy
   editor/               blocknote-converter, inline-html
   cache.ts              CONTENT_TAG / LIBRARY_TAG + revalidateContent()/revalidateLibrary()
   admin-auth.ts         requireAuth/requireAdmin/requireContributor/requireReviewer, get*Session
-  role-utils.ts         USER < CONTRIBUTOR < TRUSTED_CONTRIBUTOR < REVIEWER < ADMIN
+  role-utils.ts         LEARNER < AUTHOR < TRUSTED_AUTHOR < REVIEWER < ADMIN
   blockLimits.ts        per-block length limits (shared by editor + scripts/audit-block-limits.ts)
 prisma/schema.prisma    single schema file
 scripts/                seeding / migration / audit; stories-v2/ has its own validate.ts
@@ -133,16 +137,24 @@ Author content is untrusted: contributors self-register. Keep these rules:
   - Post-login `callbackUrl`s go through `safeRedirectPath` (`lib/security/safe-redirect.ts`): same-site paths only.
 - Baseline security headers are set in `next.config.ts`. There is no script-src CSP yet, because Sandpack and the image hosts need testing first.
 - The JWT callback in `lib/auth.ts` re-reads role and ban status every 60s, so a ban ends the session.
-- **Anonymous suggestions** (`app/api/suggestions`, table `Suggestion`) must stay identity-free: never store an IP, user agent or user id on them, and always render them as plain text. They go to the reviewer queue and are never applied to content automatically. Only an ADMIN marks one APPLIED.
+- **Anonymous suggestions** (`app/api/suggestions`, table `Suggestion`) must stay identity-free: never store an IP, user agent or user id of the suggester, and always render them as plain text. They are never applied to content automatically: a contributor can "Nhận làm" an ACCEPTED one (`claimedById` is the claimer, never the suggester), and approving the linked proposal marks it APPLIED. Admins can still mark one APPLIED by hand.
 - **Uploads go through `sanitizeImage`** (`lib/security/image-sanitize.ts`), which strips all EXIF/GPS/XMP and uses content-hash names. Never store an uploader's original file name, and never add `.withMetadata()`/`.keepMetadata()`. Video, audio and PDF (`lib/security/media-type.ts`) are type-checked but not stripped. Before publishing the repo, `npx tsx scripts/check-committed-media.ts --all` must be clean.
 - Every new `public` table needs RLS enabled with no policies, and no `anon`/`authenticated` grants. The nightly backup guard fails otherwise.
+- **Course roles are checked in every API, never only in the UI.** `canOnCourse(viewer, courseId, action)` / `canDecideContribution` / `courseScope` (`lib/permissions/course-roles.ts`); nothing is cached in the JWT, so removing a grant works on the next request. Return 404, not 403, where a 403 would reveal a hidden target.
+- **Accounts are tombstoned, never hard-deleted** (`tombstoneUser`, `lib/services/account-service.ts`). **Credit is keyed by user id, never by username** (a deleted username can be registered again). `publicHandle` is random and never derived from the username.
+- **Publishing a contribution requires `licenceVersion`** on it (copied from the user at submit; `lib/licence.ts`).
+- **Discussions, notifications, flag notes and trusted reviewers' undisclosed details are staff-only** and never rendered on cached public pages. Public lesson notices (flags, endorsements) and course credits come from cached reads that are identical for everyone; every mutation that changes them calls `revalidateContent()`.
+- Trusted reviewers' details reach learners only as they chose (`ReviewerDisclosure`), and `CREDENTIAL`/`FULL` only after an admin verified them.
 
 ## Conventions
 - Server components by default; `"use client"` only when needed. App Router only, never the Pages Router.
 - Route handlers live in `app/api/<resource>/route.ts` and export GET/POST/PUT/DELETE.
 - Reads go through `lib/services/content-service.ts` (`unstable_cache`, tagged). **After every successful admin content mutation, call `revalidateContent()` (or `revalidateLibrary()`)** from `lib/cache.ts`. Otherwise edits stay stale until the TTL expires.
 - Slugs: use the helpers in `lib/api-helpers.ts` (`lessonSlugInCourse`, `uniqueSlugForModel`, `chapterSlugInStory`). Lesson slugs are unique per course; course and story slugs are globally unique.
-- Contribution publish (`publishContribution` in `contribution-service.ts`) supports only `NEW_COURSE` and `EDIT_LESSON_CONTENT`. It re-validates the content, creates new courses hidden (`isActive: false`) until an admin activates them, and forbids self-review. An approved `NEW_COURSE` stores the created course id in `Contribution.targetId`; contributors see "Đã duyệt — chờ quản trị viên kích hoạt" until it is active, and the admin dashboard lists approved courses that are still hidden (`getCoursesForContributions`). Promotion is manual (auto-promotion was removed).
+- Contribution publish (`publishContribution` in `contribution-service.ts`) runs in **one transaction**: claim (conditional on PENDING_REVIEW, and on not escalated unless the approver is an admin), licence check, strict re-validation, the type's publisher (`lib/services/publishers/*.ts`: `NEW_COURSE`, `EDIT_LESSON_CONTENT`, `EDIT_CHAPTER_CONTENT`, `EDIT_LIBRARY_ENTRY`, `EDIT_COURSE`), the `Review` row, the linked suggestion (→ APPLIED) and the author's notification. Then `revalidateContent()`/`revalidateLibrary()`. Permission to decide is `canDecideContribution()` (`lib/permissions/course-roles.ts`), never the author.
+  - A new publisher must: lock the live row, refuse a stale base (`StaleContributionError` → 409 `stale`) unless `force`, write, record the revision (`recordRevision`, source `CONTRIBUTION`, actor = reviewer, author = contributor), `rebuildUsage` for blocks. Not the Review/notify/revalidate: the core does those.
+  - Edit proposals are created only through `createEditProposal` (`lib/services/proposal-service.ts`): visibility (404 for hidden targets), course blocks (403), one open proposal per user per target (409 `existingId`), caps (10 / 30 open) and 10 new per hour (429). The server sets `targetId`, `baseSnapshot` and `baseUpdatedAt`; `PUT` never changes them; rebase moves the base (`…/[id]/rebase`).
+  - `NEW_COURSE` creates the course hidden (`isActive: false`) and makes the author its maintainer. Its id is stored in `Contribution.targetId`; contributors see "Đã duyệt — chờ quản trị viên kích hoạt" until it is active, and the admin dashboard lists approved courses still hidden (`getCoursesForContributions`). Promotion is manual.
 - Contribution status: saving never changes it. `CHANGES_REQUESTED` stays until the author resubmits (submit sets `PENDING_REVIEW` and clears `resolvedAt`), so the reviewer's feedback stays visible in the editor, the drafts list and the dashboard.
 - Code comments and UI copy are often in Vietnamese. Match the language of the surrounding file.
 - Don't edit `node_modules/`, `.next/` or the generated Prisma client.
@@ -183,7 +195,11 @@ Target: WCAG 2.2 AA. Full guide, with the reasons and a manual test checklist: `
   - "Bỏ nháp" (`DELETE …/draft`) returns to the live version.
   - The sticky bar is `components/admin/editor/EditorSaveBar.tsx`. The hooks are `lib/hooks/useDraftAutosave.ts` and `lib/hooks/useUnsavedChangesGuard.ts` (a leave warning on link clicks and tab close; browser back/forward isn't blocked).
 - ⚠️ **Drafts are stored unvalidated on purpose**, so half-written blocks can autosave. Never render a `ContentDraft` to learners or copy it to live content without going through the publish route's validation (`prepareBlocksForSave` plus `sanitizeAdminBlocks`). Lesson settings (slug, visibility, order) are part of the draft and only apply on publish.
-- **Publishing checks for conflicts.** The client sends the live `updatedAt` it started from (`baseUpdatedAt`). If live content changed since then (another admin, or an approved contributor edit), the API returns 409 and the editor asks before overwriting (`force: true`). Anything else that writes `LessonContent`/`ChapterContent` should leave `updatedAt` to Prisma, so this check keeps working.
+- **Publishing checks for conflicts.** The client sends the live `updatedAt` it started from (`baseUpdatedAt`). If live content changed since then (another admin, or an approved contributor edit), the API returns 409 and the editor asks before overwriting (`force: true`). Anything else that writes `LessonContent`/`ChapterContent` should leave `updatedAt` to Prisma, so this check keeps working. The check runs under a row lock (`lockLessonContent`), so two publishers can't both pass it.
+- ⚠️ **Every write to lesson content, chapter content, a library entry or a course outline records a version** in `ContentRevision` (`lib/services/revision-service.ts`, `outline-service.ts`). Inside the write's transaction: lock (`lockCourse` first if the outline changes, then `lockLessonContent`/`lockChapterContent`/`lockLibraryEntry`, which lock the parent row too), run the conflict check, write, then `recordRevision(tx, { …, snapshot: <the new version>, previous: <the live version before> })` or `recordOutlineRevision`. The first recorded change of a target stores the old live version as `BASELINE`.
+  - Writers today: admin lesson/chapter/library-entry publish and delete, admin course/level/lesson/reorder edits (outline), contribution publishers, maintainer show/hide, restore (`app/api/history/_lib/restore.ts`). Deletion records `DELETED` with the last version. Admin changes are auto-patrolled.
+  - Scripts that rewrite content must record `SCRIPT` revisions. Older scripts don't; add it before re-running one.
+  - Revisions have **no FK to content**, so history survives deletion, and they are append-only: the app role can't update or delete `ContentRevision`, `RevisionPatrol` or `AuditLog` (`prisma/sql/2026-10-17-contributor-system.sql`). Never add a cascade to a revision table.
 - Shared types are in `lib/types/drafts.ts`, and server helpers in `lib/services/draft-service.ts`. The table comes from `prisma/sql/2026-10-02-content-drafts.sql`.
 - **Library entries use the same flow** (`ContentDraft` target `LIBRARY_ENTRY`, `meta` = the whole entry form; `/api/admin/library-entries/[id]/draft`; publishing is the entry `PUT`, which checks `baseUpdatedAt` and deletes the draft). A new entry's first "Lưu nháp" creates it hidden.
 - ⚠️ **Empty lines never reach saved content.** Every BlockNote paragraph becomes its own `text` block, and without `step-break`s the player reveals one block per tap, so a saved empty line is a blank step for learners. `trimEmptyBlocks` (`lib/editor/trim-empty-blocks.ts`) drops empty text/heading/quote/list blocks and blank line breaks at a text block's edges.

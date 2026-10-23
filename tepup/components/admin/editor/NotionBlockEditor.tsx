@@ -16,6 +16,7 @@ import { WidgetEditContext } from './blocknote/WidgetEditContext';
 import { TepupFormattingToolbar } from './blocknote/MediaAccessibilityButton';
 import { TepupLinkToolbar } from './blocknote/TepupLinkToolbar';
 import BlockEditDrawer from './BlockEditDrawer';
+import InfoToggle from '@/components/ui/InfoToggle';
 import { EditorModeContext, CONTRIBUTOR_NO_UPLOAD_MESSAGE, type EditorMode } from './EditorModeContext';
 import {
   toBlockNote,
@@ -145,6 +146,10 @@ interface Props {
    * by URL from the allowed hosts (see EditorModeContext). Default `admin`.
    */
   mode?: EditorMode;
+  /** Optional heading shown in the same row as the (i) help button. */
+  heading?: React.ReactNode;
+  /** Extra static how-to text from the page, added to the editor's help panel. */
+  help?: React.ReactNode;
 }
 
 /** BlockNote's Vietnamese UI, with the URL box saying which image URLs are accepted. */
@@ -162,7 +167,7 @@ const DICTIONARY_CONTRIBUTOR = {
 };
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: Props) {
+export default function NotionBlockEditor({ blocks, onChange, mode = 'admin', heading, help }: Props) {
   const isContributor = mode === 'contributor';
   const [customTypes, setCustomTypes] = useState<CustomBlockTypeFull[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -386,24 +391,37 @@ export default function NotionBlockEditor({ blocks, onChange, mode = 'admin' }: 
   return (
     <EditorModeContext.Provider value={mode}>
     <WidgetEditContext.Provider value={widgetCtx}>
-      <div id={helpId} className="mb-2 space-y-1 text-xs text-gray-500">
-        <p>
-          Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
-          Dòng trống không có số và sẽ được bỏ khi lưu.
-        </p>
-        <p>
-          Bàn phím: gõ <kbd className="font-mono">/</kbd> để chèn block; dùng phím mũi tên để chọn
-          một block tương tác rồi <kbd className="font-mono">Enter</kbd> để mở form sửa; chọn ảnh
-          hoặc video rồi <kbd className="font-mono">Tab</kbd> để vào thanh công cụ;{' '}
-          <kbd className="font-mono">Esc</kbd> để rời trình soạn (trong trình soạn,{' '}
-          <kbd className="font-mono">Tab</kbd> thụt lề block).
-        </p>
-      </div>
-      {isContributor && (
-        <p className="mb-2 text-xs text-gray-500" data-testid="contributor-image-note">
-          <span className="font-medium text-gray-600">Ảnh:</span> {CONTRIBUTOR_NO_UPLOAD_MESSAGE}
-        </p>
-      )}
+      {/* Static how-to text only, behind the (i) button. Warnings and errors stay visible.
+          The panel stays in the DOM while closed, so the editor's aria-describedby still
+          reads the keyboard help. */}
+      <InfoToggle
+        label="Hướng dẫn soạn bài"
+        heading={heading}
+        storageKey={`tepup:editor-help-open:${mode}`}
+        accent={isContributor ? 'teal' : 'blue'}
+        className="mb-2"
+        panelClassName="space-y-1"
+      >
+        <div id={helpId} className="space-y-1">
+          <p>
+            Số bên trái là số thứ tự block, khớp với &ldquo;Block #…&rdquo; trong thông báo lỗi.
+            Dòng trống không có số và sẽ được bỏ khi lưu.
+          </p>
+          <p>
+            Bàn phím: gõ <kbd className="font-mono">/</kbd> để chèn block; dùng phím mũi tên để chọn
+            một block tương tác rồi <kbd className="font-mono">Enter</kbd> để mở form sửa; chọn ảnh
+            hoặc video rồi <kbd className="font-mono">Tab</kbd> để vào thanh công cụ;{' '}
+            <kbd className="font-mono">Esc</kbd> để rời trình soạn (trong trình soạn,{' '}
+            <kbd className="font-mono">Tab</kbd> thụt lề block).
+          </p>
+        </div>
+        {isContributor && (
+          <p data-testid="contributor-image-note">
+            <span className="font-medium text-gray-700">Ảnh:</span> {CONTRIBUTOR_NO_UPLOAD_MESSAGE}
+          </p>
+        )}
+        {help}
+      </InfoToggle>
       <style ref={numberingStyleRef} />
       <div
         ref={editorWrapRef}

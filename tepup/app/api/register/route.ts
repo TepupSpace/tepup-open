@@ -4,12 +4,18 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { clientIp, rateLimit, refundRateLimit, retryAfterMinutes } from '@/lib/security/rate-limit';
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from '@/lib/security/password-policy';
+import { LICENCE_VERSION } from '@/lib/licence';
+import { newPublicHandle } from '@/lib/credit';
 
 // Usernames are stored lowercase, so "Tester_Hanoi" and "tester_hanoi" are one account.
 // Users may type capitals; they're folded before validation and storage.
 const USERNAME_REGEX = /^[a-z0-9_]{3,20}$/;
 
 const SIGNUP_WINDOW_MS = 60 * 60_000;
+
+function isUniqueClash(e: unknown): boolean {
+  return e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002';
+}
 
 function tooMany(retryAfterSeconds: number, error: string) {
   return NextResponse.json(
@@ -53,11 +59,19 @@ export async function POST(req: NextRequest) {
     } catch {
       return reject('Dữ liệu không hợp lệ');
     }
-    const { password, username: rawUsername, mode } = body;
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return reject('Dữ liệu không hợp lệ');
+    }
+    const { password, username: rawUsername, mode, licenceAccepted } = body;
 
     // Only allow contributor registration
     if (mode !== 'contributor') {
       return reject('Chỉ hỗ trợ đăng ký bằng tài khoản contributor', 403);
+    }
+
+    // Content licence consent is required at sign-up (proposal §6.11).
+    if (licenceAccepted !== true) {
+      return reject('Bạn cần đồng ý giấy phép nội dung (CC BY-SA 4.0) để tạo tài khoản');
     }
 
     // Validate password
@@ -86,14 +100,32 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(password, 12);
 
-    const user = await prisma.user.create({
-      data: {
-        username,
-        name: username,
-        password: hashedPassword,
-        role: 'CONTRIBUTOR',
-      },
-    });
+    // publicHandle is random and unique (§6.12). On the rare handle clash, try another one;
+    // a username clash (two sign-ups at once) falls through to the P2002 handler below.
+    let user: { id: string; username: string | null } | null = null;
+    for (let attempt = 0; !user; attempt++) {
+      try {
+        user = await prisma.user.create({
+          data: {
+            username,
+            name: username,
+            password: hashedPassword,
+            role: 'AUTHOR',
+            publicHandle: newPublicHandle(),
+            licenceVersion: LICENCE_VERSION,
+            licenceAcceptedAt: new Date(),
+          },
+          select: { id: true, username: true },
+        });
+      } catch (e) {
+        if (attempt >= 4 || !isUniqueClash(e)) throw e;
+        const taken = await prisma.user.findFirst({
+          where: { username: { equals: username, mode: 'insensitive' } },
+          select: { id: true },
+        });
+        if (taken) throw e; // the username, not the handle
+      }
+    }
 
     return NextResponse.json(
       {
@@ -104,7 +136,7 @@ export async function POST(req: NextRequest) {
     );
   } catch (error) {
     // Two sign-ups for the same name at once: the unique index catches the second.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    if (isUniqueClash(error)) {
       return reject('Tên tài khoản này đã được sử dụng');
     }
     console.error('Registration error:', error);

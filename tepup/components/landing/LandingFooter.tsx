@@ -1,4 +1,5 @@
 import Link from '@/components/ui/AppLink';
+import LicenceFooterLine from '@/components/LicenceFooterLine';
 
 /**
  * Chân trang của landing v2.
@@ -51,6 +52,11 @@ export default function LandingFooter() {
       <p className="lp-footer__legal">
         © {new Date().getFullYear()} Tépup. Kiến thức công dân thực dụng bằng tiếng Việt.
       </p>
+      {/* Tailwind only (no lp-footer__legal): its 50% ink is too faint for linked text. */}
+      <LicenceFooterLine
+        className="mx-auto mt-2 w-[min(77.5rem,calc(100vw-3rem))] text-sm text-gray-700"
+        linkClassName="underline underline-offset-2 hover:text-gray-900"
+      />
     </footer>
   );
 }

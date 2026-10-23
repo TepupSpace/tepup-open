@@ -7,29 +7,47 @@ datasource db {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  name              String?
-  username          String?           @unique
-  email             String?           @unique
-  emailVerified     DateTime?
-  image             String?
-  password          String?
-  createdAt         DateTime          @default(now())
-  updatedAt         DateTime          @updatedAt
-  role              UserRole          @default(USER)
-  isBanned          Boolean           @default(false)
-  bannedAt          DateTime?
-  bannedReason      String?
-  accounts          Account[]
-  sessions          Session[]
-  progress          UserProgress[]
-  contributions     Contribution[]
-  reviews           Review[]
-  featureRequests   FeatureRequest[]
-  customBlockTypes  CustomBlockType[]
-  suggestionReviews Suggestion[]      @relation("SuggestionReviewer")
-  createdCourses    Course[]          @relation("CourseCreator")
-  contentDrafts     ContentDraft[]    @relation("ContentDraftEditor")
+  id                  String                  @id @default(cuid())
+  name                String?
+  username            String?                 @unique
+  email               String?                 @unique
+  emailVerified       DateTime?
+  image               String?
+  password            String?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  role                UserRole                @default(LEARNER)
+  isBanned            Boolean                 @default(false)
+  bannedAt            DateTime?
+  bannedReason        String?
+  /// Công khai ghi công: NAME = tên tài khoản, PSEUDONYM = "Cộng tác viên #<publicHandle>".
+  creditMode          CreditMode              @default(PSEUDONYM)
+  /// Ngẫu nhiên, sinh khi đăng ký, không bao giờ đổi, không suy ra từ username/id.
+  publicHandle        String?                 @unique
+  /// Phiên bản giấy phép đã đồng ý (lib/licence.ts); null = chưa đồng ý.
+  licenceVersion      String?
+  licenceAcceptedAt   DateTime?
+  /// Tombstone: tài khoản đã xoá (dữ liệu cá nhân đã xoá, đóng góp giữ lại). Không bao giờ xoá hàng.
+  deletedAt           DateTime?
+  accounts            Account[]
+  sessions            Session[]
+  progress            UserProgress[]
+  contributions       Contribution[]
+  reviews             Review[]
+  featureRequests     FeatureRequest[]
+  customBlockTypes    CustomBlockType[]
+  suggestionReviews   Suggestion[]            @relation("SuggestionReviewer")
+  createdCourses      Course[]                @relation("CourseCreator")
+  contentDrafts       ContentDraft[]          @relation("ContentDraftEditor")
+  revisionsActed      ContentRevision[]       @relation("RevisionActor")
+  revisionsAuthored   ContentRevision[]       @relation("RevisionAuthor")
+  courseMemberships   CourseMember[]          @relation("CourseMemberUser")
+  reviewerProfile     ReviewerProfile?        @relation("ReviewerProfileUser")
+  notifications       Notification[]          @relation("NotificationUser")
+  comments            DiscussionComment[]     @relation("CommentAuthor")
+  reviewRequests      ReviewRequest[]         @relation("ReviewRequestRequester")
+  reviewRequestsAsked ReviewRequestReviewer[] @relation("ReviewRequestReviewerUser")
+  reviewOpinions      ReviewOpinion[]         @relation("ReviewOpinionReviewer")
 }
 
 model Account {
@@ -121,6 +139,7 @@ model Course {
   levels          Level[]
   lessons         Lesson[]
   recommendations CourseStoryRecommendation[]
+  members         CourseMember[]
 
   @@index([categoryId])
   @@index([createdById])
@@ -315,17 +334,32 @@ model LibraryDocument {
 }
 
 model Contribution {
-  id            String           @id @default(cuid())
-  contributorId String
-  type          ContributionType
-  targetId      String?
-  status        ContentStatus    @default(DRAFT)
-  data          Json
-  message       String?
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
-  submittedAt   DateTime?
-  resolvedAt    DateTime?
+  id             String           @id @default(cuid())
+  contributorId  String
+  type           ContributionType
+  targetId       String?
+  status         ContentStatus    @default(DRAFT)
+  data           Json
+  message        String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  submittedAt    DateTime?
+  resolvedAt     DateTime?
+  /// EDIT_LESSON_CONTENT: LessonContent.updatedAt when the proposal started (null = the
+  /// lesson had no content yet). Set by the server only; publish refuses a newer live
+  /// version unless the reviewer forces it.
+  baseUpdatedAt  DateTime?
+  /// EDIT_LESSON_CONTENT: the live { title, blocks } when the proposal started, for the
+  /// reviewer's diff. A column, not part of `data`: the strict validator strips unknown keys.
+  baseSnapshot   Json?
+  /// Giấy phép tác giả đã đồng ý lúc gửi (chép từ User.licenceVersion); publish từ chối nếu thiếu.
+  licenceVersion String?
+  /// Đề xuất tạo từ một góp ý đã nhận (Suggestion.id); duyệt xong đánh dấu góp ý APPLIED.
+  suggestionId   String?
+  /// "Chuyển quản trị viên": khi đã chuyển, chỉ ADMIN được duyệt.
+  escalatedAt    DateTime?
+  escalatedById  String?
+  escalationNote String?
 
   contributor User     @relation(fields: [contributorId], references: [id], onDelete: Cascade)
   reviews     Review[]
@@ -333,6 +367,7 @@ model Contribution {
   @@index([contributorId])
   @@index([status])
   @@index([type])
+  @@index([targetId])
 }
 
 model Review {
@@ -351,9 +386,9 @@ model Review {
 }
 
 enum UserRole {
-  USER
-  CONTRIBUTOR
-  TRUSTED_CONTRIBUTOR
+  LEARNER
+  AUTHOR
+  TRUSTED_AUTHOR
   REVIEWER
   ADMIN
 }
@@ -372,6 +407,8 @@ enum ContributionType {
   NEW_LESSON
   EDIT_LESSON_CONTENT
   EDIT_COURSE
+  EDIT_CHAPTER_CONTENT
+  EDIT_LIBRARY_ENTRY
 }
 
 enum ReviewAction {
@@ -443,24 +480,28 @@ model ScriptLog {
 /// Reviewers triage it; accepted suggestions are applied by an editor through the normal
 /// content editor, never written to the lesson automatically.
 model Suggestion {
-  id         String           @id @default(cuid())
-  targetType SuggestionTarget
+  id            String            @id @default(cuid())
+  targetType    SuggestionTarget
   /// Lesson.id or Chapter.id, depending on targetType (polymorphic, so no FK)
-  targetId   String
+  targetId      String
   /// The passage the suggestion is about (optional, usually the learner's selection)
-  quote      String?
+  quote         String?
   /// What should change
-  proposal   String
+  proposal      String
   /// Why / source (optional)
-  reason     String?
+  reason        String?
   /// NEW_ENTRY: loại mục người học đề xuất (mục từ, nguồn, viết tắt, công cụ)
   suggestedType LibraryEntryType?
-  status     SuggestionStatus @default(PENDING)
-  reviewerId String?
-  reviewer   User?            @relation("SuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
-  reviewNote String?
-  createdAt  DateTime         @default(now())
-  resolvedAt DateTime?
+  status        SuggestionStatus  @default(PENDING)
+  reviewerId    String?
+  reviewer      User?             @relation("SuggestionReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  reviewNote    String?
+  /// Cộng tác viên đã "Nhận làm" góp ý (KHÔNG phải người góp ý ẩn danh). Hết hạn sau 14 ngày
+  /// nếu chưa gửi đề xuất (lib/suggestions.ts).
+  claimedById   String?
+  claimedAt     DateTime?
+  createdAt     DateTime          @default(now())
+  resolvedAt    DateTime?
 
   @@index([status, createdAt])
   @@index([targetType, targetId])
@@ -567,6 +608,308 @@ enum SuggestionStatus {
 /// PUT .../content routes) validates the draft, writes LessonContent / ChapterContent and
 /// deletes the row. Blocks are stored as typed (half-written blocks included), so they are
 /// only ever loaded back into the admin editor, never rendered.
+// ---------------------------------------------------------------------------
+// Contributor system (docs/proposal-contributor-edits-and-maintainers.md).
+// SQL: prisma/sql/2026-10-17-contributor-system.sql. Every table: RLS on, no policies.
+// ---------------------------------------------------------------------------
+
+/// History of lessons, chapters, library entries and course outlines. Each row is a
+/// VERSION as written (Wikipedia model). Written in the same transaction as the content
+/// write, by `recordRevision` (lib/services/revision-service.ts). The first write to a
+/// target with no history also stores the old live version as BASELINE.
+/// No FKs to content on purpose: history outlives deletion. Append-only for the app role.
+model ContentRevision {
+  id             String          @id @default(cuid())
+  targetType     RevisionTarget
+  targetId       String
+  /// LESSON and COURSE_OUTLINE: the course (course roles, per-course recent changes).
+  courseId       String?
+  /// Lesson/chapter/entry name or course name at write time.
+  label          String
+  /// LESSON/CHAPTER: { title, blocks }; LIBRARY_ENTRY: editable entry fields; COURSE_OUTLINE: outline.
+  snapshot       Json
+  source         RevisionSource
+  /// Who made it live (publishing admin, approving reviewer, maintainer).
+  actorId        String?
+  actor          User?           @relation("RevisionActor", fields: [actorId], references: [id], onDelete: SetNull)
+  /// Whose words these are (the proposer, for contributions). Credits read this.
+  authorId       String?
+  author         User?           @relation("RevisionAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  contributionId String?
+  createdAt      DateTime        @default(now())
+  patrol         RevisionPatrol?
+
+  @@index([targetType, targetId, createdAt])
+  @@index([courseId, createdAt])
+  @@index([createdAt])
+  @@index([authorId])
+}
+
+enum RevisionTarget {
+  LESSON
+  CHAPTER
+  LIBRARY_ENTRY
+  COURSE_OUTLINE
+}
+
+enum RevisionSource {
+  /// The live version found when a target got its first recorded change.
+  BASELINE
+  ADMIN_PUBLISH
+  CONTRIBUTION
+  /// Course lead action (show/hide a lesson).
+  COURSE_LEAD
+  ROLLBACK
+  SCRIPT
+  /// The target was deleted; snapshot = its last version.
+  DELETED
+}
+
+/// "Đã kiểm tra" on a recent change. Separate table so revisions stay append-only.
+model RevisionPatrol {
+  revisionId    String          @id
+  revision      ContentRevision @relation(fields: [revisionId], references: [id])
+  patrolledById String?
+  patrolledAt   DateTime        @default(now())
+}
+
+/// Course roles: maintainers and trusted reviewers ("chuyên gia"), one role per user per course.
+/// Checked in every course-scoped API (lib/permissions/course-roles.ts), never cached in the JWT.
+model CourseMember {
+  courseId   String
+  userId     String
+  role       CourseRole
+  /// Per-course override of ReviewerProfile.disclosure (trusted reviewers only); null = profile default.
+  disclosure ReviewerDisclosure?
+  /// null = added automatically (author of an approved NEW_COURSE).
+  addedById  String?
+  createdAt  DateTime            @default(now())
+  course     Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user       User                @relation("CourseMemberUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, userId])
+  @@index([userId])
+}
+
+enum CourseRole {
+  COURSE_LEAD
+  TRUSTED_REVIEWER
+}
+
+/// Per-course block: no proposals, comments or suggestion claims on that course.
+model CourseBlock {
+  courseId    String
+  userId      String
+  reason      String?
+  blockedById String?
+  createdAt   DateTime @default(now())
+
+  @@id([courseId, userId])
+  @@index([userId])
+}
+
+/// What learners may see about a trusted reviewer (proposal §6.14a). Opt-in; CREDENTIAL and
+/// FULL show only after an admin verified the credential.
+model ReviewerProfile {
+  userId           String             @id
+  user             User               @relation("ReviewerProfileUser", fields: [userId], references: [id], onDelete: Cascade)
+  /// Typed by the reviewer; never derived from the username. Shown only with FULL.
+  publicName       String?
+  /// e.g. "Luật sư", "Tiến sĩ kinh tế học".
+  credential       String?
+  affiliation      String?
+  disclosure       ReviewerDisclosure @default(NONE)
+  verifiedAt       DateTime?
+  verifiedById     String?
+  /// Admin-only: how the credential was checked. Never copies of documents.
+  verificationNote String?
+  updatedAt        DateTime           @updatedAt
+}
+
+enum ReviewerDisclosure {
+  /// Learners see nothing.
+  NONE
+  /// "Đã được người duyệt tin cậy kiểm tra".
+  ANONYMOUS
+  /// Verified credential without a name.
+  CREDENTIAL
+  /// Name and credential.
+  FULL
+}
+
+/// Append-only log of privileged actions (proposal §6.19). Admin-readable only.
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  targetType String
+  targetId   String
+  /// Before/after values. Never passwords.
+  details    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+}
+
+/// In-app inbox (no email by design). Text is rendered at read time from kind + target,
+/// and entries whose target the reader can no longer see are filtered out.
+model Notification {
+  id         String           @id @default(cuid())
+  userId     String
+  user       User             @relation("NotificationUser", fields: [userId], references: [id], onDelete: Cascade)
+  kind       NotificationKind
+  /// CONTRIBUTION | REVIEW_REQUEST | LESSON | COURSE | THREAD | SUGGESTION
+  targetType String
+  targetId   String
+  actorId    String?
+  createdAt  DateTime         @default(now())
+  readAt     DateTime?
+
+  @@index([userId, readAt, createdAt])
+}
+
+enum NotificationKind {
+  /// To the author: approved / rejected / changes requested.
+  CONTRIBUTION_DECIDED
+  /// To course roles (and global reviewers for non-course content are NOT notified: they use the queue).
+  CONTRIBUTION_SUBMITTED
+  REVIEW_REQUESTED
+  REVIEW_OPINION
+  COMMENT
+  ESCALATED
+  FLAG_CHANGED
+  COURSE_ROLE_GRANTED
+  COURSE_ORPHANED
+}
+
+model DiscussionThread {
+  id         String              @id @default(cuid())
+  targetType DiscussionTarget
+  targetId   String
+  /// Course of the target, when it has one (visibility and per-course blocks).
+  courseId   String?
+  createdAt  DateTime            @default(now())
+  comments   DiscussionComment[]
+
+  @@unique([targetType, targetId])
+}
+
+enum DiscussionTarget {
+  LESSON
+  CHAPTER
+  LIBRARY_ENTRY
+  CONTRIBUTION
+  REVIEW_REQUEST
+}
+
+/// Plain text, staff-only. Rendered as text, never as HTML.
+model DiscussionComment {
+  id         String           @id @default(cuid())
+  threadId   String
+  thread     DiscussionThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId   String?
+  author     User?            @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+  body       String
+  createdAt  DateTime         @default(now())
+  editedAt   DateTime?
+  hiddenAt   DateTime?
+  hiddenById String?
+
+  @@index([threadId, createdAt])
+}
+
+/// "Gửi người duyệt": an admin sends a team-written lesson version to reviewers for an
+/// (advisory) opinion. Snapshot is fixed; later draft edits don't change it.
+model ReviewRequest {
+  id                  String                  @id @default(cuid())
+  lessonId            String
+  courseId            String
+  requestedById       String?
+  requestedBy         User?                   @relation("ReviewRequestRequester", fields: [requestedById], references: [id], onDelete: SetNull)
+  title               String
+  blocks              Json
+  baseSnapshot        Json?
+  baseUpdatedAt       DateTime?
+  message             String?
+  status              ReviewRequestStatus     @default(OPEN)
+  closedAt            DateTime?
+  /// The ContentRevision that published exactly this version (endorsement shows while it is live).
+  publishedRevisionId String?
+  escalatedAt         DateTime?
+  escalatedById       String?
+  escalationNote      String?
+  createdAt           DateTime                @default(now())
+  reviewers           ReviewRequestReviewer[]
+  opinions            ReviewOpinion[]
+
+  @@index([courseId, status])
+  @@index([lessonId, status])
+}
+
+enum ReviewRequestStatus {
+  OPEN
+  CLOSED
+}
+
+model ReviewRequestReviewer {
+  requestId String
+  userId    String
+  request   ReviewRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user      User          @relation("ReviewRequestReviewerUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([requestId, userId])
+  @@index([userId])
+}
+
+model ReviewOpinion {
+  requestId  String
+  reviewerId String
+  request    ReviewRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  reviewer   User          @relation("ReviewOpinionReviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  verdict    ReviewVerdict
+  note       String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@id([requestId, reviewerId])
+}
+
+enum ReviewVerdict {
+  ENDORSED
+  CHANGES_SUGGESTED
+}
+
+/// Maintenance flags ("cần nguồn"…). Learner banner for some kinds; notes are staff-only.
+model LessonFlag {
+  id           String         @id @default(cuid())
+  lessonId     String
+  courseId     String
+  kind         LessonFlagKind
+  note         String?
+  createdById  String?
+  createdAt    DateTime       @default(now())
+  resolvedAt   DateTime?
+  resolvedById String?
+
+  @@index([lessonId, resolvedAt])
+  @@index([courseId, resolvedAt])
+}
+
+enum LessonFlagKind {
+  NEEDS_SOURCES
+  UNDER_REVIEW
+  OUTDATED
+  /// Staff-only (no learner banner).
+  NEEDS_ACCESSIBILITY
+}
+
+enum CreditMode {
+  NAME
+  PSEUDONYM
+}
+
 model ContentDraft {
   id            String             @id @default(cuid())
   targetType    ContentDraftTarget

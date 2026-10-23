@@ -1,94 +1,105 @@
-import { requireReviewer } from '@/lib/admin-auth';
-import { prisma } from '@/lib/prisma';
+import { requireContributor } from '@/lib/admin-auth';
 import Link from '@/components/ui/AppLink';
 import SuggestionQueue from '@/components/review/SuggestionQueue';
-import { CheckSquare, Clock, User } from 'lucide-react';
+import ReviewQueueList from '@/components/review/ReviewQueueList';
+import { getReviewQueue } from '@/lib/services/review-queue-service';
+import { courseScope } from '@/lib/permissions/course-roles';
+import { CheckSquare } from 'lucide-react';
+import type { UserRole } from '@prisma/client';
+import ReviewSectionTabs from '@/components/contributor/ReviewSectionTabs';
 
 export const metadata = { title: 'Duyệt nội dung' };
 
-const TYPE_LABELS: Record<string, string> = {
-  NEW_COURSE: 'Khóa học mới',
-  NEW_LEVEL: 'Cấp độ mới',
-  NEW_LESSON: 'Bài học mới',
-  EDIT_LESSON_CONTENT: 'Chỉnh sửa bài học',
-  EDIT_COURSE: 'Chỉnh sửa khóa học',
-};
+/**
+ * Review queue for global reviewers (everything) and course roles (their courses only,
+ * proposal §6.8). The same filtering runs in GET /api/contributor/reviews and, per item,
+ * in the review detail routes (canViewContributionForReview / canDecideContribution).
+ */
+export default async function ReviewQueuePage({ searchParams }: { searchParams: Promise<{ course?: string }> }) {
+  const session = await requireContributor();
+  const viewer = { id: session.user.id, role: session.user.role as UserRole };
+  const { course } = await searchParams;
+  const courseFilter = typeof course === 'string' && course ? course : null;
 
-export default async function ReviewQueuePage() {
-  const session = await requireReviewer();
+  const [queue, suggestionScope] = await Promise.all([
+    getReviewQueue(viewer, { courseId: courseFilter }),
+    courseScope(viewer, 'ACCEPT_SUGGESTION'),
+  ]);
+  const showSuggestions = suggestionScope === null || suggestionScope.length > 0;
 
-  const contributions = await prisma.contribution.findMany({
-    where: { status: 'PENDING_REVIEW' },
-    include: {
-      contributor: {
-        select: { username: true, name: true },
-      },
-    },
-    orderBy: { submittedAt: 'asc' },
-  });
+  if (queue.scope === 'NONE' && !showSuggestions) {
+    return (
+      <div>
+        <ReviewSectionTabs viewer={viewer} current="/contributor/reviews" />
+        <h1 className="text-2xl font-bold text-gray-900 mb-6">Duyệt nội dung</h1>
+        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+          <CheckSquare className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
+          <p className="text-gray-700">Bạn chưa có nội dung nào để duyệt.</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Khi quản trị viên giao cho bạn vai trò trưởng khóa học hoặc người duyệt tin cậy của một khóa học, các đề
+            xuất cho khóa đó sẽ hiện ở đây.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const filteredCourseName = courseFilter
+    ? queue.courses.find((c) => c.id === courseFilter)?.name ?? queue.items.find((i) => i.courseId === courseFilter)?.courseName
+    : null;
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <ReviewSectionTabs viewer={viewer} current="/contributor/reviews" />
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Duyệt nội dung</h1>
-        <span className="text-sm text-gray-500">
-          {contributions.length} đang chờ duyệt
-        </span>
+        <span className="text-sm text-gray-600">{queue.items.filter((i) => !i.own).length} chờ bạn duyệt</span>
       </div>
 
-      {contributions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
-          <CheckSquare className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
-          <p className="text-gray-500">Không có đóng góp nào cần duyệt.</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {contributions.map((contribution) => {
-            const data = contribution.data as Record<string, unknown>;
-            const courseName = (data?.course as Record<string, unknown>)?.name as string || 'Chưa đặt tên';
-            const contributorName = contribution.contributor.username || contribution.contributor.name || 'Ẩn danh';
-
-            return (
-              <Link
-                key={contribution.id}
-                href={`/contributor/reviews/${contribution.id}`}
-                className="block bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm hover:border-teal-200 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
-                        <Clock className="w-3 h-3" aria-hidden="true" />
-                        Chờ duyệt
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {TYPE_LABELS[contribution.type] || contribution.type}
-                      </span>
-                    </div>
-                    <h2 className="font-semibold text-gray-900">{courseName}</h2>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" aria-hidden="true" />
-                        {contributorName}
-                      </span>
-                      {contribution.submittedAt && (
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" aria-hidden="true" />
-                          {contribution.submittedAt.toLocaleDateString('vi-VN')}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <span className="text-sm text-teal-700 font-medium" aria-hidden="true">
-                    Xem chi tiết →
-                  </span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+      {queue.scope === 'COURSES' && (
+        <p className="mb-4 text-sm text-gray-600">
+          Bạn thấy các đề xuất cho những khóa học bạn phụ trách hoặc duyệt. Đề xuất của chính bạn do người khác duyệt.
+        </p>
       )}
-      <SuggestionQueue canEdit={session.user.role === 'ADMIN'} />
+
+      {/* Course filter: course roles pick among their courses; global reviewers can clear a filter from a link. */}
+      {(queue.courses.length > 1 || courseFilter) && (
+        <nav aria-label="Lọc theo khóa học" className="mb-4">
+          <ul className="flex flex-wrap gap-2 text-sm">
+            <li>
+              <Link
+                href="/contributor/reviews"
+                aria-current={!courseFilter ? 'page' : undefined}
+                className="inline-block rounded-full border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 aria-[current=page]:border-teal-700 aria-[current=page]:bg-teal-50 aria-[current=page]:text-teal-800 aria-[current=page]:font-medium"
+              >
+                Tất cả
+              </Link>
+            </li>
+            {queue.courses.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`/contributor/reviews?course=${encodeURIComponent(c.id)}`}
+                  aria-current={courseFilter === c.id ? 'page' : undefined}
+                  className="inline-block rounded-full border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-50 aria-[current=page]:border-teal-700 aria-[current=page]:bg-teal-50 aria-[current=page]:text-teal-800 aria-[current=page]:font-medium"
+                >
+                  {c.name}
+                </Link>
+              </li>
+            ))}
+            {courseFilter && queue.courses.length === 0 && (
+              <li className="px-3 py-1 text-teal-800 font-medium">{filteredCourseName ?? 'Một khóa học'}</li>
+            )}
+          </ul>
+        </nav>
+      )}
+
+      {queue.scope !== 'NONE' && (
+        <>
+          <h2 className="sr-only">Đóng góp chờ duyệt</h2>
+          <ReviewQueueList items={queue.items} variant="contributor" headingLevel={3} />
+        </>
+      )}
+      {showSuggestions && <SuggestionQueue canEdit={session.user.role === 'ADMIN'} />}
     </div>
   );
 }

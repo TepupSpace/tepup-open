@@ -1,18 +1,14 @@
 import { requireContributor } from '@/lib/admin-auth';
 import { prisma } from '@/lib/prisma';
 import Link from '@/components/ui/AppLink';
-import { FileEdit, Clock, MessageSquare } from 'lucide-react';
+import { FileEdit, Clock, MessageSquare, AlertTriangle } from 'lucide-react';
 import SubmitDraftButton, { DraftSubmitResult } from '@/components/contributor/SubmitDraftButton';
+import { contributionTypeLabel } from '@/lib/contribution-labels';
+import { describeProposalTargets } from '@/lib/services/proposal-service';
+import type { UserRole } from '@prisma/client';
+import SectionTabs, { MY_CONTRIBUTIONS_TABS } from '@/components/contributor/SectionTabs';
 
 export const metadata = { title: 'Bản nháp' };
-
-const TYPE_LABELS: Record<string, string> = {
-  NEW_COURSE: 'Khóa học mới',
-  NEW_LEVEL: 'Cấp độ mới',
-  NEW_LESSON: 'Bài học mới',
-  EDIT_LESSON_CONTENT: 'Chỉnh sửa bài học',
-  EDIT_COURSE: 'Chỉnh sửa khóa học',
-};
 
 const STATUS_STYLES: Record<string, { label: string; className: string }> = {
   DRAFT: { label: 'Bản nháp', className: 'bg-gray-100 text-gray-700' },
@@ -35,9 +31,15 @@ export default async function DraftsPage() {
     },
     orderBy: { updatedAt: 'desc' },
   });
+  // Edit proposals are named by their target, with "Bài đã thay đổi" when live moved on.
+  const targets = await describeProposalTargets(
+    { id: session.user.id, role: session.user.role as UserRole },
+    contributions
+  );
 
   return (
     <div>
+      <SectionTabs label="Đóng góp của tôi" tabs={MY_CONTRIBUTIONS_TABS} current="/contributor/drafts" />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Bản nháp</h1>
         <Link
@@ -65,7 +67,9 @@ export default async function DraftsPage() {
         <div className="space-y-3">
           {contributions.map((contribution) => {
             const data = contribution.data as Record<string, unknown>;
-            const courseName = (data?.course as Record<string, unknown>)?.name as string || 'Chưa đặt tên';
+            const target = targets.get(contribution.id);
+            const courseName =
+              target?.name || ((data?.course as Record<string, unknown>)?.name as string) || 'Chưa đặt tên';
             const statusStyle = STATUS_STYLES[contribution.status] || STATUS_STYLES.DRAFT;
             const latestReview = contribution.reviews[0];
 
@@ -81,10 +85,16 @@ export default async function DraftsPage() {
                         {statusStyle.label}
                       </span>
                       <span className="text-xs text-gray-500">
-                        {TYPE_LABELS[contribution.type] || contribution.type}
+                        {contributionTypeLabel(contribution.type)}
                       </span>
                     </div>
                     <h2 className="font-semibold text-gray-900">{courseName}</h2>
+                    {target?.stale && (
+                      <p className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                        <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                        Bài đã thay đổi — mở đề xuất để cập nhật theo bản mới
+                      </p>
+                    )}
                     <div className="flex items-center gap-3 mt-2 text-xs text-gray-500">
                       <span className="flex items-center gap-1">
                         <Clock className="w-3 h-3" aria-hidden="true" />

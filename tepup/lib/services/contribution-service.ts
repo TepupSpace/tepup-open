@@ -1,188 +1,146 @@
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import type { ContentBlock } from '@/components/admin/editor/BlockEditor';
-import { slugifyUnique } from '@/lib/utils/slug';
-import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
+import { revalidateContent, revalidateLibrary } from '@/lib/cache';
 import { isSupportedContributionType, validateContributionData } from '@/lib/schemas/content-validation';
-import { rebuildUsage } from '@/lib/library/usage-service';
+import { audit } from '@/lib/services/audit-service';
+import { notify } from '@/lib/services/notification-service';
+import {
+  ContributionInvalidError,
+  ContributionNotPendingError,
+  PUBLISHERS,
+} from '@/lib/services/publishers';
 
-interface CourseContributionData {
-  course: {
-    name: string;
-    slug: string;
-    description: string;
-    categoryId: string;
-    icon: string;
-  };
-  levels: {
-    name: string;
-    sortOrder: number;
-    lessons: {
-      name: string;
-      sortOrder: number;
-      content: {
-        title: string;
-        blocks: ContentBlock[];
-      };
-    }[];
-  }[];
+export {
+  ContributionInvalidError,
+  ContributionNotPendingError,
+  StaleContributionError,
+} from '@/lib/services/publishers';
+
+type Tx = Prisma.TransactionClient;
+
+/** The contribution was escalated to admins after the caller's permission check (→ 403). */
+export class ContributionEscalatedError extends Error {
+  constructor() {
+    super('Contribution is escalated to admins');
+    this.name = 'ContributionEscalatedError';
+  }
 }
 
-export async function publishContribution(contributionId: string, reviewerId: string) {
-  const contribution = await prisma.contribution.findUnique({
-    where: { id: contributionId },
+/**
+ * Claims a PENDING_REVIEW contribution for a decision, atomically. Escalated items are for
+ * admins only: the escalation is re-checked here, inside the transaction, since it may have
+ * happened after the route's canDecideContribution() check.
+ */
+async function claimPending(
+  tx: Tx,
+  contributionId: string,
+  reviewerId: string,
+  data: Prisma.ContributionUpdateManyMutationInput
+): Promise<void> {
+  const reviewer = await tx.user.findUnique({ where: { id: reviewerId }, select: { role: true } });
+  const adminOnly = reviewer?.role !== 'ADMIN';
+  const claimed = await tx.contribution.updateMany({
+    where: { id: contributionId, status: 'PENDING_REVIEW', ...(adminOnly && { escalatedAt: null }) },
+    data,
   });
-
-  if (!contribution) throw new Error('Contribution not found');
-  if (contribution.status !== 'PENDING_REVIEW') throw new Error('Contribution is not pending review');
-
-  // Claim it atomically so two reviewers clicking "approve" can't publish it twice.
-  const claimed = await prisma.contribution.updateMany({
-    where: { id: contributionId, status: 'PENDING_REVIEW' },
-    data: { status: 'APPROVED', resolvedAt: new Date() },
-  });
-  if (claimed.count !== 1) throw new Error('Contribution is not pending review');
-
-  // Re-validate at publish time (defence in depth): rows saved before validation existed,
-  // or written some other way, must not reach learners unchecked.
-  if (!isSupportedContributionType(contribution.type)) {
-    await releaseClaim(contributionId);
-    throw new Error(`Unsupported contribution type: ${contribution.type}`);
-  }
-  const checked = validateContributionData(contribution.type, contribution.data, { allowCustom: false });
-  if (!checked.ok) {
-    await releaseClaim(contributionId);
-    throw new Error(`Contribution content failed validation: ${checked.issues.map((i) => i.path).join(', ')}`);
-  }
-  const data = checked.value;
-
-  try {
-    switch (contribution.type) {
-      case 'NEW_COURSE':
-        await publishNewCourse(data as CourseContributionData, contribution.contributorId, contributionId);
-        break;
-      case 'EDIT_LESSON_CONTENT':
-        await publishEditLessonContent(contribution.targetId!, data as { blocks: ContentBlock[] });
-        break;
-      default:
-        throw new Error(`Unsupported contribution type: ${contribution.type}`);
-    }
-  } catch (error) {
-    await releaseClaim(contributionId);
-    throw error;
-  }
-
-  // Create review record
-  await prisma.review.create({
-    data: {
-      contributionId,
-      reviewerId,
-      action: 'APPROVED',
-    },
-  });
-
-  // Promotion to TRUSTED_CONTRIBUTOR is a manual admin decision (Admin → Users);
-  // automatic promotion after N approvals was removed as too easy to game.
-}
-
-/** Publishing failed after the claim: put the contribution back in the review queue. */
-async function releaseClaim(contributionId: string) {
-  await prisma.contribution.update({
-    where: { id: contributionId },
-    data: { status: 'PENDING_REVIEW', resolvedAt: null },
-  });
-}
-
-async function publishNewCourse(data: CourseContributionData, contributorId: string, contributionId: string) {
-  const { course, levels } = data;
-
-  const category = await prisma.category.findUnique({ where: { id: course.categoryId }, select: { id: true } });
-  if (!category) throw new Error('Category not found');
-
-  // Get next sortOrder for the category
-  const maxSortOrder = await prisma.course.aggregate({
-    _max: { sortOrder: true },
-    where: { categoryId: course.categoryId },
-  });
-
-  // The slug is a public URL, so derive it server-side rather than trusting the
-  // contributor's value, and never let it collide with an existing course.
-  const existingSlugs = (await prisma.course.findMany({ select: { slug: true } })).map((c) => c.slug);
-  const courseSlug = slugifyUnique(course.name, existingSlugs, 'khoa-hoc');
-
-  await prisma.$transaction(async (tx) => {
-    // Create course — hidden until an admin reviews it in Admin → Courses and activates it.
-    const newCourse = await tx.course.create({
-      data: {
-        name: course.name,
-        slug: courseSlug,
-        description: course.description,
-        icon: course.icon || 'book-open',
-        categoryId: course.categoryId,
-        sortOrder: (maxSortOrder._max.sortOrder ?? 0) + 1,
-        isActive: false,
-        isNew: true,
-        // Tác giả khoá: cho phép contributor xem bài đang ẩn trong khoá của mình.
-        createdById: contributorId,
-      },
+  if (claimed.count === 1) return;
+  if (adminOnly) {
+    const row = await tx.contribution.findUnique({
+      where: { id: contributionId },
+      select: { status: true, escalatedAt: true },
     });
+    if (row?.status === 'PENDING_REVIEW' && row.escalatedAt) throw new ContributionEscalatedError();
+  }
+  throw new ContributionNotPendingError();
+}
 
-    // Link the contribution to the course it created, so the contributor can see
-    // whether it is still waiting for activation (and get a link once it's live), and
-    // admins can list approved courses that are still hidden.
-    await tx.contribution.update({ where: { id: contributionId }, data: { targetId: newCourse.id } });
+/**
+ * Approve and publish, in ONE transaction: the claim, the content write and its history
+ * (ContentRevision, written by the type's publisher in lib/services/publishers/), the Review
+ * row, the linked suggestion and the author's notification all commit together or not at
+ * all. A failure never leaves an APPROVED contribution without a review or half-written content.
+ *
+ * Permission (who may approve) is checked by the caller: canDecideContribution(); the
+ * escalation part is re-checked under the claim (ContributionEscalatedError).
+ * `force`: the reviewer chose "Vẫn duyệt, ghi đè" over a newer live version; it is recorded
+ * in the review feedback and the audit log.
+ */
+export async function publishContribution(
+  contributionId: string,
+  reviewerId: string,
+  opts: { force?: boolean } = {}
+) {
+  const force = opts.force === true;
 
-    // Create levels and lessons. The course is brand new, so lesson slugs only have
-    // to avoid colliding with each other — track them as we go.
-    const takenLessonSlugs = new Set<string>();
+  await prisma.$transaction(
+    async (tx) => {
+      // Claim it atomically so two reviewers clicking "approve" can't publish it twice.
+      await claimPending(tx, contributionId, reviewerId, { status: 'APPROVED', resolvedAt: new Date() });
 
-    for (const level of levels) {
-      const newLevel = await tx.level.create({
+      const contribution = await tx.contribution.findUniqueOrThrow({ where: { id: contributionId } });
+
+      // An edit adapts someone else's work: the licence is what allows it (proposal §6.11).
+      if (!contribution.licenceVersion) {
+        throw new ContributionInvalidError('Contribution has no licence consent');
+      }
+
+      // Re-validate at publish time (defence in depth): rows saved before validation existed,
+      // or written some other way, must not reach learners unchecked.
+      const publisher = PUBLISHERS[contribution.type];
+      if (!publisher || !isSupportedContributionType(contribution.type)) {
+        throw new ContributionInvalidError(`Unsupported contribution type: ${contribution.type}`);
+      }
+      const checked = validateContributionData(contribution.type, contribution.data, { allowCustom: false });
+      if (!checked.ok) {
+        throw new ContributionInvalidError(
+          `Contribution content failed validation: ${checked.issues.map((i) => i.path).join(', ')}`
+        );
+      }
+
+      const result = await publisher({ tx, contribution, data: checked.value, reviewerId, force });
+
+      await tx.review.create({
         data: {
-          name: level.name,
-          courseId: newCourse.id,
-          sortOrder: level.sortOrder,
+          contributionId,
+          reviewerId,
+          action: 'APPROVED',
+          ...(result.forced && { feedback: 'Duyệt ghi đè: nội dung đã thay đổi sau khi đề xuất bắt đầu (force).' }),
         },
       });
-
-      for (const lesson of level.lessons) {
-        const lessonSlug = slugifyUnique(lesson.name, takenLessonSlugs, 'bai-hoc');
-        takenLessonSlugs.add(lessonSlug);
-
-        const newLesson = await tx.lesson.create({
-          data: {
-            name: lesson.name,
-            slug: lessonSlug,
-            levelId: newLevel.id,
-            courseId: newCourse.id,
-            sortOrder: lesson.sortOrder,
-            isActive: true,
-          },
+      if (result.forced) {
+        await audit(tx, {
+          actorId: reviewerId,
+          action: 'CONTRIBUTION_FORCE_APPROVED',
+          targetType: 'CONTRIBUTION',
+          targetId: contributionId,
         });
-
-        if (lesson.content.blocks.length > 0 || lesson.content.title) {
-          const blocks = JSON.parse(JSON.stringify(trimEmptyBlocks(lesson.content.blocks).blocks));
-          await tx.lessonContent.create({
-            data: {
-              lessonId: newLesson.id,
-              title: lesson.content.title || lesson.name,
-              blocks,
-            },
-          });
-          await rebuildUsage(tx, 'LESSON', newLesson.id, blocks);
-        }
       }
-    }
-  });
-}
 
-async function publishEditLessonContent(lessonId: string, data: { blocks: ContentBlock[] }) {
-  // Empty lines would be blank steps in the player (lib/editor/trim-empty-blocks.ts).
-  const blocks = JSON.parse(JSON.stringify(trimEmptyBlocks(data.blocks).blocks));
-  await prisma.$transaction(async (tx) => {
-    await tx.lessonContent.update({ where: { lessonId }, data: { blocks } });
-    // "Xuất hiện trong" of every library entry the lesson links to.
-    await rebuildUsage(tx, 'LESSON', lessonId, blocks);
-  });
+      // A proposal made from a reader suggestion applies it (proposal §6.9).
+      if (contribution.suggestionId) {
+        await tx.suggestion.updateMany({
+          where: { id: contribution.suggestionId, status: 'ACCEPTED' },
+          data: { status: 'APPLIED', resolvedAt: new Date() },
+        });
+      }
+
+      await notify(tx, [contribution.contributorId], {
+        kind: 'CONTRIBUTION_DECIDED',
+        targetType: 'CONTRIBUTION',
+        targetId: contributionId,
+        actorId: reviewerId,
+      });
+    },
+    // A NEW_COURSE can hold up to 50 levels × 200 lessons; the 5 s default is too short.
+    { maxWait: 10_000, timeout: 60_000 }
+  );
+
+  // Learners see approved content now, not after the cache TTL (CLAUDE.md).
+  revalidateContent();
+  revalidateLibrary();
+
+  // Promotion to TRUSTED_AUTHOR is a manual admin decision (Admin → Users);
+  // automatic promotion after N approvals was removed as too easy to game.
 }
 
 export async function rejectContribution(
@@ -191,22 +149,25 @@ export async function rejectContribution(
   feedback: string,
   action: 'REJECTED' | 'CHANGES_REQUESTED'
 ) {
-  const updated = await prisma.contribution.updateMany({
-    where: { id: contributionId, status: 'PENDING_REVIEW' },
-    data: {
-      status: action,
-      resolvedAt: new Date(),
-    },
-  });
-  if (updated.count !== 1) throw new Error('Contribution is not pending review');
+  // Status, Review row and the author's notification together.
+  await prisma.$transaction(async (tx) => {
+    await claimPending(tx, contributionId, reviewerId, { status: action, resolvedAt: new Date() });
 
-  await prisma.review.create({
-    data: {
-      contributionId,
-      reviewerId,
-      action,
-      feedback,
-    },
+    const c = await tx.contribution.findUniqueOrThrow({ where: { id: contributionId }, select: { contributorId: true } });
+    await tx.review.create({
+      data: {
+        contributionId,
+        reviewerId,
+        action,
+        feedback,
+      },
+    });
+    await notify(tx, [c.contributorId], {
+      kind: 'CONTRIBUTION_DECIDED',
+      targetType: 'CONTRIBUTION',
+      targetId: contributionId,
+      actorId: reviewerId,
+    });
   });
 }
 

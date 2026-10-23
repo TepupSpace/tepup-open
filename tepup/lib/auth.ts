@@ -106,7 +106,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         rateLimit('login-fail-user', userKey, LOGIN_LIMITS.user, LOGIN_WINDOW_MS);
         rateLimit('login-fail-ip', ip, LOGIN_LIMITS.ip, LOGIN_WINDOW_MS);
 
-        const user = await findLoginUser(identifier);
+        // A deleted account (tombstone, §6.13) has no password and a `deleted-…` username,
+        // so it can't match anyway; skip it explicitly so it never signs in.
+        const found = await findLoginUser(identifier);
+        const user = found && !found.deletedAt ? found : null;
         const isPasswordValid = await bcrypt.compare(password, user?.password ?? DUMMY_HASH);
         if (!user || !user.password || !isPasswordValid) {
           throw new LoginRefused(LOGIN_CODE.invalid);
@@ -165,14 +168,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return token;
       }
 
-      // Re-read role and ban status so demotions and bans take effect within a minute,
+      // Re-read role, ban and deletion status so demotions, bans and deletions take effect within a minute,
       // instead of lasting until the token expires.
       if (token.id && Date.now() - ((token.checkedAt as number | undefined) ?? 0) > SESSION_RECHECK_MS) {
         const current = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { role: true, username: true, isBanned: true },
+          select: { role: true, username: true, isBanned: true, deletedAt: true },
         });
-        if (!current || current.isBanned) return null; // ends the session
+        // Missing, banned or deleted (tombstone): end the session.
+        if (!current || current.isBanned || current.deletedAt) return null;
         token.role = current.role;
         token.username = current.username;
         token.checkedAt = Date.now();
