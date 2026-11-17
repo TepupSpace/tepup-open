@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { User, Search } from 'lucide-react';
 import { useAnnouncer } from '@/components/blocks/useAnnouncer';
 import AdminDialog from '@/app/admin/_components/AdminDialog';
+import ConfirmDialog from '@/app/admin/_components/ConfirmDialog';
+import RoleRequestsPanel from './RoleRequestsPanel';
 import { staffName } from '@/lib/credit-display';
 import { ROLE_LABEL, TERMS } from '@/lib/terms';
 
@@ -155,6 +157,7 @@ export default function UsersClient() {
   const currentUserId = session?.user?.id;
   const [users, setUsers] = useState<UserData[]>([]);
   const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   // Ô tìm kiếm chỉ có hiệu lực khi bấm tìm (không tìm theo từng phím gõ).
   const [appliedSearch, setAppliedSearch] = useState('');
@@ -167,6 +170,10 @@ export default function UsersClient() {
   // action error (updateRole reloads right after setting one).
   const [loadError, setLoadError] = useState('');
   const [deleting, setDeleting] = useState<UserData | null>(null);
+  // Hộp xác nhận đổi vai trò: một cú nhấp nhầm trong <select> không đổi quyền ngay nữa.
+  const [roleChange, setRoleChange] = useState<{ user: UserData; role: string } | null>(null);
+  const [roleChangeBusy, setRoleChangeBusy] = useState(false);
+  const [roleChangeError, setRoleChangeError] = useState('');
   const [message, announce] = useAnnouncer();
 
   const fetchUsers = useCallback(async () => {
@@ -186,6 +193,7 @@ export default function UsersClient() {
       const data = await res.json();
       setUsers(data.users);
       setTotal(data.total);
+      setTotalPages(Math.max(1, data.totalPages ?? 1));
     } catch {
       setLoadError('Không tải được danh sách người dùng.');
     } finally {
@@ -210,8 +218,11 @@ export default function UsersClient() {
       ? staffName({ username: u.username ?? null, publicHandle: u.publicHandle, deletedAt: new Date(u.deletedAt) })
       : u.username || u.name || 'Chưa đặt tên';
 
-  const updateRole = async (user: UserData, role: string) => {
-    setError('');
+  const updateRole = async () => {
+    if (!roleChange || roleChangeBusy) return;
+    const { user, role } = roleChange;
+    setRoleChangeBusy(true);
+    setRoleChangeError('');
     try {
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PUT',
@@ -219,15 +230,17 @@ export default function UsersClient() {
         body: JSON.stringify({ role }),
       });
       if (!res.ok) {
-        setError(await errorText(res, `Không đổi được vai trò của ${displayName(user)}.`));
-      } else {
-        announce(`Đã đổi vai trò của ${displayName(user)} thành ${ROLE_LABELS[role] ?? role}.`);
+        setRoleChangeError(await errorText(res, `Không đổi được vai trò của ${displayName(user)}.`));
+        return;
       }
+      announce(`Đã đổi vai trò của ${displayName(user)} thành ${ROLE_LABELS[role] ?? role}.`);
+      await fetchUsers();
+      setRoleChange(null);
     } catch {
-      setError('Đã xảy ra lỗi. Vui lòng thử lại.');
+      setRoleChangeError('Đã xảy ra lỗi. Vui lòng thử lại.');
+    } finally {
+      setRoleChangeBusy(false);
     }
-    // Tải lại cả khi lỗi, để ô chọn quay về vai trò thật.
-    fetchUsers();
   };
 
   const toggleBan = async (user: UserData, isBanned: boolean) => {
@@ -268,6 +281,9 @@ export default function UsersClient() {
           <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{loadError}</p>
         )}
       </div>
+
+      {/* Yêu cầu thay đổi quyền từ Cài đặt của người đóng góp. Duyệt xong thì tải lại bảng. */}
+      <RoleRequestsPanel onDecided={fetchUsers} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3 mb-6">
@@ -355,7 +371,13 @@ export default function UsersClient() {
                     ) : (
                       <select
                         value={user.role}
-                        onChange={(e) => updateRole(user, e.target.value)}
+                        onChange={(e) => {
+                          // Chỉ mở hộp xác nhận; ô chọn vẫn hiển thị vai trò thật cho tới khi đổi xong.
+                          if (e.target.value !== user.role) {
+                            setRoleChangeError('');
+                            setRoleChange({ user, role: e.target.value });
+                          }
+                        }}
                         aria-label={`Vai trò của ${displayName(user)}`}
                         className={`text-xs px-2 py-1 rounded-full font-medium border-0 cursor-pointer ${ROLE_COLORS[user.role] || ''}`}
                       >
@@ -430,17 +452,33 @@ export default function UsersClient() {
           >
             Trước
           </button>
-          <span className="px-3 py-1" aria-current="page">Trang {page}</span>
+          <span className="px-3 py-1" aria-current="page">Trang {page}/{totalPages}</span>
           <button
             type="button"
-            onClick={() => { if (users.length >= 20) setPage(page + 1); }}
-            aria-disabled={users.length < 20 || undefined}
+            onClick={() => { if (page < totalPages) setPage(page + 1); }}
+            aria-disabled={page >= totalPages || undefined}
             className="px-3 py-1 border border-gray-500 rounded-lg aria-disabled:opacity-50 aria-disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Sau
           </button>
         </div>
       </nav>
+
+      {roleChange && (
+        <ConfirmDialog
+          title={`Đổi vai trò của ${displayName(roleChange.user)}?`}
+          confirmLabel="Đổi vai trò"
+          busyLabel="Đang đổi…"
+          busy={roleChangeBusy}
+          error={roleChangeError}
+          onConfirm={updateRole}
+          onCancel={() => setRoleChange(null)}
+        >
+          {displayName(roleChange.user)} chuyển từ {ROLE_LABELS[roleChange.user.role] ?? roleChange.user.role} thành{' '}
+          <strong>{ROLE_LABELS[roleChange.role] ?? roleChange.role}</strong>. Quyền mới có hiệu lực trong vòng một phút.
+          {roleChange.role === 'ADMIN' && ' Quản trị viên có toàn quyền quản lý trang, kể cả người dùng và vai trò.'}
+        </ConfirmDialog>
+      )}
 
       {deleting && (
         <DeleteUserDialog

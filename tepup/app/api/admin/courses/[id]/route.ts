@@ -5,6 +5,7 @@ import { getAdminSession } from '@/lib/admin-auth';
 import { lockCourse, recordRevision } from '@/lib/services/revision-service';
 import { buildOutline, recordOutlineRevision } from '@/lib/services/outline-service';
 import { audit } from '@/lib/services/audit-service';
+import { notify } from '@/lib/services/notification-service';
 import type { Prisma } from '@prisma/client';
 
 /** URL ảnh từ form: chuỗi rỗng → null; không gửi field → giữ nguyên (undefined). */
@@ -121,6 +122,7 @@ export async function PUT(
     const course = await prisma.$transaction(async (tx) => {
       // Outline history (proposal §12): name and description are part of the outline.
       await lockCourse(tx, id);
+      const before = await tx.course.findUnique({ where: { id }, select: { isActive: true, createdById: true } });
       const outlineBefore = await buildOutline(tx, id);
       const updated = await tx.course.update({
         where: { id },
@@ -152,6 +154,16 @@ export async function PUT(
           authorId: session.user.id,
           previous: outlineBefore,
           autoPatrol: true,
+        });
+      }
+      // A contributor's approved course going live was silent before: tell its creator
+      // ("Đã duyệt — chờ kích hoạt" ends here). notify() skips the acting admin themselves.
+      if (before && !before.isActive && updated.isActive && before.createdById) {
+        await notify(tx, [before.createdById], {
+          kind: 'COURSE_ACTIVATED',
+          targetType: 'COURSE',
+          targetId: id,
+          actorId: session.user.id,
         });
       }
       return updated;

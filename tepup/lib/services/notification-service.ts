@@ -13,7 +13,8 @@ export type NotificationTargetType =
   | 'LESSON'
   | 'COURSE'
   | 'THREAD'
-  | 'SUGGESTION';
+  | 'SUGGESTION'
+  | 'ROLE_REQUEST';
 
 type Db = Prisma.TransactionClient | typeof prisma;
 

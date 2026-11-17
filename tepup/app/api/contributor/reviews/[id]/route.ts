@@ -75,7 +75,7 @@ export async function POST(
   if (action !== 'APPROVED' && action !== 'REJECTED' && action !== 'CHANGES_REQUESTED') {
     return NextResponse.json({ error: 'Action không hợp lệ' }, { status: 400 });
   }
-  if (action !== 'APPROVED' && feedback.length > FEEDBACK_MAX) {
+  if (feedback.length > FEEDBACK_MAX) {
     return NextResponse.json({ error: `Feedback quá dài (tối đa ${FEEDBACK_MAX} ký tự)` }, { status: 400 });
   }
 
@@ -110,7 +110,8 @@ export async function POST(
 
   try {
     if (action === 'APPROVED') {
-      await publishContribution(id, session.user.id, { force });
+      // The optional note ("(tuỳ chọn)") reaches the author, not the void.
+      await publishContribution(id, session.user.id, { force, feedback: feedback || undefined });
     } else {
       if (!feedback) {
         return NextResponse.json(

@@ -68,9 +68,10 @@ async function claimPending(
 export async function publishContribution(
   contributionId: string,
   reviewerId: string,
-  opts: { force?: boolean } = {}
+  opts: { force?: boolean; feedback?: string } = {}
 ) {
   const force = opts.force === true;
+  const feedback = opts.feedback?.trim() || undefined;
 
   await prisma.$transaction(
     async (tx) => {
@@ -99,12 +100,17 @@ export async function publishContribution(
 
       const result = await publisher({ tx, contribution, data: checked.value, reviewerId, force });
 
+      // The reviewer's optional note to the author is kept (the green box on "Đã gửi").
+      const forcedNote = result.forced
+        ? 'Duyệt ghi đè: nội dung đã thay đổi sau khi đề xuất bắt đầu (force).'
+        : undefined;
+      const reviewFeedback = [forcedNote, feedback].filter(Boolean).join('\n') || undefined;
       await tx.review.create({
         data: {
           contributionId,
           reviewerId,
           action: 'APPROVED',
-          ...(result.forced && { feedback: 'Duyệt ghi đè: nội dung đã thay đổi sau khi đề xuất bắt đầu (force).' }),
+          ...(reviewFeedback && { feedback: reviewFeedback }),
         },
       });
       if (result.forced) {

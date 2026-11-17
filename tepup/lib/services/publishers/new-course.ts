@@ -4,6 +4,8 @@ import { trimEmptyBlocks } from '@/lib/editor/trim-empty-blocks';
 import { rebuildUsage } from '@/lib/library/usage-service';
 import { blocksSnapshot, recordRevision } from '@/lib/services/revision-service';
 import { recordOutlineRevision } from '@/lib/services/outline-service';
+import { audit } from '@/lib/services/audit-service';
+import { notify } from '@/lib/services/notification-service';
 import { ContributionInvalidError, type Publisher } from './types';
 
 interface CourseContributionData {
@@ -68,6 +70,21 @@ export const publishNewCourse: Publisher = async ({ tx, contribution, data, revi
   // The author maintains the course they wrote (proposal §6.8); addedById null = automatic.
   await tx.courseMember.create({
     data: { courseId: newCourse.id, userId: contributorId, role: 'COURSE_LEAD' },
+  });
+  // The grant was silent before: tell the author and leave the same audit trail as a
+  // manual grant (actorId null = automatic, so the audit log says so too).
+  await audit(tx, {
+    actorId: null,
+    action: 'COURSE_ROLE_ADDED',
+    targetType: 'COURSE',
+    targetId: newCourse.id,
+    details: { userId: contributorId, role: 'COURSE_LEAD', reason: 'NEW_COURSE approved' },
+  });
+  await notify(tx, [contributorId], {
+    kind: 'COURSE_ROLE_GRANTED',
+    targetType: 'COURSE',
+    targetId: newCourse.id,
+    actorId: reviewerId,
   });
 
   // Link the contribution to the course it created (activation status, admin dashboard).

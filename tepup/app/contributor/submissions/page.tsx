@@ -7,6 +7,7 @@ import { contributionTypeLabel } from '@/lib/contribution-labels';
 import { describeProposalTargets } from '@/lib/services/proposal-service';
 import type { UserRole } from '@prisma/client';
 import SectionTabs, { MY_CONTRIBUTIONS_TABS } from '@/components/contributor/SectionTabs';
+import WithdrawSubmissionButton from '@/components/contributor/WithdrawSubmissionButton';
 
 export const metadata = { title: 'Đã gửi duyệt' };
 
@@ -104,7 +105,10 @@ export default async function SubmissionsPage() {
                           {courseName}
                         </Link>
                       ) : (
-                        courseName
+                        // NEW_COURSE has no hub: the (read-only) editor shows what was sent.
+                        <Link href={`/contributor/contributions/${contribution.id}/edit`} className="hover:underline">
+                          {courseName}
+                        </Link>
                       )}
                     </h2>
                     {target?.stale && (
@@ -178,11 +182,12 @@ export default async function SubmissionsPage() {
                   </div>
 
                   {contribution.status === 'PENDING_REVIEW' && (
-                    <div className="ml-4">
+                    <div className="ml-4 flex flex-col items-end gap-2">
                       <span className="inline-flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 bg-gray-50 rounded-lg">
                         <Eye className="w-3.5 h-3.5" aria-hidden="true" />
                         Đang chờ
                       </span>
+                      <WithdrawSubmissionButton contributionId={contribution.id} name={courseName} />
                     </div>
                   )}
                 </div>

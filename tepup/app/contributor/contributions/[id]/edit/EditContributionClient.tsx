@@ -19,6 +19,7 @@ import {
   FileText,
 } from 'lucide-react';
 import NotionBlockEditor from '@/components/admin/editor/NotionBlockEditor';
+import DiscussionThread from '@/components/discussion/DiscussionThread';
 import OutlineProposalEditor from '@/components/contributor/OutlineProposalEditor';
 import LibraryEntryProposalForm, {
   asEntryFormValue,
@@ -518,12 +519,13 @@ export default function EditContributionClient() {
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div className="min-w-0">
+          {/* Một đóng góp đã gửi không còn nằm ở "Bản nháp": đưa về đúng danh sách. */}
           <Link
-            href="/contributor/drafts"
+            href={editable ? '/contributor/drafts' : '/contributor/submissions'}
             className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 mb-2"
           >
             <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-            Bản nháp
+            {editable ? 'Bản nháp' : 'Đã gửi duyệt'}
           </Link>
           <h1 ref={headingRef} tabIndex={-1} className="text-2xl font-bold text-gray-900 break-words">
             {heading}
@@ -569,9 +571,33 @@ export default function EditContributionClient() {
 
       {!editable && (
         <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
-          {contributionStatus === 'PENDING_REVIEW'
-            ? 'Đóng góp này đang chờ duyệt nên không sửa được. Bạn sẽ thấy kết quả ở trang "Đã gửi".'
-            : 'Đóng góp này đã được xử lý nên không sửa được nữa.'}
+          {contributionStatus === 'PENDING_REVIEW' ? (
+            <>
+              Đóng góp này đang chờ duyệt nên không sửa được. Muốn sửa tiếp, dùng &ldquo;Rút lại để sửa&rdquo; ở trang{' '}
+              <Link href="/contributor/submissions" className="font-medium underline underline-offset-2">
+                Đã gửi duyệt
+              </Link>
+              .
+            </>
+          ) : contributionStatus === 'APPROVED' ? (
+            <>
+              Đóng góp này đã được duyệt nên không sửa được nữa. Trạng thái xuất bản hiện ở trang{' '}
+              <Link href="/contributor/submissions" className="font-medium underline underline-offset-2">
+                Đã gửi duyệt
+              </Link>
+              .
+            </>
+          ) : contributionStatus === 'REJECTED' ? (
+            <>
+              Đóng góp này đã bị từ chối. Góp ý của người duyệt hiện ở trang{' '}
+              <Link href="/contributor/submissions" className="font-medium underline underline-offset-2">
+                Đã gửi duyệt
+              </Link>
+              ; bạn có thể tạo đề xuất mới từ bài tương ứng.
+            </>
+          ) : (
+            'Đóng góp này đã được xử lý nên không sửa được nữa.'
+          )}
         </div>
       )}
 
@@ -697,6 +723,15 @@ export default function EditContributionClient() {
           editorKey={editorKey}
         />
       )}
+
+      {/* Người duyệt trao đổi ở đây (ReviewDetail có cùng thảo luận); trước kia tác giả nhận
+          thông báo "đã bình luận" mà không có chỗ nào đọc được. */}
+      <section aria-labelledby="contribution-discussion-heading" className="mt-8 bg-white rounded-xl border border-gray-100 p-5">
+        <h2 id="contribution-discussion-heading" className="sr-only">
+          Thảo luận
+        </h2>
+        <DiscussionThread targetType="CONTRIBUTION" targetId={id} />
+      </section>
     </div>
   );
 }

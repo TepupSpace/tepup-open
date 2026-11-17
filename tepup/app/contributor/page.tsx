@@ -29,7 +29,6 @@ export default async function ContributorDashboard() {
     pendingCount,
     approvedCount,
     rejectedCount,
-    courseRoleCount,
     reviewRequests,
     queue,
     unread,
@@ -44,7 +43,6 @@ export default async function ContributorDashboard() {
     prisma.contribution.count({ where: { contributorId: userId, status: 'PENDING_REVIEW' } }),
     prisma.contribution.count({ where: { contributorId: userId, status: 'APPROVED' } }),
     prisma.contribution.count({ where: { contributorId: userId, status: 'REJECTED' } }),
-    prisma.courseMember.count({ where: { userId } }),
     // Same sources as the linked pages: review-request inbox, review queue, notifications, suggestions.
     pendingRequestsForReviewer(userId, role, DETAILS_SHOWN),
     getReviewQueue(viewer),
@@ -152,8 +150,9 @@ export default async function ContributorDashboard() {
   ];
   const isNewcomer = ownStats.every((s) => s.count === 0);
 
-  // Access level box: only for members without a course role or global review power.
-  const showAccessLevel = courseRoleCount === 0 && (role === 'AUTHOR' || role === 'TRUSTED_AUTHOR');
+  // Access level box: the global level, shown even with a course role (the header badge
+  // shows the course role then, so this is the only place the level stays visible).
+  const showAccessLevel = role === 'AUTHOR' || role === 'TRUSTED_AUTHOR';
 
   return (
     <div>
@@ -230,7 +229,12 @@ export default async function ContributorDashboard() {
           <p className="mt-1 text-sm text-gray-600">
             {role === 'AUTHOR'
               ? `Lên ${ROLE_LABEL.TRUSTED_AUTHOR.toLocaleLowerCase('vi')} do ban quản trị xét theo các đóng góp đã duyệt (bạn có ${approvedCount}).`
-              : 'Đề xuất của bạn được ưu tiên trong hàng duyệt.'}
+              : 'Đề xuất của bạn được ưu tiên trong hàng duyệt.'}{' '}
+            Bạn có thể{' '}
+            <Link href="/contributor/settings#access-level" className="font-medium text-teal-800 underline underline-offset-2">
+              yêu cầu thay đổi quyền
+            </Link>{' '}
+            trong Cài đặt.
           </p>
         </section>
       )}

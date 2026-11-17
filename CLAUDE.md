@@ -219,6 +219,12 @@ Target: WCAG 2.2 AA. Full guide, with the reasons and a manual test checklist: `
 - Contributor routes trim before checking (`prepareContributionData` runs `trimEmptyBlocks` first), and `contentErrorBody(issues, data)` names NEW_COURSE lessons: `Level 1 › <bài> › Block #6 › …`.
 - `NotionBlockEditor mode="contributor"` never calls `/api/admin/**` (custom block types, upload, admin library): no upload (BlockNote shows only the URL tab), a Vietnamese note on allowed image hosts, and the library picker uses `/api/library`. Block forms read the mode from `EditorModeContext`. **Image upload is admin-only by decision**; don't add a contributor upload endpoint without asking.
 - BlockNote's UI uses its Vietnamese dictionary (`@blocknote/core/locales`).
+- The author sees (and writes in) the same discussion thread as reviewers, at the bottom of the editor (`DiscussionThread targetType="CONTRIBUTION"`). A PENDING_REVIEW submission can be taken back with "Rút lại để sửa" on Đã gửi duyệt (`POST …/withdraw`, conditional update against a concurrent decision). DRAFT rows (only) can be deleted from Bản nháp.
+
+## Role-change requests ("Yêu cầu thay đổi quyền")
+- A contributor asks the admins for another access level from Cài đặt → Quyền truy cập (`AccessLevelSection`); admins decide on Quản trị › Người dùng (`RoleRequestsPanel`), and the admin dashboard counts pending ones. Service: `lib/services/role-request-service.ts`; table `RoleChangeRequest` (one PENDING per user via a partial unique index — in `prisma/sql/2026-11-17-role-change-requests.sql` and `docker/after-push.sql`, Prisma can't express it).
+- Approving applies the role change only while the user's role still equals `roleAtRequest` (otherwise 409: decide from the Users page), audits `USER_ROLE_CHANGED`, and notifies the requester. ADMIN can't be requested; admins are appointed by hand.
+- Notification target `ROLE_REQUEST` is rendered only for the requester and admins (`notification-render.ts`).
 
 ## Local Docker stack
 - `tepup/compose.yaml` runs `db` (Postgres 16, data in a named volume) and `app` (`tepup/Dockerfile`, built on start by `docker/entrypoint.mjs`). The entrypoint does: wait for the database → `prisma db push` as the owner → `docker/after-push.sql` (RLS on every table plus grants, as in production) → `scripts/docker-seed.ts --apply` → `next build` → `next start`.

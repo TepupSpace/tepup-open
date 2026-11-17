@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
+import type { UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+
+const VALID_ROLES: readonly string[] = ['LEARNER', 'AUTHOR', 'TRUSTED_AUTHOR', 'REVIEWER', 'ADMIN'];
 
 export async function GET(req: NextRequest) {
   const session = await getAdminSession();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const role = searchParams.get('role');
+  // An unknown value would make Prisma throw (500): refuse it as a client error instead.
+  const roleParam = searchParams.get('role');
+  if (roleParam && !VALID_ROLES.includes(roleParam)) {
+    return NextResponse.json({ error: 'Role không hợp lệ' }, { status: 400 });
+  }
+  const role = roleParam as UserRole | null;
   const search = searchParams.get('search');
   const page = Math.max(1, parseInt(searchParams.get('page') || '1') || 1);
   const limit = 20;

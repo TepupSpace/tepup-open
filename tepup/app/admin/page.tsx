@@ -4,11 +4,12 @@ import { FolderTree, BookOpen, GraduationCap, Users, BookMarked, Hourglass } fro
 import Link from '@/components/ui/AppLink';
 import { getCoursesForContributions } from '@/lib/services/contribution-service';
 import type { UserRole } from '@prisma/client';
-import { AlertTriangle, Bell, ClipboardCheck, ShieldCheck } from 'lucide-react';
+import { AlertTriangle, Bell, ClipboardCheck, ShieldCheck, UserCheck } from 'lucide-react';
 import WaitingForYou, { type WaitingItem } from '@/components/contributor/dashboard/WaitingForYou';
 import { getReviewQueue } from '@/lib/services/review-queue-service';
 import { countVisibleUnread, UNREAD_SCAN_LIMIT } from '@/lib/services/notification-render';
 import { pendingRequestsForReviewer } from '@/lib/services/review-request-service';
+import { pendingRoleRequestCount } from '@/lib/services/role-request-service';
 
 export const metadata = { title: 'Bảng điều khiển' };
 
@@ -69,7 +70,7 @@ export default async function AdminDashboard() {
 
   // "Việc chờ bạn": the same sources (and so the same counts) as the linked admin pages.
   const viewer = session?.user ? { id: session.user.id, role: session.user.role as UserRole } : null;
-  const [queue, unread, asked, answered] = viewer
+  const [queue, unread, asked, answered, pendingRoleRequests] = viewer
     ? await Promise.all([
         getReviewQueue(viewer),
         countVisibleUnread(viewer),
@@ -83,8 +84,9 @@ export default async function AdminDashboard() {
               select: { id: true, lessonId: true, _count: { select: { opinions: true } } },
             })
           : Promise.resolve([]),
+        isAdmin ? pendingRoleRequestCount() : Promise.resolve(0),
       ])
-    : [null, 0, { count: 0, items: [] }, []];
+    : [null, 0, { count: 0, items: [] }, [], 0];
   const others = queue ? queue.items.filter((i) => !i.own) : [];
   const escalated = isAdmin ? others.filter((i) => i.escalatedAt) : [];
   const lessonNames = new Map(
@@ -100,6 +102,14 @@ export default async function AdminDashboard() {
     context: i.courseName && i.courseName !== i.title ? i.courseName : null,
   });
   const waiting: WaitingItem[] = [
+    {
+      key: 'role-requests',
+      Icon: UserCheck,
+      count: pendingRoleRequests,
+      label: 'yêu cầu thay đổi quyền chờ bạn quyết định',
+      href: '/admin/users#role-requests',
+      action: 'Mở danh sách người dùng',
+    },
     {
       key: 'escalated',
       Icon: AlertTriangle,

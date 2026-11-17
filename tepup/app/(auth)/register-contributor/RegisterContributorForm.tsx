@@ -171,7 +171,7 @@ export default function RegisterContributorForm() {
                     autoCapitalize="none"
                     autoCorrect="off"
                     spellCheck={false}
-                    placeholder="vd: contributor_abc"
+                    placeholder="vd: nguoi_dong_gop"
                     required
                     minLength={3}
                     maxLength={20}

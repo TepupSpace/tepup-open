@@ -1,4 +1,5 @@
 import SettingsClient from './SettingsClient';
+import AccessLevelSection from '@/components/contributor/settings/AccessLevelSection';
 import CreditSettings from '@/components/contributor/settings/CreditSettings';
 import MyCourseRolesSection from '@/components/contributor/settings/MyCourseRolesSection';
 import ReviewerProfileSection from '@/components/contributor/settings/ReviewerProfileSection';
@@ -10,6 +11,7 @@ export default function ContributorSettingsPage() {
   return (
     <div className="space-y-8">
       <SettingsClient />
+      <AccessLevelSection />
       <CreditSettings />
       <MyCourseRolesSection />
       <ReviewerProfileSection />

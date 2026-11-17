@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     // Only allow contributor registration
     if (mode !== 'contributor') {
-      return reject('Chỉ hỗ trợ đăng ký bằng tài khoản contributor', 403);
+      return reject('Chỉ hỗ trợ đăng ký tài khoản người đóng góp', 403);
     }
 
     // Content licence consent is required at sign-up (proposal §6.11).

@@ -116,7 +116,8 @@ export default function MyCourseRolesSection() {
         Vai trò trong khóa học
       </h2>
       <p className="text-sm text-gray-600 mb-4">
-        Quản trị viên giao các vai trò này. Bạn có thể rời vai trò bất cứ lúc nào; muốn nhận lại thì liên hệ quản trị viên.
+        Quản trị viên giao các vai trò này. Bạn có thể rời vai trò bất cứ lúc nào; muốn nhận lại (hoặc nhận vai trò ở khóa
+        khác), gửi &ldquo;Yêu cầu thay đổi quyền&rdquo; ở mục Quyền truy cập phía trên và ghi rõ khóa học.
       </p>
 
       <p role="status" className={status ? 'mb-3 rounded-lg border border-green-200 bg-green-50 p-3 text-sm text-green-800' : 'sr-only'}>

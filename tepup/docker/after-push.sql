@@ -14,6 +14,10 @@ end $$;
 
 grant usage, select, update on all sequences in schema public to tepup_app;
 
+-- Partial unique indexes Prisma cannot express (prisma/sql/2026-11-17-role-change-requests.sql).
+create unique index if not exists "RoleChangeRequest_one_pending_per_user"
+    on public."RoleChangeRequest"("userId") where "status" = 'PENDING';
+
 -- Append-only tables, as in production (prisma/sql/2026-10-17-contributor-system.sql).
 revoke update, delete, truncate on public."ContentRevision" from tepup_app;
 revoke update, delete, truncate on public."AuditLog" from tepup_app;

@@ -66,7 +66,7 @@ export default function SectionTabs({
 /** "Đóng góp của tôi": everyone. */
 export const MY_CONTRIBUTIONS_TABS: SectionTab[] = [
   { href: '/contributor/drafts', label: 'Bản nháp' },
-  { href: '/contributor/submissions', label: 'Đã gửi' },
+  { href: '/contributor/submissions', label: 'Đã gửi duyệt' },
 ];
 
 /** "Tìm bài để sửa": everyone. */

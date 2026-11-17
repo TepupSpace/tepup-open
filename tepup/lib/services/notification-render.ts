@@ -2,6 +2,7 @@ import type { CourseRole, DiscussionTarget, Notification, NotificationKind, Revi
 import { prisma } from '@/lib/prisma';
 import { staffName } from '@/lib/credit';
 import { canReviewContent } from '@/lib/role-utils';
+import { ROLE_LABEL as ACCESS_LABEL } from '@/lib/terms';
 import { canOnCourse, type CourseAction, type Viewer } from '@/lib/permissions/course-roles';
 import { threadTargetHref } from '@/lib/services/discussion-service';
 
@@ -72,6 +73,7 @@ export async function renderNotifications(
   const courseIds = new Set(idsOf('COURSE'));
   const contributionIds = new Set(idsOf('CONTRIBUTION'));
   const requestIds = new Set(idsOf('REVIEW_REQUEST'));
+  const roleRequestIds = new Set(idsOf('ROLE_REQUEST'));
 
   const addDiscussionTarget = (type: DiscussionTarget, id: string) => {
     if (type === 'LESSON') lessonIds.add(id);
@@ -93,7 +95,7 @@ export async function renderNotifications(
   }
 
   // ── 2. Second hop: contributions and review requests point at content ─────────────────
-  const [contributions, requests] = await Promise.all([
+  const [contributions, requests, roleRequests] = await Promise.all([
     contributionIds.size
       ? prisma.contribution.findMany({
           where: { id: { in: [...contributionIds] } },
@@ -113,9 +115,16 @@ export async function renderNotifications(
           select: { id: true, courseId: true, title: true, requestedById: true, reviewers: { select: { userId: true } } },
         })
       : [],
+    roleRequestIds.size
+      ? prisma.roleChangeRequest.findMany({
+          where: { id: { in: [...roleRequestIds] } },
+          select: { id: true, userId: true, requestedRole: true, status: true },
+        })
+      : [],
   ]);
   const contributionMap = new Map(contributions.map((c) => [c.id, c]));
   const requestMap = new Map(requests.map((r) => [r.id, r]));
+  const roleRequestMap = new Map(roleRequests.map((r) => [r.id, r]));
   for (const c of contributions) {
     if (!c.targetId) continue;
     if (c.type === 'EDIT_LESSON_CONTENT') lessonIds.add(c.targetId);
@@ -291,8 +300,12 @@ export async function renderNotifications(
     return a ? staffName(a) : 'Một tài khoản đã xóa';
   };
 
-  const contributionHref = (id: string) =>
-    threadTargetHref('CONTRIBUTION', id, { viewerIsAuthor: contributionMap.get(id)?.contributorId === viewer.id });
+  const contributionHref = (id: string) => {
+    const mine = contributionMap.get(id)?.contributorId === viewer.id;
+    // From the admin inbox, deciding happens in the admin review queue, not /contributor/reviews.
+    if (!mine && (opts.isAdmin || viewer.role === 'ADMIN')) return `/admin/reviews/${id}`;
+    return threadTargetHref('CONTRIBUTION', id, { viewerIsAuthor: mine });
+  };
   const courseHref = (id: string) =>
     opts.isAdmin || viewer.role === 'ADMIN' ? `/admin/courses/${id}/members` : `/contributor/maintain/${id}`;
 
@@ -359,6 +372,8 @@ export async function renderNotifications(
             : `${actor} đã giao cho bạn một vai trò trong ${label} (vai trò này không còn).`;
         } else if (r.kind === 'COURSE_ORPHANED') {
           text = `${capitalise(label)} không còn trưởng khóa học nào.`;
+        } else if (r.kind === 'COURSE_ACTIVATED') {
+          text = `${actor} đã kích hoạt ${label}: khóa học hiển thị công khai với người học.`;
         } else {
           text = `Có cập nhật về ${label}.`;
         }
@@ -375,6 +390,29 @@ export async function renderNotifications(
           r.kind === 'COMMENT'
             ? `${actor} đã bình luận trong thảo luận về ${label}.`
             : `Có cập nhật trong thảo luận về ${label}.`;
+        break;
+      }
+      case 'ROLE_REQUEST': {
+        const rr = roleRequestMap.get(r.targetId);
+        // Only the requester and admins may see role requests.
+        if (!rr || (rr.userId !== viewer.id && viewer.role !== 'ADMIN')) break;
+        const roleLabel = ACCESS_LABEL[rr.requestedRole];
+        if (r.kind === 'ROLE_REQUEST_SUBMITTED') {
+          href = '/admin/users#role-requests';
+          text = `${actor} đã yêu cầu quyền ${roleLabel}.`;
+        } else if (r.kind === 'ROLE_REQUEST_DECIDED') {
+          href = rr.userId === viewer.id ? '/contributor/settings#access-level' : '/admin/users#role-requests';
+          const mine = rr.userId === viewer.id ? ' của bạn' : '';
+          text =
+            rr.status === 'APPROVED'
+              ? `${actor} đã chấp nhận yêu cầu quyền ${roleLabel}${mine}.`
+              : rr.status === 'DECLINED'
+                ? `${actor} đã từ chối yêu cầu quyền ${roleLabel}${mine}.`
+                : `Yêu cầu quyền ${roleLabel}${mine} đã có quyết định.`;
+        } else {
+          href = rr.userId === viewer.id ? '/contributor/settings#access-level' : '/admin/users#role-requests';
+          text = `Có cập nhật về một yêu cầu thay đổi quyền.`;
+        }
         break;
       }
       case 'SUGGESTION': {

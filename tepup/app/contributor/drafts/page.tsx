@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import Link from '@/components/ui/AppLink';
 import { FileEdit, Clock, MessageSquare, AlertTriangle } from 'lucide-react';
 import SubmitDraftButton, { DraftSubmitResult } from '@/components/contributor/SubmitDraftButton';
+import DeleteDraftButton from '@/components/contributor/DeleteDraftButton';
 import { contributionTypeLabel } from '@/lib/contribution-labels';
 import { describeProposalTargets } from '@/lib/services/proposal-service';
 import type { UserRole } from '@prisma/client';
@@ -56,12 +57,20 @@ export default async function DraftsPage() {
         <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
           <FileEdit className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
           <p className="text-gray-500 mb-4">Chưa có bản nháp nào.</p>
-          <Link
-            href="/contributor/courses/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 text-sm font-medium"
-          >
-            Tạo khóa học mới
-          </Link>
+          <div className="flex flex-wrap justify-center gap-3">
+            <Link
+              href="/contributor/courses"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 text-sm font-medium"
+            >
+              Tìm bài để sửa
+            </Link>
+            <Link
+              href="/contributor/courses/new"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-white text-teal-800 border border-teal-200 rounded-lg hover:bg-teal-50 text-sm font-medium"
+            >
+              Tạo khóa học mới
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">
@@ -127,6 +136,10 @@ export default async function DraftsPage() {
                       courseName={courseName}
                       label={contribution.status === 'CHANGES_REQUESTED' ? 'Gửi lại' : undefined}
                     />
+                    {/* CHANGES_REQUESTED giữ lịch sử duyệt nên không xóa được (API cũng chặn). */}
+                    {contribution.status === 'DRAFT' && (
+                      <DeleteDraftButton contributionId={contribution.id} name={courseName} />
+                    )}
                   </div>
                 </div>
               </div>

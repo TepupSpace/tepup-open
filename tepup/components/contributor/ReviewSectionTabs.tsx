@@ -17,6 +17,7 @@ export default async function ReviewSectionTabs({
   const global = canReviewContent(viewer.role as UserRole);
   const roles = global ? null : [...(await getMemberships(viewer.id)).values()];
   const reviewer = global || (roles?.length ?? 0) > 0;
-  const requests = global || !!roles?.includes('TRUSTED_REVIEWER');
+  // Both course roles hold READ_HISTORY (canViewReviewRequest), so both get the tab.
+  const requests = global || (roles?.length ?? 0) > 0;
   return <SectionTabs label="Việc duyệt" tabs={reviewTabs({ reviewer, requests })} current={current} />;
 }
