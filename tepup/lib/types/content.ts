@@ -212,6 +212,27 @@ export interface HotColdGuessBlock {
   context: string;
 }
 
+/**
+ * Tìm quy luật bí mật của một bộ ba số (kiểu thí nghiệm 2-4-6 của Wason).
+ * Người học tự nhập bộ ba, block trả lời "Đúng"/"Không đúng" theo `rule`, rồi
+ * người học chọn quy luật trong `options` (đúng 1 lựa chọn đúng).
+ */
+export interface RuleDiscoveryBlock {
+  type: 'rule-discovery';
+  title?: string;
+  /** Luật chơi, markdown inline; bỏ trống thì dùng lời mặc định. */
+  instruction?: string;
+  /** Bộ ba mẫu, hiện sẵn là "Đúng". Phải thoả `rule`. */
+  example: [number, number, number];
+  /** Điều kiện theo biến `a`, `b`, `c`, chạy qua `lib/security/safe-expr.ts`. Vd. `a < b && b < c`. */
+  rule: string;
+  /** Câu hỏi khi người học chốt quy luật. */
+  question: string;
+  options: { id: string; text: string; isCorrect: boolean }[];
+  /** Lời giải, hiện sau khi chốt. */
+  explanation: string;
+}
+
 // === NHÓM D: Ghép nối / Ghi nhớ / Phân loại ===
 
 /** Nối mỗi mục cột trái với đúng một mục cột phải. Luôn cân 1-1. */
@@ -354,6 +375,7 @@ type ContentBlockUnion =
   | BiasDetectorBlock
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
+  | RuleDiscoveryBlock
   | PairMatchBlock
   | FlipCardBlock
   | SortBucketBlock

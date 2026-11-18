@@ -21,7 +21,7 @@ import type {
   CheckListItem,
 } from '@/lib/types/content';
 import { PAIR_MATCH_LIMITS, FLIP_CARD_LIMITS } from '@/lib/blockLimits';
-import { MAX_EXPR_LENGTH } from '@/lib/security/safe-expr';
+import { MAX_EXPR_LENGTH, evaluateCondition } from '@/lib/security/safe-expr';
 
 const idField = { id: z.string().optional() };
 
@@ -480,6 +480,39 @@ export const hotColdGuessBlockSchema = z.object({
   context: z.string().optional(),
 });
 
+/** Biến hợp lệ trong `rule` của block rule-discovery. */
+export const RULE_DISCOVERY_VARS = ['a', 'b', 'c'] as const;
+
+export const ruleDiscoveryBlockSchema = z
+  .object({
+    ...idField,
+    type: z.literal('rule-discovery'),
+    title: z.string().optional(),
+    instruction: z.string().optional(),
+    example: z.tuple([z.number(), z.number(), z.number()]),
+    rule: z.string(),
+    question: z.string(),
+    options: z.array(choiceSchema).min(2),
+    explanation: z.string(),
+  })
+  .superRefine((b, ctx) => {
+    refineUniqueIds(ctx, b.options, 'options');
+    const correct = b.options.filter((o) => o.isCorrect).length;
+    if (correct !== 1) {
+      ctx.addIssue({ code: 'custom', message: `cần đúng 1 đáp án đúng (đang có ${correct})`, path: ['options'] });
+    }
+    if (!b.rule.trim()) return; // bản nháp: chưa viết quy luật
+    const err = checkExpression(b.rule, RULE_DISCOVERY_VARS);
+    if (err) {
+      ctx.addIssue({ code: 'custom', message: `quy luật ${err}`, path: ['rule'] });
+      return;
+    }
+    const [a, bb, c] = b.example;
+    if (!evaluateCondition(b.rule, { a, b: bb, c })) {
+      ctx.addIssue({ code: 'custom', message: 'bộ số mẫu không thoả quy luật', path: ['example'] });
+    }
+  });
+
 export const pairMatchBlockSchema = z
   .object({
     ...idField,
@@ -595,6 +628,7 @@ export const BLOCK_SCHEMAS = {
   'bias-detector': biasDetectorBlockSchema,
   'perspective-switch': perspectiveSwitchBlockSchema,
   'hot-cold-guess': hotColdGuessBlockSchema,
+  'rule-discovery': ruleDiscoveryBlockSchema,
   'pair-match': pairMatchBlockSchema,
   'flip-card': flipCardBlockSchema,
   'sort-bucket': sortBucketBlockSchema,
@@ -1000,6 +1034,17 @@ export const STRICT_BLOCK_SCHEMAS = {
     tolerance: num,
     hints: arr(textStr, L.options),
     context: textStr.optional(),
+  }),
+  'rule-discovery': z.object({
+    ...idField,
+    type: z.literal('rule-discovery'),
+    title: shortStr.optional(),
+    instruction: textStr.optional(),
+    example: z.tuple([num, num, num]),
+    rule: formulaStr,
+    question: textStr,
+    options: arr(choiceOption, L.options),
+    explanation: textStr,
   }),
   'pair-match': z.object({
     ...idField,

@@ -21,6 +21,7 @@ import BudgetAllocatorBlockEditor from './BudgetAllocatorBlockEditor';
 import BiasDetectorBlockEditor from './BiasDetectorBlockEditor';
 import PerspectiveSwitchBlockEditor from './PerspectiveSwitchBlockEditor';
 import HotColdGuessBlockEditor from './HotColdGuessBlockEditor';
+import RuleDiscoveryBlockEditor from './RuleDiscoveryBlockEditor';
 import PairMatchBlockEditor from './PairMatchBlockEditor';
 import FlipCardBlockEditor from './FlipCardBlockEditor';
 import SortBucketBlockEditor from './SortBucketBlockEditor';
@@ -50,6 +51,7 @@ export type {
   BiasDetectorBlock,
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
+  RuleDiscoveryBlock,
   PairMatchBlock,
   FlipCardBlock,
   SortBucketBlock,
@@ -71,6 +73,7 @@ const BLOCK_EDITOR_MAP: Record<string, React.ComponentType<{ block: any; onChang
   'bias-detector': BiasDetectorBlockEditor,
   'perspective-switch': PerspectiveSwitchBlockEditor,
   'hot-cold-guess': HotColdGuessBlockEditor,
+  'rule-discovery': RuleDiscoveryBlockEditor,
   'pair-match': PairMatchBlockEditor,
   'flip-card': FlipCardBlockEditor,
   'sort-bucket': SortBucketBlockEditor,

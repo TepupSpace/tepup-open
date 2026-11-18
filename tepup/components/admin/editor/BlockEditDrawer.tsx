@@ -15,6 +15,7 @@ import BudgetAllocatorBlockEditor from './BudgetAllocatorBlockEditor';
 import BiasDetectorBlockEditor from './BiasDetectorBlockEditor';
 import PerspectiveSwitchBlockEditor from './PerspectiveSwitchBlockEditor';
 import HotColdGuessBlockEditor from './HotColdGuessBlockEditor';
+import RuleDiscoveryBlockEditor from './RuleDiscoveryBlockEditor';
 import PairMatchBlockEditor from './PairMatchBlockEditor';
 import FlipCardBlockEditor from './FlipCardBlockEditor';
 import SortBucketBlockEditor from './SortBucketBlockEditor';
@@ -38,6 +39,7 @@ const FORM_MAP: Record<string, FormComponent> = {
   'bias-detector': BiasDetectorBlockEditor,
   'perspective-switch': PerspectiveSwitchBlockEditor,
   'hot-cold-guess': HotColdGuessBlockEditor,
+  'rule-discovery': RuleDiscoveryBlockEditor,
   'pair-match': PairMatchBlockEditor,
   'flip-card': FlipCardBlockEditor,
   'sort-bucket': SortBucketBlockEditor,

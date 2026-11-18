@@ -143,6 +143,9 @@ function checkFormulas(block: Obj, path: string, issues: Issues) {
     case 'budget-allocator':
       each(block.outcomes, 'condition', 'outcomes');
       break;
+    case 'rule-discovery':
+      checkFormula(block.rule, `${path}.rule`, issues);
+      break;
   }
 }
 

@@ -10,6 +10,7 @@ import {
   BiasDetectorBlockComponent,
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
+  RuleDiscoveryBlockComponent,
 } from '@/components/blocks';
 
 import type {
@@ -19,6 +20,7 @@ import type {
   BiasDetectorBlock,
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
+  RuleDiscoveryBlock,
 } from '@/lib/types/content';
 
 // ==========================================
@@ -162,6 +164,22 @@ const mockHotColdGuess: HotColdGuessBlock = {
   context: 'GDP bình quân đầu người VN năm 2023 đạt khoảng 4,284 USD. Con số này tăng gần 10 lần so với năm 2000 (390 USD). Tuy nhiên, GDP bình quân không phản ánh bất bình đẳng.',
 };
 
+const mockRuleDiscovery: RuleDiscoveryBlock = {
+  type: 'rule-discovery',
+  title: 'Tìm quy luật bí mật',
+  example: [2, 4, 6],
+  rule: 'a < b && b < c',
+  question: 'Theo bạn, quy luật bí mật là gì?',
+  options: [
+    { id: '1', text: 'Ba số chẵn liên tiếp', isCorrect: false },
+    { id: '2', text: 'Mỗi số lớn hơn số trước 2 đơn vị', isCorrect: false },
+    { id: '3', text: 'Ba số tăng dần', isCorrect: true },
+    { id: '4', text: 'Số thứ ba bằng tổng hai số đầu', isCorrect: false },
+  ],
+  explanation:
+    'Quy luật chỉ là “ba số tăng dần”. Trong thí nghiệm của Wason (1960), phần lớn người tham gia chỉ thử các bộ số hợp với phỏng đoán của mình, nên không thấy phỏng đoán đó quá hẹp.',
+};
+
 // ==========================================
 
 const SECTIONS: { label: string; node: React.ReactNode }[] = [
@@ -171,6 +189,7 @@ const SECTIONS: { label: string; node: React.ReactNode }[] = [
   { label: 'Bias Detector (B1)', node: <BiasDetectorBlockComponent block={mockBiasDetector} /> },
   { label: 'Perspective Switch (B3)', node: <PerspectiveSwitchBlockComponent block={mockPerspectiveSwitch} /> },
   { label: 'Hot / Cold Guess (C1)', node: <HotColdGuessBlockComponent block={mockHotColdGuess} /> },
+  { label: 'Tìm quy luật 2-4-6 (C2)', node: <RuleDiscoveryBlockComponent block={mockRuleDiscovery} /> },
 ];
 
 export default function BlockDemoPage() {

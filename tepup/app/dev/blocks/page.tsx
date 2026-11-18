@@ -7,6 +7,7 @@ import {
   BiasDetectorBlockComponent,
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
+  RuleDiscoveryBlockComponent,
   PairMatchBlockComponent,
   FlipCardBlockComponent,
   SortBucketBlockComponent,
@@ -19,6 +20,7 @@ import type {
   BiasDetectorBlock,
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
+  RuleDiscoveryBlock,
   PairMatchBlock,
   FlipCardBlock,
   SortBucketBlock,
@@ -27,6 +29,22 @@ import type {
 // ==========================================
 // MOCK DATA — Vietnamese Social Science Content
 // ==========================================
+
+const mockRuleDiscovery: RuleDiscoveryBlock = {
+  type: 'rule-discovery',
+  title: 'Tìm quy luật bí mật',
+  example: [2, 4, 6],
+  rule: 'a < b && b < c',
+  question: 'Theo bạn, quy luật bí mật là gì?',
+  options: [
+    { id: '1', text: 'Ba số chẵn liên tiếp', isCorrect: false },
+    { id: '2', text: 'Mỗi số lớn hơn số trước 2 đơn vị', isCorrect: false },
+    { id: '3', text: 'Ba số tăng dần', isCorrect: true },
+    { id: '4', text: 'Số thứ ba bằng tổng hai số đầu', isCorrect: false },
+  ],
+  explanation:
+    'Quy luật chỉ là “ba số tăng dần”. Trong thí nghiệm của Wason (1960), phần lớn người tham gia chỉ thử các bộ số hợp với phỏng đoán của mình, nên không thấy phỏng đoán đó quá hẹp.',
+};
 
 const mockPairMatch: PairMatchBlock = {
   type: 'pair-match',
@@ -274,6 +292,9 @@ export default function DevBlocksPage() {
 
           <div className="mb-2 text-sm text-gray-500 font-medium">C1. Hot Cold Guess</div>
           <HotColdGuessBlockComponent block={mockHotColdGuess} onComplete={() => console.log('HotCold complete')} />
+
+          <div className="mb-2 mt-6 text-sm text-gray-500 font-medium">C2. Tìm quy luật (2-4-6)</div>
+          <RuleDiscoveryBlockComponent block={mockRuleDiscovery} onComplete={() => console.log('RuleDiscovery complete')} />
         </section>
 
         {/* NHÓM D */}

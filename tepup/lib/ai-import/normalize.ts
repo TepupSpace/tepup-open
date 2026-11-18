@@ -55,6 +55,8 @@ export function normalizeBlock(block: unknown): unknown {
         perspectives: fillIds(block.perspectives, 'p'),
         question: isObj(block.question) ? { ...block.question, options: fillIds(block.question.options) } : block.question,
       };
+    case 'rule-discovery':
+      return { ...block, options: fillIds(block.options) };
     case 'pair-match':
       return { ...block, pairs: fillIds(block.pairs, 'p') };
     case 'flip-card':

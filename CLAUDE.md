@@ -93,7 +93,7 @@ LibraryEntry (topic, source, term, acronym, tool) ⇄ LibraryLink;  LibraryUsage
 ```
 - Block types (`lib/types/content.ts`):
   - Core: `text`, `image`, `callout`, `question`, `library-document`
-  - Interactive: `calculator`, `slider-simulator`, `budget-allocator`, `bias-detector`, `perspective-switch`, `hot-cold-guess`, `pair-match`, `flip-card`, `sort-bucket`, plus `custom` (Sandpack)
+  - Interactive: `calculator`, `slider-simulator`, `budget-allocator`, `bias-detector`, `perspective-switch`, `hot-cold-guess`, `rule-discovery` (2-4-6 style: `rule` is a safe-expr condition over `a`,`b`,`c`; `example` must satisfy it), `pair-match`, `flip-card`, `sort-bucket`, plus `custom` (Sandpack)
   - Native: `heading`, `quote`, `code`, `bullet-list`, `numbered-list`, `check-list`, `toggle`, `table`, `video`, `audio`, `file`, `step-break`
 - The editor groups interactive blocks into **question** blocks (checkpoints, e.g. `question`, `pair-match`, `sort-bucket`) and **explainer** blocks (simulations that replace body text). The grouping lives in the `group` field of `blockTypes` in `components/admin/editor/block-utils.ts`.
 - **Only types in `INTERACTIVE_BLOCK_MAP` (`components/learn/BlockRenderer.tsx`) render. Any other type silently renders nothing.** The key doc's "only 6 types" list is out of date; the map is the source of truth.

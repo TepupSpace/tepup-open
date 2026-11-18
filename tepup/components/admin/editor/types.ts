@@ -166,6 +166,17 @@ export interface HotColdGuessBlock {
   context?: string;
 }
 
+export interface RuleDiscoveryBlock {
+  type: 'rule-discovery';
+  title?: string;
+  instruction?: string;
+  example: [number, number, number];
+  rule: string;
+  question: string;
+  options: { id: string; text: string; isCorrect: boolean }[];
+  explanation: string;
+}
+
 export interface PairMatchBlock {
   type: 'pair-match';
   title?: string;
@@ -204,6 +215,7 @@ export type ContentBlock =
   | BiasDetectorBlock
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
+  | RuleDiscoveryBlock
   | PairMatchBlock
   | FlipCardBlock
   | SortBucketBlock

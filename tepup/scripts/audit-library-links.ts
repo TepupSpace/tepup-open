@@ -93,6 +93,7 @@ async function main() {
       if (b.type === 'flip-card') inside.push(...(b.cards ?? []).flatMap((c: any) => [c.front?.text, c.back?.text]));
       if (b.type === 'pair-match') inside.push(...(b.pairs ?? []).flatMap((p: any) => [p.left, p.right]));
       if (b.type === 'sort-bucket') inside.push(...(b.items ?? []).map((i: any) => i.text));
+      if (b.type === 'rule-discovery') inside.push(...(b.options ?? []).map((o: any) => o.text));
       if (b.type === 'perspective-switch') inside.push(...(b.question?.options ?? []).map((o: any) => o.text));
       const n = inside.filter((x) => typeof x === 'string' && /\]\(|https?:\/\//.test(x)).length;
       if (n) warnings.push(`${t.where}: ${n} link nằm trong ${b.type} (lựa chọn/thẻ/mục) sẽ hiện như chữ thường, không bấm được`);

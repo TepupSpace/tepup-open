@@ -324,6 +324,39 @@ export const BLOCK_SPECS: Record<string, BlockSpec> = {
     },
   },
 
+  'rule-discovery': {
+    label: 'Tìm quy luật (kiểu 2-4-6)',
+    purpose:
+      'Người học tự nhập các bộ ba số, block trả lời "Đúng"/"Không đúng" theo một quy luật bí mật; khi tự tin, người học chọn quy luật trong danh sách. Dùng để minh hoạ thiên kiến xác nhận: chỉ thử các bộ số mình nghĩ sẽ đúng.',
+    fields: [
+      '`instruction` (tuỳ chọn): luật chơi; bỏ trống dùng lời mặc định.',
+      '`example`: bộ ba mẫu, mảng 3 số, PHẢI thoả `rule`.',
+      '`rule`: điều kiện theo biến `a`, `b`, `c` (vd. `a < b && b < c`). Dùng < <= > >= == != && || + - * / % ** và min/max/abs/round. Không dùng `^`.',
+      '`question`: câu hỏi khi chốt quy luật.',
+      '`options`: các lựa chọn, mỗi lựa chọn có `id`, `text`, `isCorrect`; đúng 1 lựa chọn đúng.',
+      '`explanation`: lời giải hiện sau khi chốt.',
+    ],
+    rules: [
+      '4 lựa chọn; các lựa chọn sai là những quy luật hẹp hơn mà bộ mẫu cũng thoả (vd. "số chẵn tăng 2").',
+      'Lời giải nhắc rằng bộ số bị trả lời "Không đúng" cho nhiều thông tin nhất.',
+    ],
+    example: {
+      type: 'rule-discovery',
+      title: 'Tìm quy luật bí mật',
+      example: [2, 4, 6],
+      rule: 'a < b && b < c',
+      question: 'Theo bạn, quy luật bí mật là gì?',
+      options: [
+        { id: 'a', text: 'Ba số chẵn liên tiếp', isCorrect: false },
+        { id: 'b', text: 'Mỗi số lớn hơn số trước 2 đơn vị', isCorrect: false },
+        { id: 'c', text: 'Ba số tăng dần', isCorrect: true },
+        { id: 'd', text: 'Số thứ ba bằng tổng hai số đầu', isCorrect: false },
+      ],
+      explanation:
+        'Quy luật chỉ là "ba số tăng dần". Trong thí nghiệm của Wason (1960), phần lớn người tham gia chỉ thử các bộ số hợp với phỏng đoán của mình (8-10-12, 20-22-24…), nên không bao giờ thấy phỏng đoán sai.',
+    },
+  },
+
   'pair-match': {
     label: 'Nối cặp',
     purpose: 'Người học nối mỗi mục cột trái (khái niệm) với mục đúng ở cột phải (định nghĩa/ví dụ).',

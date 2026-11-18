@@ -2,9 +2,9 @@ import {
   Type, Image, Lightbulb, ListChecks, BookOpen,
   Calculator, SlidersHorizontal, PieChart, ScanSearch, Users, Thermometer,
   Puzzle, TrendingUp, BarChart3, Sliders, Brain, Zap, Milestone,
-  Waypoints, SquareStack, Boxes,
+  Waypoints, SquareStack, Boxes, FlaskConical,
 } from 'lucide-react';
-import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, PerspectiveSwitchBlock, HotColdGuessBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
+import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, PerspectiveSwitchBlock, HotColdGuessBlock, RuleDiscoveryBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
 import type { CustomBlockInstance } from '@/lib/types/custom-block';
 
 /**
@@ -31,6 +31,7 @@ export const blockTypes: { type: string; label: string; icon: React.ElementType;
   { type: 'bias-detector', label: 'Phát hiện thiên lệch', icon: ScanSearch, group: 'question' },
   { type: 'perspective-switch', label: 'Đa góc nhìn', icon: Users, group: 'question' },
   { type: 'hot-cold-guess', label: 'Hot/Cold Guess', icon: Thermometer, group: 'question' },
+  { type: 'rule-discovery', label: 'Tìm quy luật (2-4-6)', icon: FlaskConical, group: 'question' },
   { type: 'flip-card', label: 'Lật thẻ', icon: SquareStack, group: 'explainer' },
   { type: 'calculator', label: 'Máy tính', icon: Calculator, group: 'explainer' },
   { type: 'slider-simulator', label: 'Simulator', icon: SlidersHorizontal, group: 'explainer' },
@@ -62,6 +63,7 @@ const BLOCK_HUE: Record<string, BlockHue> = {
   'bias-detector':      'red',
   'perspective-switch': 'violet',
   'hot-cold-guess':     'teal',
+  'rule-discovery':     'indigo',
   'custom':             'violet',
   'step-break':         'sky',
 };
@@ -163,6 +165,8 @@ export function getBlockPreview(block: ContentBlock): string {
       return block.title || block.event?.slice(0, 60) || '(Đa góc nhìn)';
     case 'hot-cold-guess':
       return block.title || block.question?.slice(0, 60) || '(Hot/Cold Guess)';
+    case 'rule-discovery':
+      return block.title || block.question?.slice(0, 60) || '(Tìm quy luật)';
     case 'pair-match':
       return block.title || `Nối cặp: ${block.pairs?.length ?? 0} cặp`;
     case 'flip-card':
@@ -264,6 +268,21 @@ export function createEmptyBlock(type: string): ContentBlock {
         tolerance: 10,
         hints: [],
       } as HotColdGuessBlock;
+    case 'rule-discovery':
+      return {
+        type: 'rule-discovery',
+        title: 'Tìm quy luật bí mật',
+        example: [2, 4, 6],
+        rule: 'a < b && b < c',
+        question: 'Theo bạn, quy luật bí mật là gì?',
+        options: [
+          { id: '1', text: '', isCorrect: true },
+          { id: '2', text: '', isCorrect: false },
+          { id: '3', text: '', isCorrect: false },
+          { id: '4', text: '', isCorrect: false },
+        ],
+        explanation: '',
+      } as RuleDiscoveryBlock;
     case 'pair-match':
       return {
         type: 'pair-match',
