@@ -68,7 +68,7 @@ export default async function CourseRolesCard({ userId }: { userId: string }) {
   ];
 
   return (
-    <section aria-labelledby="course-roles-title" className="bg-white rounded-xl border border-gray-100 p-6" data-testid="course-roles-card">
+    <section aria-labelledby="course-roles-title" className="staff-card staff-card--flat p-6" data-testid="course-roles-card">
       <h2 id="course-roles-title" className="text-lg font-semibold text-gray-900 mb-3">
         Khóa bạn phụ trách
       </h2>

@@ -111,7 +111,7 @@ export default function MyCourseRolesSection() {
   }
 
   return (
-    <section aria-labelledby="my-course-roles-heading" className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">
+    <section aria-labelledby="my-course-roles-heading" className="staff-card staff-card--flat p-6 max-w-2xl">
       <h2 id="my-course-roles-heading" tabIndex={-1} className="text-lg font-semibold text-gray-900 mb-1">
         Vai trò trong khóa học
       </h2>

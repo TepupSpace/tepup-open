@@ -161,7 +161,7 @@ export default async function ContributorDashboard() {
         <div className="flex flex-wrap gap-2">
           <Link
             href="/contributor/courses"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 transition-colors font-medium text-sm"
+            className="staff-btn staff-btn--primary"
           >
             <Search className="w-4 h-4" aria-hidden="true" />
             Tìm bài để sửa
@@ -221,7 +221,7 @@ export default async function ContributorDashboard() {
 
       {/* Access level: promotion is a manual admin decision (auto-promotion was removed). */}
       {showAccessLevel && (
-        <section aria-labelledby="access-level-title" className="bg-white rounded-xl border border-gray-100 p-5 mb-8">
+        <section aria-labelledby="access-level-title" className="staff-card staff-card--flat p-5 mb-8">
           <h2 id="access-level-title" className="font-semibold text-gray-900 flex items-center gap-2">
             <Star className="w-5 h-5 text-teal-700" aria-hidden="true" />
             Cấp truy cập: <span className="text-teal-800">{ROLE_LABEL[role]}</span>
@@ -240,7 +240,7 @@ export default async function ContributorDashboard() {
       )}
 
       {/* Feature requests: the only feedback channel to the team. */}
-      <div className="bg-white rounded-xl border border-gray-100 p-5 flex flex-wrap items-start justify-between gap-4">
+      <div className="staff-card staff-card--flat p-5 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h2 className="font-semibold text-gray-900 flex items-center gap-2">
             <Lightbulb className="w-5 h-5 text-amber-600" aria-hidden="true" />

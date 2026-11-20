@@ -205,8 +205,8 @@ export default function AdminSidebar() {
     .filter((group) => group.items.length > 0);
 
   const linkClass = (isActive: boolean) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors ${focusRing} ${
-      isActive ? 'bg-blue-50 text-blue-700' : 'text-gray-600 hover:bg-gray-50'
+    `flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors ${focusRing} ${
+      isActive ? 'bg-blue-50 text-blue-700 font-semibold' : 'text-gray-700 hover:bg-white'
     }`;
 
   // Following a link on a phone closes the drawer (the page changes underneath it).
@@ -231,7 +231,7 @@ export default function AdminSidebar() {
         aria-label="Mở menu quản trị"
         aria-expanded={drawerOpen}
         aria-controls={asideId}
-        className={`fixed top-3 left-4 z-50 lg:hidden p-2 bg-white text-gray-700 rounded-lg shadow-md ${focusRing}`}
+        className={`fixed top-3 left-4 z-50 lg:hidden p-2 bg-white text-gray-700 rounded-full shadow-md ${focusRing}`}
       >
         <Menu className="w-5 h-5" aria-hidden="true" />
       </button>
@@ -253,24 +253,23 @@ export default function AdminSidebar() {
           // Closed drawer on a small screen is off-screen: keep it out of the Tab order and
           // the accessibility tree (WCAG 2.4.3, 2.4.11).
           inert={!isDesktop && !mobileOpen}
-          className={`fixed top-0 left-0 h-full w-64 flex flex-col bg-white border-r border-gray-200 z-50 transition-all duration-300 ${
+          className={`fixed top-0 left-0 h-full w-64 flex flex-col staff-side border-r z-50 transition-all duration-300 ${
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           } lg:translate-x-0 ${collapsed ? 'lg:w-20' : ''}`}
         >
           {/* Logo */}
-          <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
+          <div className="h-16 flex-shrink-0 flex items-center justify-between px-4">
             <Link
               href="/admin"
               onClick={closeDrawer}
-              className={`flex items-center gap-2 rounded-xl ${focusRing}`}
+              className={`staff-logo rounded-xl ${focusRing}`}
             >
-              <span
-                aria-hidden="true"
-                className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-bold text-xl"
-              >
-                T
+              {/* eslint-disable-next-line @next/next/no-img-element -- biểu tượng cố định, next/image chỉ thêm wrapper thừa */}
+              <img src="/paper/favicon.svg" alt="" width={36} height={36} />
+              <span className={iconsOnly ? 'sr-only' : undefined}>
+                <span className="staff-logo__name">Tépup</span>
+                <span className="staff-logo__area">Quản trị</span>
               </span>
-              <span className={iconsOnly ? 'sr-only' : 'font-bold text-gray-900'}>Tepup Admin</span>
             </Link>
             <button
               type="button"
@@ -353,7 +352,7 @@ export default function AdminSidebar() {
           </nav>
 
           {/* Settings at bottom - all users. In normal flow after the scrolling nav, so they never overlap. */}
-          <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+          <div className="flex-shrink-0 p-4 border-t border-gray-200">
             <Link
               href="/admin/settings"
               onClick={closeDrawer}

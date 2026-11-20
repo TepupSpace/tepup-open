@@ -5,7 +5,7 @@ import LicenceFooterLine from '@/components/LicenceFooterLine';
 import '@/app/paper.css';
 
 /**
- * Khung giấy dùng chung cho trang học viên (/story/**, /thu-vien/**): nền giấy,
+ * Khung giấy dùng chung cho trang học viên (/story/**, /thu-vien/**, /contributor-guide): nền giấy,
  * header pill, thanh tab đáy trên mobile.
  *
  * Theme sáng cố định như /courses (.ch) và landing (.lp), không dùng .reader:
@@ -16,7 +16,7 @@ export default function PaperShell({
   current,
   children,
 }: {
-  current: 'courses' | 'library';
+  current?: 'courses' | 'library';
   children: React.ReactNode;
 }) {
   return (

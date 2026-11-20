@@ -132,7 +132,7 @@ export default function EntriesClient() {
           <Spinner />
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+        <div className="staff-card overflow-hidden">
           <table className="w-full">
             <caption className="sr-only">Danh sách mục tham chiếu</caption>
             <thead className="bg-gray-50 border-b border-gray-100">

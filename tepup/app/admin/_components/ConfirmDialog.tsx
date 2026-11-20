@@ -54,7 +54,7 @@ export default function ConfirmDialog({
           type="button"
           data-dialog-cancel
           onClick={onCancel}
-          className="rounded-xl px-4 py-2 text-gray-600 transition-colors hover:bg-gray-100"
+          className="staff-btn staff-btn--ghost"
         >
           Hủy
         </button>
@@ -64,7 +64,7 @@ export default function ConfirmDialog({
             if (!busy) onConfirm();
           }}
           aria-disabled={busy || undefined}
-          className="rounded-xl bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 aria-disabled:cursor-wait aria-disabled:opacity-70"
+          className="staff-btn staff-btn--danger"
         >
           {busy ? busyLabel : confirmLabel}
         </button>

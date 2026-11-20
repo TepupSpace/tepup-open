@@ -434,7 +434,7 @@ export default function EntryEditorClient({ params }: { params: Promise<{ id: st
           <FormError message={error} />
         </div>
 
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <section className="staff-card p-6 space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="e-type" className={labelClass}>
@@ -521,7 +521,7 @@ export default function EntryEditorClient({ params }: { params: Promise<{ id: st
         <MetaFields type={type} meta={meta} setM={setM} str={str} num={num} />
         {type === 'SOURCE' && <DuplicateWarning meta={meta} selfId={isNew ? undefined : id} />}
 
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <section className="staff-card p-6 space-y-4">
           <h2 className="text-lg font-semibold text-gray-900">Liên kết</h2>
           {type === 'SOURCE' && (
             <p className="text-sm text-gray-700">
@@ -565,7 +565,7 @@ export default function EntryEditorClient({ params }: { params: Promise<{ id: st
           )}
         </section>
 
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+        <section className="staff-card p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-gray-900">Nội dung (bảng bên)</h2>
             <button
@@ -696,7 +696,7 @@ function MetaFields({
   );
 
   return (
-    <section className="bg-white rounded-2xl border border-gray-200 p-6 space-y-4">
+    <section className="staff-card p-6 space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">Thông tin {TYPE_LABELS[type].toLowerCase()}</h2>
 
       {type === 'CONCEPT' && (

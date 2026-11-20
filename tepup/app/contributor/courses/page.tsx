@@ -247,7 +247,7 @@ export default async function ContributorCoursesPage({
           </div>
           <button
             type="submit"
-            className="rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+            className="staff-btn staff-btn--primary"
           >
             Tìm
           </button>

@@ -271,7 +271,7 @@ export default function LibraryDocumentClient({
       {/* Form */}
       <form onSubmit={handleSubmit} className="space-y-6" noValidate>
         {/* Basic Info Card */}
-        <section aria-labelledby="library-basic-heading" className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+        <section aria-labelledby="library-basic-heading" className="staff-card p-6 space-y-4">
           <h2 id="library-basic-heading" className="text-lg font-semibold text-gray-900 mb-4">
             Thông tin cơ bản
           </h2>
@@ -373,7 +373,7 @@ export default function LibraryDocumentClient({
         </section>
 
         {/* Content Card */}
-        <section aria-labelledby="library-content-heading" className="bg-white rounded-2xl border border-gray-100 p-6">
+        <section aria-labelledby="library-content-heading" className="staff-card p-6">
           <h2 id="library-content-heading" tabIndex={-1} className="text-lg font-semibold text-gray-900 mb-4">
             Nội dung tài liệu
           </h2>
@@ -472,7 +472,7 @@ export default function LibraryDocumentClient({
         </section>
 
         {/* Related Concepts Card */}
-        <section aria-labelledby="library-extra-heading" className="bg-white rounded-2xl border border-gray-100 p-6 space-y-4">
+        <section aria-labelledby="library-extra-heading" className="staff-card p-6 space-y-4">
           <h2 id="library-extra-heading" className="text-lg font-semibold text-gray-900 mb-4">
             Thông tin bổ sung
           </h2>
@@ -526,7 +526,7 @@ export default function LibraryDocumentClient({
         <div className="flex justify-end gap-3">
           <Link
             href="/admin/library"
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+            className="staff-btn staff-btn--ghost"
           >
             Hủy
           </Link>

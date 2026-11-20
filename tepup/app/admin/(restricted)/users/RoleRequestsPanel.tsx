@@ -110,7 +110,7 @@ function Decide({
           {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         </div>
         <div className="flex justify-end gap-3">
-          <button type="button" onClick={onCancel} className="rounded-xl px-4 py-2 text-gray-600 transition-colors hover:bg-gray-100">
+          <button type="button" onClick={onCancel} className="staff-btn staff-btn--ghost">
             Hủy
           </button>
           <button
@@ -205,7 +205,7 @@ export default function RoleRequestsPanel({ onDecided }: { onDecided?: () => voi
                         setStatus('');
                         setDeciding({ request: r, action: 'APPROVE' });
                       }}
-                      className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-teal-800"
+                      className="staff-btn staff-btn--primary staff-btn--sm"
                     >
                       Chấp nhận<span className="sr-only"> yêu cầu của {name}</span>
                     </button>

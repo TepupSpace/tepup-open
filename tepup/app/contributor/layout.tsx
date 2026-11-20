@@ -4,6 +4,8 @@ import ContributorSidebar from '@/components/contributor/ContributorSidebar';
 import ContributorHeader from '@/components/contributor/ContributorHeader';
 import DesktopOnlyNotice from '@/components/mobile/DesktopOnlyNotice';
 import { SessionProvider } from 'next-auth/react';
+import { fraunces, beVietnam } from '@/lib/fonts/paper';
+import '@/app/staff-paper.css';
 import { TERMS, roleBadge } from '@/lib/terms';
 import type { UserRole } from '@prisma/client';
 
@@ -39,8 +41,9 @@ export default async function ContributorLayout({
   return (
     <SessionProvider>
       <DesktopOnlyNotice area="contributor" />
-      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học. */}
-      <div className="reader min-h-screen bg-gray-50">
+      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học.
+          `staff`: giao diện giấy (app/staff-paper.css), dùng token --pl-* nên chế độ tối vẫn chạy. */}
+      <div className={`reader staff ${fraunces.variable} ${beVietnam.variable} min-h-screen`}>
         <ContributorSidebar hasCourseRole={hasCourseRole} isTrustedReviewer={isTrustedReviewer} />
         <div className="lg:pl-64 transition-all duration-300">
           <ContributorHeader badge={badge} badgeIsCourseRole={badgeIsCourseRole} />

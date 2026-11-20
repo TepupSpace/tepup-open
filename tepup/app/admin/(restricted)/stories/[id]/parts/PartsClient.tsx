@@ -295,7 +295,7 @@ export default function PartsClient({
             setDialogError('');
             setShowPartModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="staff-btn staff-btn--primary"
         >
           <Plus className="w-5 h-5" />
           <span>Thêm phần</span>
@@ -324,7 +324,7 @@ export default function PartsClient({
       {/* Parts List */}
       <div className="space-y-4">
         {parts.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <div className="staff-card p-12 text-center">
             <p className="text-gray-500">
               Chưa có phần nào. Hãy thêm phần đầu tiên!
             </p>
@@ -337,7 +337,7 @@ export default function PartsClient({
               <section
                 key={part.id}
                 aria-labelledby={`part-${part.id}-name`}
-                className="bg-white rounded-2xl border border-gray-100 overflow-hidden"
+                className="staff-card overflow-hidden"
               >
                 {/* Part Header */}
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-100">
@@ -515,14 +515,14 @@ export default function PartsClient({
               <button
                 type="button"
                 onClick={closePartModal}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="staff-btn staff-btn--ghost"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 aria-disabled={saving || undefined}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-70 aria-disabled:cursor-wait"
               >
                 {saving ? 'Đang lưu...' : 'Lưu'}
               </button>
@@ -586,14 +586,14 @@ export default function PartsClient({
               <button
                 type="button"
                 onClick={closeChapterModal}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="staff-btn staff-btn--ghost"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 aria-disabled={saving || undefined}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-70 aria-disabled:cursor-wait"
               >
                 {saving ? 'Đang lưu...' : 'Lưu'}
               </button>

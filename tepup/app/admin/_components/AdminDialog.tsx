@@ -117,9 +117,9 @@ export default function AdminDialog({
           aria-labelledby={titleId}
           aria-describedby={describedBy}
           tabIndex={-1}
-          className={`relative w-full ${widthClassName} max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl`}
+          className={`relative w-full ${widthClassName} max-h-[90vh] overflow-y-auto rounded-[1.75rem] bg-white p-6 sm:p-7 shadow-xl`}
         >
-          <h2 id={titleId} className="mb-4 text-lg font-semibold text-gray-900">
+          <h2 id={titleId} className="staff-serif mb-4 text-2xl">
             {title}
           </h2>
           {children}

@@ -83,9 +83,9 @@ function matchLength(item: MenuItem, pathname: string): number {
 }
 
 const linkBase =
-  'flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700';
-const linkActive = 'bg-teal-50 text-teal-800';
-const linkIdle = 'text-gray-600 hover:bg-gray-50';
+  'flex items-center gap-3 px-3 py-2.5 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700';
+const linkActive = 'bg-teal-50 text-teal-800 font-semibold';
+const linkIdle = 'text-gray-700 hover:bg-white';
 
 // `isTrustedReviewer` is still passed by the layout; the "Yêu cầu duyệt" tab uses the same rule
 // on the server (ReviewSectionTabs), so the sidebar no longer needs it.
@@ -184,7 +184,7 @@ export default function ContributorSidebar({
             aria-label={mobileOpen ? 'Đóng menu' : 'Mở menu'}
             aria-expanded={mobileOpen}
             aria-controls="contributor-sidebar"
-            className="fixed top-3 left-3 z-50 lg:hidden p-2 bg-white text-gray-700 rounded-lg shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+            className="fixed top-3 left-3 z-50 lg:hidden p-2 bg-white text-gray-700 rounded-full shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
           >
             <Menu className="w-5 h-5" aria-hidden="true" />
           </button>
@@ -194,22 +194,23 @@ export default function ContributorSidebar({
             id="contributor-sidebar"
             aria-label={`Thanh bên ${TERMS.area}`}
             inert={drawerHidden}
-            className={`fixed top-0 left-0 h-full w-64 flex flex-col bg-white border-r border-gray-200 z-50 transition-all duration-300 lg:translate-x-0 ${
+            className={`fixed top-0 left-0 h-full w-64 flex flex-col staff-side border-r z-50 transition-all duration-300 lg:translate-x-0 ${
               mobileOpen ? 'translate-x-0' : '-translate-x-full'
             } ${collapsed ? 'lg:w-20' : 'lg:w-64'}`}
           >
             {/* Logo */}
-            <div className="h-16 flex-shrink-0 flex items-center justify-between px-4 border-b border-gray-200">
+            <div className="h-16 flex-shrink-0 flex items-center justify-between px-4">
               <Link
                 href="/contributor"
                 onClick={closeMobile}
-                className="flex items-center gap-2 ml-10 lg:ml-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+                className="staff-logo ml-10 lg:ml-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
               >
-                <span className="w-10 h-10 bg-teal-700 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <span className="text-white font-bold text-xl" aria-hidden="true">T</span>
-                  <span className="sr-only">Tepup</span>
+                {/* eslint-disable-next-line @next/next/no-img-element -- biểu tượng cố định, next/image chỉ thêm wrapper thừa */}
+                <img src="/paper/favicon.svg" alt="" width={36} height={36} />
+                <span className={collapsed ? 'lg:sr-only' : undefined}>
+                  <span className="staff-logo__name">Tépup</span>
+                  <span className="staff-logo__area">{TERMS.area}</span>
                 </span>
-                <span className={`font-bold text-gray-900 ${collapsed ? 'lg:sr-only' : ''}`}>{TERMS.area}</span>
               </Link>
               <button
                 type="button"

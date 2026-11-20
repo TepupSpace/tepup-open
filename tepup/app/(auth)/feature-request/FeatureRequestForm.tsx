@@ -87,7 +87,7 @@ export default function FeatureRequestForm({ signedIn }: { signedIn: SignedInUse
 
   if (isSubmitted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col">
+      <div className="min-h-screen flex flex-col">
         {backLink}
         <main id="main-content" className="flex-1 flex items-center justify-center px-4">
           <div className="text-center max-w-md">
@@ -117,7 +117,7 @@ export default function FeatureRequestForm({ signedIn }: { signedIn: SignedInUse
               </button>
               <Link
                 href={signedIn?.isContributor ? '/contributor' : '/'}
-                className="px-4 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+                className="staff-btn staff-btn--primary"
               >
                 {signedIn?.isContributor ? 'Về khu đóng góp' : 'Về trang chủ'}
               </Link>
@@ -129,7 +129,7 @@ export default function FeatureRequestForm({ signedIn }: { signedIn: SignedInUse
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {backLink}
 
       <main id="main-content" className="flex-1 flex items-center justify-center px-4 py-8">
@@ -144,7 +144,7 @@ export default function FeatureRequestForm({ signedIn }: { signedIn: SignedInUse
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="staff-card p-6 sm:p-8">
             {/* Always mounted, so the text is read when it appears. */}
             <div
               id="feature-request-error"
@@ -231,7 +231,7 @@ export default function FeatureRequestForm({ signedIn }: { signedIn: SignedInUse
                 type="submit"
                 // aria-disabled, not disabled: the pressed button keeps focus while sending.
                 aria-disabled={isLoading || undefined}
-                className="w-full py-3 bg-teal-700 text-white font-semibold rounded-xl hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all inline-flex items-center justify-center gap-2"
+                className="w-full py-3 bg-teal-700 text-white font-semibold rounded-full hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all inline-flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" aria-hidden="true" />
                 {isLoading ? 'Đang gửi...' : 'Gửi yêu cầu'}

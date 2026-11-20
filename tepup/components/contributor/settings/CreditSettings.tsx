@@ -112,7 +112,7 @@ export default function CreditSettings() {
       : '';
 
   return (
-    <section aria-labelledby="credit-settings-heading" className="bg-white rounded-xl border border-gray-100 p-6 max-w-lg">
+    <section aria-labelledby="credit-settings-heading" className="staff-card staff-card--flat p-6 max-w-lg">
       <h2 id="credit-settings-heading" className="text-lg font-semibold text-gray-900 mb-2">
         Ghi công công khai
       </h2>
@@ -161,7 +161,7 @@ export default function CreditSettings() {
                 type="button"
                 onClick={() => save({ acceptLicence: true }, 'licence')}
                 aria-disabled={saving !== null || undefined}
-                className="px-4 py-2 bg-teal-700 text-white rounded-xl text-sm font-medium hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-60 aria-disabled:cursor-wait"
               >
                 {saving === 'licence' ? 'Đang lưu…' : 'Đồng ý'}
               </button>

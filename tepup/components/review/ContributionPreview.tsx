@@ -225,7 +225,7 @@ export default function ContributionPreview({
   if (type === 'EDIT_LESSON_CONTENT' || type === 'EDIT_CHAPTER_CONTENT') {
     const title = (obj as { title?: unknown }).title;
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="staff-card staff-card--flat p-5">
         {header}
         <div className="border border-gray-100 rounded-lg px-4 py-5 sm:px-6">
           {typeof title === 'string' && title && (
@@ -239,7 +239,7 @@ export default function ContributionPreview({
 
   if (type === 'EDIT_LIBRARY_ENTRY') {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="staff-card staff-card--flat p-5">
         <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
           <Eye className={`w-4 h-4 ${accentText}`} aria-hidden="true" />
           Xem trước mục thư viện
@@ -251,7 +251,7 @@ export default function ContributionPreview({
 
   if (type === 'EDIT_COURSE') {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5">
+      <div className="staff-card staff-card--flat p-5">
         <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
           <Eye className={`w-4 h-4 ${accentText}`} aria-hidden="true" />
           Mục lục khóa học
@@ -263,7 +263,7 @@ export default function ContributionPreview({
 
   const levels = asArray<LevelLike>(obj.levels);
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-5">
+    <div className="staff-card staff-card--flat p-5">
       {header}
       {type !== 'NEW_COURSE' && (
         <Warning>Loại đóng góp &quot;{type}&quot; chưa được hỗ trợ xuất bản.</Warning>

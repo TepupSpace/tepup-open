@@ -11,9 +11,9 @@ export default function AdminHeader() {
   const name = session?.user?.name || 'Admin';
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-4 pl-16 pr-6 lg:pl-6">
+    <header className="h-16 staff-head border-b flex items-center justify-between gap-4 pl-16 pr-6 lg:pl-6">
       {/* Not a heading: every admin page has its own <h1> (one h1 per screen). */}
-      <p className="text-lg font-semibold text-gray-900 truncate">Quản trị Tepup</p>
+      <p className="text-lg font-semibold text-gray-700 truncate">Quản trị Tepup</p>
 
       <div className="flex items-center gap-4">
         {/* View site link: opens a new tab, so say so (WCAG 3.2.5 advisory, G201). */}
@@ -53,7 +53,7 @@ export default function AdminHeader() {
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: '/' })}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
             aria-label={`Đăng xuất (${name})`}
             title="Đăng xuất"
           >

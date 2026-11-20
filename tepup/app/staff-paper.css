@@ -1,0 +1,361 @@
+/* ============================================================================
+   Giao diện "giấy" cho khu nhân sự: /admin, /contributor và các trang đăng nhập.
+
+   Cùng cơ chế với trang học (components/learn/player-paper.css): lớp .staff nằm
+   cùng phần tử với .reader, đặt font giấy + nền giấy, rồi trỏ bảng màu Tailwind
+   về token --pl-* (sáng + tối định nghĩa trong scripts/gen-reader-css.mjs →
+   app/reader.css). Các trang viết cứng `bg-white`, `text-gray-600`, `bg-blue-600`…
+   tự ra màu giấy, cả ở chế độ tối, không cần sửa từng trang.
+
+   - Màu nhấn: blue và teal (màu nhấn cũ của admin / contributor) → đỏ giấy.
+     red, green, amber, purple… giữ bảng màu Tailwind (reader.css lo chế độ tối),
+     để trạng thái lỗi / đã duyệt / chờ vẫn phân biệt được.
+   - Chỉ dùng token --pl-*; không viết mã màu ở đây.
+   - File không nằm trong @layer nên thắng tiện ích Tailwind mà không cần !important.
+   - Component mới: dùng components/staff/* (Button, Card, PageHeader, Badge)
+     thay vì viết thêm `bg-blue-600 …`.
+   ========================================================================= */
+
+.staff {
+  --pl-sans: var(--font-be-vietnam), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pl-serif: var(--font-fraunces), var(--font-be-vietnam), Georgia, serif;
+  --staff-edge: color-mix(in srgb, var(--pl-line) 75%, var(--pl-line-strong));
+  --staff-red-edge: color-mix(in srgb, var(--pl-red-fill) 70%, black);
+  position: relative;
+  isolation: isolate;
+  background-color: var(--pl-page);
+  color: var(--pl-ink);
+  font-family: var(--pl-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Nền giấy như trang học viên; chế độ tối gần như tắt (token). */
+.staff::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url('/paper/page-bg.webp') center top / 100% auto repeat-y;
+  opacity: var(--pl-texture-opacity);
+  pointer-events: none;
+}
+
+.staff :focus-visible {
+  outline: 2px solid var(--pl-red);
+  outline-offset: 2px;
+}
+
+/* Tiêu đề trang (h1) và tiêu đề serif: Fraunces nghiêng như phần học viên.
+   Không đụng tiêu đề bên trong trình soạn thảo bài (BlockNote) và bản xem trước bài. */
+.staff h1:not(.tepup-lesson-editor *):not(.sr-only),
+.staff .staff-serif {
+  font-family: var(--pl-serif);
+  font-weight: 600;
+  font-style: italic;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  letter-spacing: -0.01em;
+  color: var(--pl-ink-strong);
+}
+
+/* Tiêu đề trang cũ (`text-2xl font-bold`): to hơn một nấc cho hợp chữ serif. */
+.staff h1.text-2xl:not(.tepup-lesson-editor *) {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+/* ---------- khung: thanh bên + đầu trang ---------- */
+.staff-side {
+  background-color: var(--pl-page);
+  border-color: var(--pl-line);
+}
+.staff-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.staff-logo img {
+  width: 2.25rem;
+  height: 2.25rem;
+  flex: 0 0 auto;
+}
+.staff-logo__name {
+  font-family: var(--pl-serif);
+  font-weight: 600;
+  font-style: italic;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--pl-ink-strong);
+}
+.staff-logo__area {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pl-red-text);
+}
+.staff-head {
+  background-color: color-mix(in srgb, var(--pl-page) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-color: var(--pl-line);
+}
+
+/* Nút nhấn chính (bg-blue-600 / bg-teal-700 cũ): nền đỏ giấy, chữ trắng ở cả hai chế độ.
+   Biến màu bên dưới trỏ 600–950 về màu CHỮ đỏ (đủ tương phản cho chữ, viền, vòng focus);
+   riêng nền đặc thì cần màu đổ đậm, nên ghi đè theo lớp. */
+.staff :is(.bg-blue-500, .bg-blue-600, .bg-blue-700, .bg-teal-600, .bg-teal-700, .bg-teal-800) {
+  background-color: var(--pl-red-fill);
+  color: var(--pl-on-red);
+}
+.staff :is(.hover\:bg-blue-600:hover, .hover\:bg-blue-700:hover, .hover\:bg-blue-800:hover, .hover\:bg-teal-700:hover, .hover\:bg-teal-800:hover, .hover\:bg-teal-900:hover) {
+  background-color: var(--pl-red-fill-hover);
+  color: var(--pl-on-red);
+}
+
+/* ---------- thành phần (components/staff/*) ---------- */
+/* Thẻ: trắng, bo 24px, mép dưới dày như thẻ chương ở trang khoá học. */
+.staff-card {
+  border-radius: 1.5rem;
+  background-color: var(--pl-card);
+  box-shadow: 0 6px 0 var(--staff-edge);
+}
+.staff-card--flat {
+  box-shadow: none;
+}
+
+/* Nút: viên thuốc như .lbtn của trang học. */
+.staff-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0 1.25rem;
+  border-radius: 1000px;
+  border: 1.5px solid transparent;
+  font-family: var(--pl-sans);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s, box-shadow 0.1s;
+}
+.staff-btn--sm {
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  font-size: 0.875rem;
+}
+.staff-btn--primary {
+  background-color: var(--pl-red-fill);
+  color: var(--pl-on-red);
+  box-shadow: 0 4px 0 var(--staff-red-edge);
+}
+.staff-btn--primary:hover {
+  background-color: var(--pl-red-fill-hover);
+}
+.staff-btn--primary:active:not([aria-disabled='true']) {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 var(--staff-red-edge);
+}
+.staff-btn--secondary {
+  background-color: var(--pl-card);
+  color: var(--pl-ink);
+  border-color: var(--pl-line-strong);
+}
+.staff-btn--secondary:hover {
+  background-color: var(--pl-card-hover);
+}
+.staff-btn--ghost {
+  background-color: transparent;
+  color: var(--pl-ink);
+}
+.staff-btn--ghost:hover {
+  background-color: var(--pl-card);
+}
+/* Nguy hiểm: viền đỏ lỗi, không đổ đặc, để khác nút chính (cũng đỏ). */
+.staff-btn--danger {
+  background-color: var(--pl-card);
+  color: var(--pl-wrong);
+  border-color: var(--pl-wrong);
+}
+.staff-btn--danger:hover {
+  background-color: var(--pl-wrong-bg);
+}
+.staff-btn[aria-disabled='true'] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.staff-btn[aria-busy='true'] {
+  cursor: wait;
+}
+
+/* Đầu trang: kicker + tiêu đề serif + mô tả + hành động. */
+.staff-pagehead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+.staff-pagehead__kicker {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--pl-red-text);
+}
+.staff .staff-pagehead h1 {
+  font-size: 2rem;
+  line-height: 1.15;
+}
+.staff-pagehead__desc {
+  margin-top: 0.375rem;
+  max-width: 48rem;
+  color: var(--pl-muted);
+}
+.staff-pagehead__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Nhãn trạng thái. */
+.staff-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.625rem;
+  border-radius: 1000px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.staff-badge--neutral { background-color: var(--pl-subtle); color: var(--pl-n700); box-shadow: inset 0 0 0 1px var(--pl-line); }
+.staff-badge--red { background-color: var(--pl-sel-bg); color: var(--pl-red-text); }
+.staff-badge--green { background-color: var(--pl-right-bg); color: var(--pl-green-text); }
+.staff-badge--warning { background-color: var(--pl-warning-bg); color: var(--pl-warning-text); }
+.staff-badge--wrong { background-color: var(--pl-wrong-bg); color: var(--pl-wrong); }
+.staff-badge--info { background-color: var(--pl-info-bg); color: var(--pl-info-text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .staff-btn {
+    transition: none;
+  }
+}
+
+/* ---- Bảng màu Tailwind trỏ về token giấy ---- */
+.staff {
+  --color-white: var(--pl-card);
+  --color-gray-50: var(--pl-subtle);
+  --color-gray-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-gray-200: var(--pl-line);
+  --color-gray-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-gray-400: var(--pl-n400);
+  --color-gray-500: var(--pl-muted);
+  --color-gray-600: var(--pl-n600);
+  --color-gray-700: var(--pl-n700);
+  --color-gray-800: var(--pl-ink);
+  --color-gray-900: var(--pl-ink);
+  --color-gray-950: var(--pl-ink-strong);
+  --color-slate-50: var(--pl-subtle);
+  --color-slate-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-slate-200: var(--pl-line);
+  --color-slate-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-slate-400: var(--pl-n400);
+  --color-slate-500: var(--pl-muted);
+  --color-slate-600: var(--pl-n600);
+  --color-slate-700: var(--pl-n700);
+  --color-slate-800: var(--pl-ink);
+  --color-slate-900: var(--pl-ink);
+  --color-slate-950: var(--pl-ink-strong);
+  --color-zinc-50: var(--pl-subtle);
+  --color-zinc-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-zinc-200: var(--pl-line);
+  --color-zinc-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-zinc-400: var(--pl-n400);
+  --color-zinc-500: var(--pl-muted);
+  --color-zinc-600: var(--pl-n600);
+  --color-zinc-700: var(--pl-n700);
+  --color-zinc-800: var(--pl-ink);
+  --color-zinc-900: var(--pl-ink);
+  --color-zinc-950: var(--pl-ink-strong);
+  --color-neutral-50: var(--pl-subtle);
+  --color-neutral-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-neutral-200: var(--pl-line);
+  --color-neutral-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-neutral-400: var(--pl-n400);
+  --color-neutral-500: var(--pl-muted);
+  --color-neutral-600: var(--pl-n600);
+  --color-neutral-700: var(--pl-n700);
+  --color-neutral-800: var(--pl-ink);
+  --color-neutral-900: var(--pl-ink);
+  --color-neutral-950: var(--pl-ink-strong);
+  --color-stone-50: var(--pl-subtle);
+  --color-stone-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-stone-200: var(--pl-line);
+  --color-stone-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-stone-400: var(--pl-n400);
+  --color-stone-500: var(--pl-muted);
+  --color-stone-600: var(--pl-n600);
+  --color-stone-700: var(--pl-n700);
+  --color-stone-800: var(--pl-ink);
+  --color-stone-900: var(--pl-ink);
+  --color-stone-950: var(--pl-ink-strong);
+  --color-blue-50: var(--pl-sel-bg);
+  --color-blue-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-blue-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-blue-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-blue-400: var(--pl-red);
+  --color-blue-500: var(--pl-red);
+  --color-blue-600: var(--pl-red-text);
+  --color-blue-700: var(--pl-red-text);
+  --color-blue-800: var(--pl-red-text);
+  --color-blue-900: var(--pl-red-text);
+  --color-blue-950: var(--pl-red-text);
+  --color-teal-50: var(--pl-sel-bg);
+  --color-teal-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-teal-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-teal-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-teal-400: var(--pl-red);
+  --color-teal-500: var(--pl-red);
+  --color-teal-600: var(--pl-red-text);
+  --color-teal-700: var(--pl-red-text);
+  --color-teal-800: var(--pl-red-text);
+  --color-teal-900: var(--pl-red-text);
+  --color-teal-950: var(--pl-red-text);
+}
+
+/* Ô thông tin (nền blue/teal-50 + viền cùng màu, kiểu "Bắt đầu đóng góp"): giữ tông xanh
+   "thông tin" như callout info của trang học, không đỏ (đỏ nhạt đọc như báo lỗi).
+   Đặt sau bảng màu chung nên thắng nó; biến áp cho cả phần tử lẫn chữ/liên kết bên trong. */
+.staff :is(.bg-blue-50, .bg-teal-50):is(.border-blue-100, .border-blue-200, .border-blue-300, .border-teal-100, .border-teal-200, .border-teal-300) {
+  --color-blue-50: var(--pl-info-bg);
+  --color-blue-100: color-mix(in srgb, var(--pl-info-bg) 85%, var(--pl-info-line));
+  --color-blue-200: color-mix(in srgb, var(--pl-info-bg) 60%, var(--pl-info-line));
+  --color-blue-300: color-mix(in srgb, var(--pl-info-bg) 40%, var(--pl-info-line));
+  --color-blue-400: var(--pl-info-line);
+  --color-blue-500: var(--pl-info-line);
+  --color-blue-600: var(--pl-info-text);
+  --color-blue-700: var(--pl-info-text);
+  --color-blue-800: var(--pl-info-text);
+  --color-blue-900: var(--pl-info-text);
+  --color-blue-950: var(--pl-info-text);
+  --color-teal-50: var(--pl-info-bg);
+  --color-teal-100: color-mix(in srgb, var(--pl-info-bg) 85%, var(--pl-info-line));
+  --color-teal-200: color-mix(in srgb, var(--pl-info-bg) 60%, var(--pl-info-line));
+  --color-teal-300: color-mix(in srgb, var(--pl-info-bg) 40%, var(--pl-info-line));
+  --color-teal-400: var(--pl-info-line);
+  --color-teal-500: var(--pl-info-line);
+  --color-teal-600: var(--pl-info-text);
+  --color-teal-700: var(--pl-info-text);
+  --color-teal-800: var(--pl-info-text);
+  --color-teal-900: var(--pl-info-text);
+  --color-teal-950: var(--pl-info-text);
+}

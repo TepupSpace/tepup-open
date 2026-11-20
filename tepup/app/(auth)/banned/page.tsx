@@ -5,7 +5,7 @@ export const metadata = { title: 'Tài khoản đã bị khóa | Tepup' };
 
 export default function BannedPage() {
   return (
-    <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+    <main id="main-content" className="min-h-screen flex items-center justify-center px-4">
       <div className="text-center max-w-md">
         <div className="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-2xl mb-4">
           <ShieldOff className="w-8 h-8 text-red-600" aria-hidden="true" />

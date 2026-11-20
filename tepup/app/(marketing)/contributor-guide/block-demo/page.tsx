@@ -194,7 +194,7 @@ const SECTIONS: { label: string; node: React.ReactNode }[] = [
 
 export default function BlockDemoPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="guide min-h-screen">
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-10">
         <Link
           href="/contributor-guide"
@@ -204,7 +204,7 @@ export default function BlockDemoPage() {
           Quay lại Hướng dẫn đóng góp
         </Link>
 
-        <h1 className="text-2xl font-bold text-gray-900 mb-1">Thư viện block tương tác</h1>
+        <h1 className="paper-serif text-4xl text-gray-900 mb-1">Thư viện block tương tác</h1>
         <p className="text-sm text-gray-500 mb-8">
           Các loại block tương tác được hỗ trợ trong trình soạn bài học.
         </p>

@@ -98,7 +98,7 @@ export default function NewCourseClient() {
         </p>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">
+      <div className="staff-card staff-card--flat p-6 max-w-2xl">
         {/* Always mounted, so the text is read when it appears. */}
         <div
           id="new-course-error"
@@ -181,7 +181,7 @@ export default function NewCourseClient() {
             type="submit"
             // aria-disabled, not disabled: the pressed button keeps focus while the draft is created.
             aria-disabled={isLoading || undefined}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-700 text-white font-medium rounded-xl hover:bg-teal-800 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+            className="staff-btn staff-btn--primary aria-disabled:opacity-60 aria-disabled:cursor-wait"
           >
             <Save className="w-4 h-4" aria-hidden="true" />
             {isLoading ? 'Đang tạo...' : 'Tạo bản nháp'}

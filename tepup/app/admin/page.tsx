@@ -167,35 +167,30 @@ export default async function AdminDashboard() {
       count: stats.categories,
       icon: FolderTree,
       href: '/admin/categories',
-      color: 'bg-purple-500',
     },
     {
       title: 'Khóa học',
       count: stats.courses,
       icon: BookOpen,
       href: '/admin/courses',
-      color: 'bg-blue-500',
     },
     {
       title: 'Bài học',
       count: stats.lessons,
       icon: GraduationCap,
       href: '/admin/courses',
-      color: 'bg-green-500',
     },
     {
       title: 'Nhân vật',
       count: stats.characters,
       icon: Users,
       href: '/admin/characters',
-      color: 'bg-orange-500',
     },
     {
       title: 'Câu chuyện',
       count: stats.stories,
       icon: BookMarked,
       href: '/admin/stories',
-      color: 'bg-pink-500',
     },
   ];
 
@@ -244,16 +239,16 @@ export default async function AdminDashboard() {
             <Link
               key={card.title}
               href={card.href}
-              className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-shadow"
+              className="staff-card p-6 transition-transform hover:-translate-y-0.5"
             >
               <div className="flex items-center gap-4">
                 <div
-                  className={`w-12 h-12 ${card.color} rounded-xl flex items-center justify-center`}
+                  className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center"
                 >
-                  <Icon className="w-6 h-6 text-white" />
+                  <Icon className="w-6 h-6 text-blue-700" aria-hidden="true" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{card.count}</p>
+                  <p className="staff-serif text-3xl leading-none">{card.count}</p>
                   <p className="text-sm text-gray-500">{card.title}</p>
                 </div>
               </div>
@@ -264,35 +259,35 @@ export default async function AdminDashboard() {
 
       {/* Quick Actions - admin only */}
       {isAdmin && (
-        <div className="bg-white rounded-2xl p-6 border border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <div className="staff-card p-6">
+          <h2 className="staff-serif text-2xl mb-4">
             Thao tác nhanh
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Link
               href="/admin/categories/new"
-              className="flex items-center gap-3 p-4 bg-purple-50 text-purple-700 rounded-xl hover:bg-purple-100 transition-colors"
+              className="flex items-center gap-3 p-4 bg-gray-50 text-gray-900 rounded-full hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
               <FolderTree className="w-5 h-5" />
               <span className="font-medium">Thêm danh mục</span>
             </Link>
             <Link
               href="/admin/courses/new"
-              className="flex items-center gap-3 p-4 bg-blue-50 text-blue-700 rounded-xl hover:bg-blue-100 transition-colors"
+              className="flex items-center gap-3 p-4 bg-gray-50 text-gray-900 rounded-full hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
               <BookOpen className="w-5 h-5" />
               <span className="font-medium">Thêm khóa học</span>
             </Link>
             <Link
               href="/admin/characters/new"
-              className="flex items-center gap-3 p-4 bg-orange-50 text-orange-700 rounded-xl hover:bg-orange-100 transition-colors"
+              className="flex items-center gap-3 p-4 bg-gray-50 text-gray-900 rounded-full hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
               <Users className="w-5 h-5" />
               <span className="font-medium">Thêm nhân vật</span>
             </Link>
             <Link
               href="/admin/stories/new"
-              className="flex items-center gap-3 p-4 bg-pink-50 text-pink-700 rounded-xl hover:bg-pink-100 transition-colors"
+              className="flex items-center gap-3 p-4 bg-gray-50 text-gray-900 rounded-full hover:bg-blue-50 hover:text-blue-700 transition-colors"
             >
               <BookMarked className="w-5 h-5" />
               <span className="font-medium">Thêm câu chuyện</span>

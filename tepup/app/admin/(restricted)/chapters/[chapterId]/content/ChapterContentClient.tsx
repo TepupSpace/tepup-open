@@ -263,7 +263,7 @@ export default function ChapterContentClient({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Editor */}
         <div className={showPreview ? '' : 'lg:col-span-2'}>
-          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <div className="staff-card p-6">
             {/* Block Editor */}
             <section aria-labelledby="chapter-editor-heading">
               <h2 id="chapter-editor-heading" className="block text-sm font-medium text-gray-700 mb-3">
@@ -277,7 +277,7 @@ export default function ChapterContentClient({
         {/* Preview */}
         {showPreview && (
           <section id="chapter-preview" aria-labelledby="chapter-preview-heading">
-            <div className="bg-white rounded-2xl border border-gray-100 p-6 sticky top-20">
+            <div className="staff-card p-6 sticky top-20">
               <h2 id="chapter-preview-heading" className="text-sm font-medium text-gray-600 mb-4">
                 Xem trước
               </h2>

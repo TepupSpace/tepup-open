@@ -559,7 +559,7 @@ export default function EditContributionClient() {
                 aria-disabled={isSubmitting || undefined}
                 aria-describedby="licence-submit-note"
                 title="Lưu bản mới nhất rồi gửi cho người duyệt"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium aria-disabled:opacity-60 aria-disabled:cursor-wait focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-60 aria-disabled:cursor-wait"
               >
                 <Send className="w-4 h-4" aria-hidden="true" />
                 {isSubmitting ? 'Đang gửi...' : contributionStatus === 'CHANGES_REQUESTED' ? 'Gửi lại' : 'Gửi duyệt'}
@@ -726,7 +726,7 @@ export default function EditContributionClient() {
 
       {/* Người duyệt trao đổi ở đây (ReviewDetail có cùng thảo luận); trước kia tác giả nhận
           thông báo "đã bình luận" mà không có chỗ nào đọc được. */}
-      <section aria-labelledby="contribution-discussion-heading" className="mt-8 bg-white rounded-xl border border-gray-100 p-5">
+      <section aria-labelledby="contribution-discussion-heading" className="mt-8 staff-card staff-card--flat p-5">
         <h2 id="contribution-discussion-heading" className="sr-only">
           Thảo luận
         </h2>
@@ -783,7 +783,7 @@ function EditProposalBody({
     const d = data as BlocksData;
     editor = (
       <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+        <div className="staff-card staff-card--flat p-4 sm:p-6">
           <label htmlFor="proposal-title" className="block text-sm font-medium text-gray-700 mb-1">
             Tiêu đề nội dung
           </label>
@@ -800,7 +800,7 @@ function EditProposalBody({
             className={inputClass}
           />
         </div>
-        <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-6">
+        <div className="staff-card staff-card--flat p-3 sm:p-6">
           {editable ? (
             <NotionBlockEditor
               key={`proposal-${editorKey}`}
@@ -870,7 +870,7 @@ function EditProposalBody({
       <div className={suggestion ? 'grid grid-cols-1 gap-4 lg:grid-cols-[1fr_18rem]' : ''}>
         <div className="min-w-0 space-y-4">
           {editor}
-          <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+          <div className="staff-card staff-card--flat p-4 sm:p-6">
             <label htmlFor="contribution-message" className="block text-sm font-medium text-gray-700 mb-1">
               Lời nhắn cho người duyệt <span className="font-normal text-gray-600">(tuỳ chọn)</span>
             </label>
@@ -1009,7 +1009,7 @@ function NewCourseEditor({
     <div className="flex flex-col lg:flex-row gap-4 lg:gap-6">
       {/* Left sidebar - course structure */}
       <div className="w-full lg:w-72 lg:flex-shrink-0">
-        <nav aria-label="Cấu trúc khóa học" className="bg-white rounded-xl border border-gray-100 p-4 lg:sticky lg:top-6">
+        <nav aria-label="Cấu trúc khóa học" className="staff-card staff-card--flat p-4 lg:sticky lg:top-6">
           {/* Course overview */}
           <button
             type="button"
@@ -1206,7 +1206,7 @@ function CourseOverviewEditor({
   const course = data.course;
   const slugPreview = slugify(course.name || '') || 'khoa-hoc';
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+    <div className="staff-card staff-card--flat p-4 sm:p-6">
       <h2 tabIndex={-1} className="text-lg font-semibold text-gray-900 mb-4">Thông tin khóa học</h2>
       <div className="space-y-4">
         <div>
@@ -1291,7 +1291,7 @@ function LevelEditor({
   onRemoveLesson: (lessonIdx: number) => void;
 }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6">
+    <div className="staff-card staff-card--flat p-4 sm:p-6">
       <div className="flex items-center justify-between mb-4">
         <h2 tabIndex={-1} className="text-lg font-semibold text-gray-900">Cấp độ {levelIdx + 1}</h2>
         {!readOnly && (
@@ -1401,7 +1401,7 @@ function LessonEditor({
         Quay lại cấp độ
       </button>
 
-      <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-6 mb-4">
+      <div className="staff-card staff-card--flat p-4 sm:p-6 mb-4">
         <h2 tabIndex={-1} className="text-lg font-semibold text-gray-900 mb-4 break-words">
           {lesson.name || 'Bài học'}
         </h2>
@@ -1437,7 +1437,7 @@ function LessonEditor({
       </div>
 
       {/* Block Editor */}
-      <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-6">
+      <div className="staff-card staff-card--flat p-3 sm:p-6">
         {readOnly ? (
           <>
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Nội dung bài học</h3>

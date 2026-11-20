@@ -45,7 +45,7 @@ export default async function DraftsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Bản nháp</h1>
         <Link
           href="/contributor/courses/new"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-xl hover:bg-teal-800 transition-colors font-medium text-sm"
+          className="staff-btn staff-btn--primary"
         >
           Tạo mới
         </Link>
@@ -54,13 +54,13 @@ export default async function DraftsPage() {
       <DraftSubmitResult />
 
       {contributions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="staff-card staff-card--flat p-12 text-center">
           <FileEdit className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
           <p className="text-gray-500 mb-4">Chưa có bản nháp nào.</p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
               href="/contributor/courses"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-teal-700 text-white rounded-lg hover:bg-teal-800 text-sm font-medium"
+              className="staff-btn staff-btn--primary"
             >
               Tìm bài để sửa
             </Link>
@@ -85,7 +85,7 @@ export default async function DraftsPage() {
             return (
               <div
                 key={contribution.id}
-                className="bg-white rounded-xl border border-gray-100 p-5 hover:shadow-sm transition-shadow"
+                className="staff-card staff-card--flat p-5 hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

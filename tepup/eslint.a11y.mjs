@@ -15,6 +15,7 @@ export const a11yFiles = [
   "app/contributor/**/*.{ts,tsx}",
   "components/admin/**/*.{ts,tsx}",
   "components/contributor/**/*.{ts,tsx}",
+  "components/staff/**/*.{ts,tsx}",
   "components/review/**/*.{ts,tsx}",
   "components/pwa/**/*.{ts,tsx}",
   "app/(learn)/**/*.{ts,tsx}",

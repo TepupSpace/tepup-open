@@ -187,7 +187,7 @@ export default function AuditLogClient() {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+            className="staff-btn staff-btn--primary"
           >
             Lọc
           </button>
@@ -208,7 +208,7 @@ export default function AuditLogClient() {
         {error && <p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="staff-card staff-card--flat overflow-x-auto">
         <table className="w-full text-sm">
           <caption className="sr-only">Nhật ký quản trị, mới nhất trước</caption>
           <thead className="bg-gray-50 border-b border-gray-100">

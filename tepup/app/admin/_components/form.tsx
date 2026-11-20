@@ -5,10 +5,10 @@ import Link from '@/components/ui/AppLink';
  * Mảnh dùng chung cho các form quản trị.
  *
  * - Viền ô nhập gray-500 (≥ 3:1 so với nền, WCAG 1.4.11); gray-200 cũ gần như không thấy.
- * - Vòng focus blue-600; `aria-invalid` tô viền đỏ cho ô đang lỗi.
+ * - Vòng focus blue-600 (đỏ giấy trong .staff); `aria-invalid` tô viền đỏ cho ô đang lỗi.
  */
 export const inputClass =
-  'w-full px-4 py-3 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent aria-[invalid=true]:border-red-600';
+  'w-full px-4 py-3 bg-white border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent aria-[invalid=true]:border-red-600';
 
 export const labelClass = 'block text-sm font-medium text-gray-700 mb-1';
 

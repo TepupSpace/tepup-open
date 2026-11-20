@@ -5,6 +5,8 @@ import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminHeader from '@/components/admin/AdminHeader';
 import DesktopOnlyNotice from '@/components/mobile/DesktopOnlyNotice';
 import { SessionProvider } from 'next-auth/react';
+import { fraunces, beVietnam } from '@/lib/fonts/paper';
+import '@/app/staff-paper.css';
 
 export const metadata = {
   // Trang con đặt `metadata.title` riêng ("Khoá học", "Bản nháp"…): mỗi trang một tiêu đề, để
@@ -29,8 +31,9 @@ export default async function AdminLayout({
   return (
     <SessionProvider>
       <DesktopOnlyNotice />
-      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học. */}
-      <div className="reader min-h-screen bg-gray-50">
+      {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học.
+          `staff`: giao diện giấy (app/staff-paper.css), dùng token --pl-* nên chế độ tối vẫn chạy. */}
+      <div className={`reader staff ${fraunces.variable} ${beVietnam.variable} min-h-screen`}>
         <AdminSidebar />
         <div className="lg:pl-64 transition-all duration-300">
           <AdminHeader />

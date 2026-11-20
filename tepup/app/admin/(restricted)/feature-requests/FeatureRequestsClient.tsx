@@ -144,7 +144,7 @@ export default function FeatureRequestsClient() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
+      <div className="staff-card staff-card--flat overflow-hidden">
         <table className="w-full">
           <caption className="sr-only">Danh sách yêu cầu tính năng, trang {page}. Bấm tiêu đề để xem mô tả.</caption>
           <thead className="bg-gray-50 border-b border-gray-100">

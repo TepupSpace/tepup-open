@@ -24,14 +24,14 @@ export const metadata = {
 
 export default function ContributorGuidePage() {
   return (
-    <div className="bg-gray-50">
+    <div className="guide guide--accent">
       <main id="main-content" className="max-w-3xl mx-auto px-4 py-12">
         {/* Hero */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 rounded-2xl mb-4">
             <BookOpen className="w-8 h-8 text-teal-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-3">
+          <h1 className="paper-serif text-4xl text-gray-900 mb-3">
             Hướng dẫn Đóng góp cho Tepup
           </h1>
           <p className="text-lg text-gray-600 max-w-xl mx-auto">
@@ -41,8 +41,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 1: Tepup là gì */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">1</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">1</span>
             Tepup là gì & Tại sao cần bạn?
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -57,8 +57,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 2: Cách tạo tài khoản */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">2</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">2</span>
             Cách tạo tài khoản
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -89,8 +89,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 3: Quy trình đóng góp */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">3</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">3</span>
             Quy trình đóng góp
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -153,8 +153,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 4: Access levels and course roles */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">4</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">4</span>
             Cấp truy cập và vai trò trong khóa học
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -238,8 +238,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 5: Hướng dẫn viết nội dung */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">5</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">5</span>
             Hướng dẫn viết nội dung chất lượng
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6">
@@ -341,8 +341,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 6: Giấy phép, ghi công, lịch sử (the public footer links to #ghi-cong) */}
         <section id="ghi-cong" className="mb-10 scroll-mt-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">6</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">6</span>
             Giấy phép, ghi công và lịch sử
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4 text-sm text-gray-700">
@@ -372,8 +372,8 @@ export default function ContributorGuidePage() {
 
         {/* Section 7: FAQ */}
         <section className="mb-10">
-          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-lg text-sm font-bold">7</span>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-4 flex items-center gap-3">
+            <span className="flex items-center justify-center w-8 h-8 bg-teal-100 text-teal-700 rounded-full text-sm font-bold">7</span>
             Câu hỏi thường gặp
           </h2>
           <div className="space-y-3">
@@ -413,11 +413,11 @@ export default function ContributorGuidePage() {
 
         {/* CTA */}
         <div className="text-center py-8 border-t border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Sẵn sàng đóng góp?</h2>
+          <h2 className="paper-serif text-2xl text-gray-900 mb-2">Sẵn sàng đóng góp?</h2>
           <p className="text-gray-600 mb-6">Tạo tài khoản ẩn danh và bắt đầu chia sẻ kiến thức.</p>
           <Link
             href="/register-contributor"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-teal-700 text-white font-semibold rounded-xl hover:bg-teal-800 transition-all"
+            className="paper-btn"
           >
             Đăng ký ngay
             <ArrowRight className="w-5 h-5" />

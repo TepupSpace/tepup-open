@@ -113,7 +113,7 @@ export default function RegisterContributorForm() {
     [hint, errorField === field ? 'register-error' : null].filter(Boolean).join(' ') || undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="p-4">
         <Link
@@ -134,17 +134,18 @@ export default function RegisterContributorForm() {
               href="/"
               className="inline-flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
             >
-              <span className="w-12 h-12 bg-teal-700 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-2xl" aria-hidden="true">T</span>
-                <span className="sr-only">Tepup</span>
+              <span className="staff-logo justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element -- biểu tượng cố định, next/image chỉ thêm wrapper thừa */}
+                <img src="/paper/favicon.svg" alt="" width={36} height={36} />
+                <span className="staff-logo__name">Tépup</span>
               </span>
             </Link>
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">{TERMS.signUp}</h1>
+            <h1 className="mt-4 text-3xl text-gray-900">{TERMS.signUp}</h1>
             <p className="mt-2 text-gray-600">Tạo tài khoản để đóng góp ẩn danh — không cần email, không cần tên thật</p>
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="staff-card p-6 sm:p-8">
             {/* Always mounted, so the text is read when it appears. */}
             <div
               id="register-error"
@@ -294,7 +295,7 @@ export default function RegisterContributorForm() {
                 type="submit"
                 // aria-disabled, not disabled: the pressed button keeps focus while the account is created.
                 aria-disabled={isLoading || undefined}
-                className="w-full py-3 bg-teal-700 text-white font-semibold rounded-xl hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all"
+                className="w-full py-3 bg-teal-700 text-white font-semibold rounded-full hover:bg-teal-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all"
               >
                 {isLoading ? 'Đang tạo tài khoản...' : 'Tạo tài khoản'}
               </button>

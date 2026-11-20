@@ -142,7 +142,7 @@ function BlockPreview({ config }: { config: CustomBlockTypeConfig }) {
           <button
             type="button"
             onClick={handleRetry}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="staff-btn staff-btn--primary"
           >
             <RefreshCw className="w-4 h-4" />
             Tải lại
@@ -185,7 +185,7 @@ function EditorSchemaPreview({ config }: { config: CustomBlockTypeConfig }) {
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div className="staff-card overflow-hidden">
       <div className="px-5 py-4 bg-gray-50 border-b border-gray-200">
         <h2 className="font-semibold text-gray-800 text-sm">Trường cấu hình (admin thấy khi thêm block)</h2>
         <p className="text-xs text-gray-600 mt-0.5">
@@ -350,7 +350,7 @@ function SaveModal({ config, onSave, onClose, isSaving, saveError = '', initialN
           <button
             type="submit"
             aria-disabled={isSaving || undefined}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+            className="staff-btn staff-btn--primary flex-1 aria-disabled:opacity-70 aria-disabled:cursor-wait"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {isSaving ? 'Đang lưu…' : 'Lưu'}
@@ -642,7 +642,7 @@ function BlockBuilderNewPageInner() {
             <button
               type="button"
               onClick={() => setConfirmReset(true)}
-              className="flex items-center gap-1.5 px-3 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              className="staff-btn staff-btn--ghost"
             >
               <RotateCcw className="w-4 h-4" />
               Làm mới
@@ -652,7 +652,7 @@ function BlockBuilderNewPageInner() {
             type="button"
             onClick={() => { setSaveError(''); setShowSaveModal(true); }}
             disabled={!currentConfig}
-            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            className="staff-btn staff-btn--primary disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             Lưu block
@@ -749,7 +749,7 @@ function BlockBuilderNewPageInner() {
         <div className="flex flex-col gap-3 min-h-0">
 
           {/* Prompt input */}
-          <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-shrink-0">
+          <div className="staff-card p-4 flex-shrink-0">
             <div className="flex items-center gap-2 mb-3">
               <Sparkles className="w-4 h-4 text-blue-600" />
               <label htmlFor="block-prompt" className="text-sm font-medium text-gray-700">
@@ -857,7 +857,7 @@ function BlockBuilderNewPageInner() {
 
           {/* Example prompts */}
           {!currentConfig && !isGenerating && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-shrink-0">
+            <div className="staff-card p-4 flex-shrink-0">
               <h2 className="text-xs font-medium text-gray-600 mb-3">Ví dụ mô tả</h2>
               <div className="space-y-2">
                 {EXAMPLE_PROMPTS.map((p, i) => (
@@ -880,7 +880,7 @@ function BlockBuilderNewPageInner() {
 
           {/* History */}
           {history.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-1 min-h-0 overflow-y-auto">
+            <div className="staff-card p-4 flex-1 min-h-0 overflow-y-auto">
               <h2 className="text-xs font-medium text-gray-600 mb-3">Lịch sử chỉnh sửa</h2>
               <div className="space-y-2">
                 {history.map((entry) => (
@@ -906,7 +906,7 @@ function BlockBuilderNewPageInner() {
 
           {/* Config summary */}
           {currentConfig && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4 flex-shrink-0">
+            <div className="staff-card p-4 flex-shrink-0">
               <h2 className="text-xs font-medium text-gray-600 mb-2">Block đã tạo</h2>
               <div className="text-sm font-semibold text-gray-800">{currentConfig.name}</div>
               {currentConfig.description && (

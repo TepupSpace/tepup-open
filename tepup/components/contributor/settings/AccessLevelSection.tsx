@@ -146,7 +146,7 @@ export default function AccessLevelSection() {
     <section
       id="access-level"
       aria-labelledby="access-level-heading"
-      className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl scroll-mt-20"
+      className="staff-card staff-card--flat p-6 max-w-2xl scroll-mt-20"
     >
       <h2 id="access-level-heading" tabIndex={-1} className="text-lg font-semibold text-gray-900 mb-1 flex items-center gap-2">
         <Shield className="w-5 h-5 text-teal-700" aria-hidden="true" />
@@ -231,7 +231,7 @@ export default function AccessLevelSection() {
             <button
               type="submit"
               aria-disabled={busy || undefined}
-              className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 aria-disabled:cursor-wait aria-disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+              className="staff-btn staff-btn--primary aria-disabled:cursor-wait aria-disabled:opacity-60"
             >
               {busy ? 'Đang gửi…' : 'Gửi yêu cầu'}
             </button>
@@ -241,7 +241,7 @@ export default function AccessLevelSection() {
                 setFormOpen(false);
                 setError('');
               }}
-              className="rounded-xl px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+              className="staff-btn staff-btn--ghost"
             >
               Hủy
             </button>

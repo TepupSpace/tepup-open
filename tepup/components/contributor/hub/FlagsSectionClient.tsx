@@ -198,7 +198,7 @@ export default function FlagsSectionClient({
           </div>
           <button
             type="submit"
-            className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 aria-disabled:cursor-not-allowed aria-disabled:opacity-70"
+            className="staff-btn staff-btn--primary aria-disabled:cursor-not-allowed aria-disabled:opacity-70"
             {...busyProps}
           >
             {busy === 'add' && <Spinner size="sm" tone="onDark" />}

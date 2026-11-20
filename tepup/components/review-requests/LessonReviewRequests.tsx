@@ -154,7 +154,7 @@ export function SendToReviewerDialog({
           type="button"
           onClick={() => void submit()}
           aria-disabled={busy}
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 aria-disabled:opacity-60"
+          className="staff-btn staff-btn--primary aria-disabled:opacity-60"
         >
           {busy ? 'Đang gửi…' : `Gửi (${selected.size})`}
         </button>

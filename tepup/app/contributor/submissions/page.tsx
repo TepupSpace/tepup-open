@@ -52,7 +52,7 @@ export default async function SubmissionsPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Đã gửi duyệt</h1>
 
       {contributions.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+        <div className="staff-card staff-card--flat p-12 text-center">
           <Send className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
           <p className="text-gray-500">Chưa có đóng góp nào được gửi duyệt.</p>
         </div>
@@ -86,7 +86,7 @@ export default async function SubmissionsPage() {
             return (
               <div
                 key={contribution.id}
-                className="bg-white rounded-xl border border-gray-100 p-5"
+                className="staff-card staff-card--flat p-5"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">

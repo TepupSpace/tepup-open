@@ -22,7 +22,7 @@ export default function ReviewQueueList({
 
   if (items.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-12 text-center">
+      <div className="staff-card staff-card--flat p-12 text-center">
         <CheckSquare className="w-12 h-12 text-gray-500 mx-auto mb-3" aria-hidden="true" />
         <p className="text-gray-500">Không có đóng góp nào cần duyệt.</p>
       </div>

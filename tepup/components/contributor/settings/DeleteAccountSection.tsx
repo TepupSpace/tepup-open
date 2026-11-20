@@ -130,7 +130,7 @@ function DeleteAccountDialog({ username, onCancel }: { username: string; onCance
             onClick={() => {
               if (!busy && !done) onCancel();
             }}
-            className="rounded-xl px-4 py-2 text-gray-600 transition-colors hover:bg-gray-100"
+            className="staff-btn staff-btn--ghost"
           >
             Hủy
           </button>

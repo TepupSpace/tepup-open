@@ -26,7 +26,7 @@ export default async function LoginPage({
   return (
     <Suspense
       fallback={
-        <main id="main-content" className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <main id="main-content" className="min-h-screen flex items-center justify-center">
           <h1 className="sr-only">Đăng nhập vào Tepup</h1>
           <div role="status">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" aria-hidden="true"></div>

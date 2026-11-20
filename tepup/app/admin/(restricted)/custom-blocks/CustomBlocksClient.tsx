@@ -83,7 +83,7 @@ export default function CustomBlocksClient() {
         </div>
         <Link
           href="/admin/custom-blocks/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="staff-btn staff-btn--primary"
         >
           <Plus className="w-5 h-5" />
           <span>Tạo block mới</span>
@@ -122,7 +122,7 @@ export default function CustomBlocksClient() {
 
       {/* Block types grid */}
       {!isLoading && !error && blockTypes.length === 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-16 text-center">
+        <div className="staff-card p-16 text-center">
           <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <Puzzle className="w-8 h-8 text-gray-500" />
           </div>
@@ -130,7 +130,7 @@ export default function CustomBlocksClient() {
           <p className="text-gray-500 mb-6">Tạo loại block đầu tiên bằng mô tả cho AI</p>
           <Link
             href="/admin/custom-blocks/new"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+            className="staff-btn staff-btn--primary"
           >
             <Plus className="w-4 h-4" />
             Tạo block đầu tiên
@@ -147,7 +147,7 @@ export default function CustomBlocksClient() {
             return (
               <li
                 key={bt.id}
-                className="bg-white rounded-2xl border border-gray-100 p-5 hover:shadow-md transition-shadow"
+                className="staff-card p-5 hover:shadow-md transition-shadow"
               >
                 {/* Card header */}
                 <div className="flex items-start gap-3 mb-3">

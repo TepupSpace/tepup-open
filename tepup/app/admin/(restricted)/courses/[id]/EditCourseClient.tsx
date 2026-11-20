@@ -226,7 +226,7 @@ export default function EditCourseClient({
       </nav>
 
       {/* Form */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+      <div className="staff-card p-6">
         <FormError message={error} />
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -393,14 +393,14 @@ export default function EditCourseClient({
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
             <Link
               href="/admin/courses"
-              className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+              className="staff-btn staff-btn--ghost"
             >
               Hủy
             </Link>
             <button
               type="submit"
               aria-disabled={saving || undefined}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+              className="staff-btn staff-btn--primary aria-disabled:opacity-70 aria-disabled:cursor-wait"
             >
               <Save className="w-4 h-4" />
               <span>{saving ? 'Đang lưu...' : 'Lưu thay đổi'}</span>

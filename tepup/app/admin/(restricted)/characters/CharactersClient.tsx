@@ -99,7 +99,7 @@ export default function CharactersClient() {
         </div>
         <Link
           href="/admin/characters/new"
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="staff-btn staff-btn--primary"
         >
           <Plus className="w-5 h-5" />
           <span>Thêm nhân vật</span>
@@ -109,7 +109,7 @@ export default function CharactersClient() {
       {/* Characters Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {characters.length === 0 ? (
-          <div className="col-span-full bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <div className="col-span-full staff-card p-12 text-center">
             <p className="text-gray-500">
               Chưa có nhân vật nào. Hãy tạo nhân vật đầu tiên!
             </p>
@@ -120,7 +120,7 @@ export default function CharactersClient() {
             return (
               <div
                 key={character.id}
-                className="bg-white rounded-2xl border border-gray-100 p-6 hover:shadow-md transition-shadow"
+                className="staff-card p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-4">

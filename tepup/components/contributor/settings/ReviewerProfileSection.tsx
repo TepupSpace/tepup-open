@@ -124,7 +124,7 @@ export default function ReviewerProfileSection() {
   };
 
   return (
-    <section aria-labelledby="reviewer-profile-heading" className="bg-white rounded-xl border border-gray-100 p-6 max-w-2xl">
+    <section aria-labelledby="reviewer-profile-heading" className="staff-card staff-card--flat p-6 max-w-2xl">
       <h2 id="reviewer-profile-heading" className="text-lg font-semibold text-gray-900 mb-1">
         Hồ sơ người duyệt tin cậy
       </h2>
@@ -268,7 +268,7 @@ export default function ReviewerProfileSection() {
         <button
           type="submit"
           aria-disabled={busy || undefined}
-          className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-sm font-medium text-white hover:bg-teal-800 aria-disabled:cursor-wait aria-disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+          className="staff-btn staff-btn--primary aria-disabled:cursor-wait aria-disabled:opacity-60"
         >
           <Save className="h-4 w-4" aria-hidden="true" />
           {busy ? 'Đang lưu…' : 'Lưu hồ sơ'}

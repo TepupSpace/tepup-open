@@ -1,0 +1,55 @@
+/* Hướng dẫn đóng góp trong khung giấy (PaperShell, theme sáng cố định).
+
+   - .paper đặt margin 0 cho p/h1–h3 (thắng tiện ích Tailwind): khôi phục các mb-* trang dùng.
+   - Thẻ trắng: bo 24px, mép dưới dày như thẻ chương ở trang khoá học.
+   - .guide--accent (chỉ trang hướng dẫn, không phải /block-demo vì block phải giữ đúng màu
+     như người học thấy): teal/blue cũ → đỏ giấy. -600 trở lên dùng --red-hover (#c83622),
+     đủ 4.5:1 trên nền trắng cho chữ nhỏ. */
+
+.paper .guide :is(p, h1, h2, h3).mb-1 { margin-bottom: 0.25rem; }
+.paper .guide :is(p, h1, h2, h3).mb-2 { margin-bottom: 0.5rem; }
+.paper .guide :is(p, h1, h2, h3).mb-3 { margin-bottom: 0.75rem; }
+.paper .guide :is(p, h1, h2, h3).mb-4 { margin-bottom: 1rem; }
+.paper .guide :is(p, h1, h2, h3).mb-6 { margin-bottom: 1.5rem; }
+.paper .guide :is(p, h1, h2, h3).mb-8 { margin-bottom: 2rem; }
+
+.guide .bg-white:is(.rounded-xl, .rounded-2xl) {
+  border-radius: 1.5rem;
+  border-color: transparent;
+  box-shadow: 0 6px 0 #dcdcdc;
+}
+
+.guide--accent {
+  --color-teal-50: color-mix(in srgb, var(--red) 8%, white);
+  --color-teal-100: color-mix(in srgb, var(--red) 13%, white);
+  --color-teal-200: color-mix(in srgb, var(--red) 28%, white);
+  --color-teal-300: color-mix(in srgb, var(--red) 45%, white);
+  --color-teal-400: var(--red);
+  --color-teal-500: var(--red);
+  --color-teal-600: var(--red-hover);
+  --color-teal-700: var(--red-hover);
+  --color-teal-800: var(--red-hover);
+  --color-teal-900: var(--red-hover);
+  --color-blue-50: color-mix(in srgb, var(--red) 8%, white);
+  --color-blue-100: color-mix(in srgb, var(--red) 13%, white);
+  --color-blue-200: color-mix(in srgb, var(--red) 28%, white);
+  --color-blue-300: color-mix(in srgb, var(--red) 45%, white);
+  --color-blue-400: var(--red);
+  --color-blue-500: var(--red);
+  --color-blue-600: var(--red-hover);
+  --color-blue-700: var(--red-hover);
+  --color-blue-800: var(--red-hover);
+  --color-blue-900: var(--red-hover);
+}
+/* Nền đặc + chữ trắng (nút "Đăng ký"…): đổ đỏ. */
+.guide--accent :is(.bg-teal-600, .bg-teal-700, .bg-blue-600, .bg-blue-700) {
+  background-color: var(--red-fill);
+  color: #fff;
+}
+.guide--accent :is(.hover\:bg-teal-700, .hover\:bg-teal-800, .hover\:bg-blue-700, .hover\:bg-blue-800):hover {
+  background-color: var(--red-hover);
+}
+
+.paper .guide :is(p, h1, h2, h3).mx-auto {
+  margin-inline: auto;
+}

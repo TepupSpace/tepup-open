@@ -98,13 +98,13 @@ export default function SuggestionQueue({ canEdit }: { canEdit: boolean }) {
       {items === null ? (
         <p className="text-sm text-gray-500">Đang tải…</p>
       ) : items.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-sm text-gray-500">
+        <div className="staff-card staff-card--flat p-8 text-center text-sm text-gray-500">
           Không có góp ý nào đang chờ.
         </div>
       ) : (
         <div className="space-y-3">
           {items.map((s) => (
-            <div key={s.id} className="bg-white rounded-xl border border-gray-100 p-5">
+            <div key={s.id} className="staff-card staff-card--flat p-5">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[s.status]}`}>
                   {SUGGESTION_STATUS_LABELS[s.status]}

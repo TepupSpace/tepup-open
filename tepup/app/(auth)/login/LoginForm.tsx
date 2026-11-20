@@ -68,7 +68,7 @@ export default function LoginForm() {
   const describedBy = error ? 'login-error' : undefined;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
       <header className="p-4">
         <Link
@@ -89,17 +89,18 @@ export default function LoginForm() {
               href="/"
               className="inline-flex items-center gap-2 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             >
-              <span className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
-                <span className="text-white font-bold text-2xl" aria-hidden="true">T</span>
-                <span className="sr-only">Tepup</span>
+              <span className="staff-logo justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element -- biểu tượng cố định, next/image chỉ thêm wrapper thừa */}
+                <img src="/paper/favicon.svg" alt="" width={36} height={36} />
+                <span className="staff-logo__name">Tépup</span>
               </span>
             </Link>
-            <h1 className="mt-4 text-2xl font-bold text-gray-900">Đăng nhập vào Tepup</h1>
+            <h1 className="mt-4 text-3xl text-gray-900">Đăng nhập vào Tepup</h1>
             <p className="mt-2 text-gray-600">Dành cho người đóng góp, người duyệt bài và quản trị viên. Học trên Tepup không cần tài khoản.</p>
           </div>
 
           {/* Form */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="staff-card p-6 sm:p-8">
             {justRegistered && (
               // Server-rendered with the page (it came in the URL), so it's in the reading order
               // right before the form rather than announced.
@@ -170,7 +171,7 @@ export default function LoginForm() {
                 type="submit"
                 // aria-disabled, not disabled: the pressed button keeps focus while signing in.
                 aria-disabled={isLoading || undefined}
-                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all"
+                className="w-full py-3 bg-blue-600 text-white font-semibold rounded-full hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 aria-disabled:opacity-60 aria-disabled:cursor-wait transition-all"
               >
                 {isLoading ? 'Đang đăng nhập...' : 'Đăng nhập'}
               </button>

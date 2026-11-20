@@ -399,7 +399,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
         {/* Left: content */}
         <div className="lg:col-span-2 space-y-4 min-w-0">
           {courseData.course && !isEdit && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="staff-card staff-card--flat p-5">
               <h2 className="font-semibold text-gray-900 mb-3">Thông tin khóa học</h2>
               <div className="space-y-2 text-sm">
                 <div><span className="text-gray-600">Tên:</span> <span className="font-medium">{courseData.course.name}</span></div>
@@ -420,7 +420,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
             ringClass={c.ring}
             panels={{
               changes: (
-                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <div className="staff-card staff-card--flat p-5">
                   <h2 className="sr-only">Thay đổi so với bản tác giả bắt đầu</h2>
                   {contribution.baseSnapshot == null && contribution.type !== 'EDIT_COURSE' && (
                     <p className="mb-3 text-sm text-gray-600">Khi đề xuất bắt đầu, {noun} này chưa có nội dung.</p>
@@ -437,7 +437,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
                 </p>
               ),
               discussion: (
-                <div className="bg-white rounded-xl border border-gray-100 p-5">
+                <div className="staff-card staff-card--flat p-5">
                   <h2 className="sr-only">Thảo luận</h2>
                   <DiscussionThread targetType="CONTRIBUTION" targetId={contribution.id} />
                 </div>
@@ -447,7 +447,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
 
           {/* Previous reviews */}
           {contribution.reviews.length > 0 && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="staff-card staff-card--flat p-5">
               <h2 className="font-semibold text-gray-900 mb-3">Lịch sử duyệt</h2>
               <div className="space-y-2">
                 {contribution.reviews.map((review) => (
@@ -479,7 +479,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
 
         {/* Right: contributor info + actions */}
         <div className="space-y-4">
-          <div className="bg-white rounded-xl border border-gray-100 p-5">
+          <div className="staff-card staff-card--flat p-5">
             <h2 className="font-semibold text-gray-900 mb-3">Người đóng góp</h2>
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 ${c.avatarBg} rounded-full flex items-center justify-center`}>
@@ -508,7 +508,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
           </div>
 
           {isPending && liveInfo?.decideBlockedReason !== 'OWN' && (
-            <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="staff-card staff-card--flat p-5">
               <EscalateButton
                 targetType="CONTRIBUTION"
                 id={contribution.id}
@@ -538,7 +538,7 @@ export default function ReviewDetail({ id, accent }: { id: string; accent: Accen
                 e.preventDefault();
                 void handleSubmit();
               }}
-              className="bg-white rounded-xl border border-gray-100 p-5"
+              className="staff-card staff-card--flat p-5"
             >
               <h2 className="font-semibold text-gray-900 mb-3">Hành động</h2>
 

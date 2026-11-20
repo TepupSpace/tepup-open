@@ -183,7 +183,7 @@ export default function LibraryClient() {
       </p>
 
       {/* Documents Table */}
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="staff-card overflow-hidden">
         <table className="w-full">
           <caption className="sr-only">Danh sách tài liệu thư viện</caption>
           <thead className="bg-gray-50 border-b border-gray-100">

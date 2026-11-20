@@ -497,7 +497,7 @@ export default function LevelsClient({
             setDialogError('');
             setShowLevelModal(true);
           }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+          className="staff-btn staff-btn--primary"
         >
           <Plus className="w-5 h-5" />
           <span>Thêm cấp độ</span>
@@ -531,7 +531,7 @@ export default function LevelsClient({
       {/* Levels List */}
       <div className="space-y-4">
         {levels.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-gray-100 p-12 text-center">
+          <div className="staff-card p-12 text-center">
             <p className="text-gray-500">
               Chưa có cấp độ nào. Hãy thêm cấp độ đầu tiên!
             </p>
@@ -820,14 +820,14 @@ export default function LevelsClient({
               <button
                 type="button"
                 onClick={closeLevelModal}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="staff-btn staff-btn--ghost"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 aria-disabled={saving || undefined}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-70 aria-disabled:cursor-wait"
               >
                 {saving ? 'Đang lưu...' : 'Lưu'}
               </button>
@@ -872,14 +872,14 @@ export default function LevelsClient({
               <button
                 type="button"
                 onClick={closeLessonModal}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                className="staff-btn staff-btn--ghost"
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 aria-disabled={saving || undefined}
-                className="px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 aria-disabled:opacity-70 aria-disabled:cursor-wait transition-colors"
+                className="staff-btn staff-btn--primary aria-disabled:opacity-70 aria-disabled:cursor-wait"
               >
                 {saving ? 'Đang lưu...' : 'Lưu'}
               </button>

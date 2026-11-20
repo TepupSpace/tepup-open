@@ -159,7 +159,7 @@ export default function ImageUploadField({
                   // The button disappears with the image: keep focus in the field.
                   document.getElementById(inputId)?.focus();
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-gray-600 rounded-lg hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
+                className="staff-btn staff-btn--ghost staff-btn--sm"
               >
                 <X className="w-4 h-4" aria-hidden="true" />
                 Bỏ ảnh

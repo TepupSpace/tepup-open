@@ -29,8 +29,8 @@ const ROLE_OPTIONS = ['LEARNER', 'AUTHOR', 'TRUSTED_AUTHOR', 'REVIEWER', 'ADMIN'
 const ROLE_LABELS: Record<string, string> = ROLE_LABEL;
 
 const ROLE_COLORS: Record<string, string> = {
-  LEARNER: 'bg-gray-100 text-gray-700',
-  AUTHOR: 'bg-teal-100 text-teal-700',
+  LEARNER: 'bg-gray-100 text-gray-600',
+  AUTHOR: 'bg-white text-gray-700 ring-1 ring-gray-300',
   TRUSTED_AUTHOR: 'bg-emerald-100 text-emerald-700',
   REVIEWER: 'bg-blue-100 text-blue-700',
   ADMIN: 'bg-amber-100 text-amber-700',
@@ -135,7 +135,7 @@ function DeleteUserDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-xl px-4 py-2 text-gray-600 transition-colors hover:bg-gray-100"
+            className="staff-btn staff-btn--ghost"
           >
             Hủy
           </button>
@@ -328,7 +328,7 @@ export default function UsersClient() {
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
+      <div className="staff-card staff-card--flat overflow-x-auto">
         <table className="w-full">
           <caption className="sr-only">Danh sách người dùng, trang {page}</caption>
           <thead className="bg-gray-50 border-b border-gray-100">

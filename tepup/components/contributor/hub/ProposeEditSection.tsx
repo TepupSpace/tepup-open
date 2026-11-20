@@ -49,7 +49,7 @@ export default async function ProposeEditSection({
           </p>
           <Link
             href={`/contributor/contributions/${open.id}/edit`}
-            className="inline-flex items-center rounded-lg bg-teal-700 px-4 py-2 text-sm font-medium text-white hover:bg-teal-800"
+            className="staff-btn staff-btn--primary"
           >
             {open.status === 'PENDING_REVIEW' ? 'Xem đề xuất' : 'Tiếp tục sửa'}
           </Link>

@@ -35,10 +35,10 @@ export default function ContributorHeader({
     : ROLE_BADGE_COLORS[role] || ROLE_BADGE_COLORS.AUTHOR;
 
   return (
-    <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between gap-3 pl-16 pr-4 sm:pr-6 lg:px-6">
+    <header className="h-16 staff-head border-b flex items-center justify-between gap-3 pl-16 pr-4 sm:pr-6 lg:px-6">
       <div className="min-w-0">
         {/* Not a heading: each page has its own single <h1>. */}
-        <p className="text-base sm:text-lg font-semibold text-gray-900 truncate">{TERMS.area}</p>
+        <p className="text-base sm:text-lg font-semibold text-gray-700 truncate">{TERMS.area}</p>
       </div>
 
       <div className="flex shrink-0 items-center gap-3 sm:gap-4">
@@ -80,7 +80,7 @@ export default function ContributorHeader({
             onClick={() => signOut({ callbackUrl: '/' })}
             aria-label="Đăng xuất"
             title="Đăng xuất"
-            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
+            className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700"
           >
             <LogOut className="w-5 h-5" aria-hidden="true" />
           </button>

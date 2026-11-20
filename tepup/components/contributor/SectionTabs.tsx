@@ -33,10 +33,10 @@ export default function SectionTabs({
   if (visible.length < 2 && !children) return null;
 
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3 border-b border-gray-200">
+    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
       {visible.length >= 2 ? (
         <nav aria-label={label}>
-          <ul className="flex flex-wrap gap-x-5 gap-y-1">
+          <ul className="inline-flex flex-wrap gap-1 rounded-[1.5rem] bg-white p-1">
             {visible.map((t) => {
               const active = t.href === current;
               return (
@@ -44,8 +44,8 @@ export default function SectionTabs({
                   <Link
                     href={t.href}
                     aria-current={active ? 'page' : undefined}
-                    className={`-mb-px inline-block border-b-2 px-1 pb-2 pt-1 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 ${
-                      active ? 'border-teal-700 text-teal-800' : 'border-transparent text-gray-600 hover:border-gray-300 hover:text-gray-900'
+                    className={`inline-block rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2 ${
+                      active ? 'bg-teal-700 text-white' : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                     }`}
                   >
                     {t.label}
@@ -58,7 +58,7 @@ export default function SectionTabs({
       ) : (
         <span />
       )}
-      {children && <div className="pb-2">{children}</div>}
+      {children && <div>{children}</div>}
     </div>
   );
 }
@@ -90,7 +90,7 @@ export function NewCourseButton() {
   return (
     <Link
       href="/contributor/courses/new"
-      className="inline-flex items-center gap-2 rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-teal-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-700 focus-visible:ring-offset-2"
+      className="staff-btn staff-btn--primary"
     >
       <PlusCircle className="h-4 w-4" aria-hidden="true" />
       Tạo khóa học mới
