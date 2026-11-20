@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from '@/components/ui/AppLink';
 import { getChapterPage } from '@/lib/services/content-service';
 import LessonPlayer from '@/components/learn/LessonPlayer';
+import PaperEmptyState from '@/components/learn/PaperEmptyState';
 import { tvReferencesEnabled } from '@/lib/library/flags';
 import { itemAfter } from '@/lib/utils/next-item';
 
@@ -49,19 +49,12 @@ export default async function ChapterRoute({ params }: ChapterPageProps) {
 
   if (!data.content || data.content.blocks.length === 0) {
     return (
-      // <main id="main-content">: đích của link "bỏ qua tới nội dung".
-      <main id="main-content" className="reader min-h-screen bg-white flex items-center justify-center px-4">
-        <div className="text-center max-w-md">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.chapter.title}</h1>
-          <p className="text-gray-500 mb-6">Chương này chưa có nội dung.</p>
-          <Link
-            href={exitHref}
-            className="inline-block px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Quay lại câu chuyện
-          </Link>
-        </div>
-      </main>
+      <PaperEmptyState
+        title={data.chapter.title}
+        message="Chương này chưa có nội dung."
+        backHref={exitHref}
+        backLabel="Quay lại câu chuyện"
+      />
     );
   }
 

@@ -109,6 +109,9 @@ model Category {
   name        String
   description String?
   icon        String   @default("brain")
+  /// Màu chủ đạo của danh mục ở /courses (folder + nền kệ). Một trong các khoá
+  /// preset ở lib/paper/category-colors.ts; DB có CHECK cùng danh sách.
+  color       String   @default("blue")
   sortOrder   Int      @default(0)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())

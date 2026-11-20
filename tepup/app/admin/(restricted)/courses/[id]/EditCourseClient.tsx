@@ -6,6 +6,7 @@ import Link from '@/components/ui/AppLink';
 import { Save, BookMarked } from 'lucide-react';
 import IconPicker from '@/components/admin/IconPicker';
 import ImageUploadField from '@/components/admin/ImageUploadField';
+import { CategoryFolderPreview } from '@/components/admin/CategoryColorPicker';
 import Spinner from '@/components/ui/Spinner';
 import {
   BackLink,
@@ -21,6 +22,7 @@ import RelatedPicker from '../../../_components/RelatedPicker';
 interface Category {
   id: string;
   name: string;
+  color?: string;
 }
 
 interface Story {
@@ -326,11 +328,20 @@ export default function EditCourseClient({
           {/* Ảnh bìa ở trang /courses */}
           <ImageUploadField
             label="Ảnh bìa"
-            hint="Thẻ 220×280, tên khoá học đè lên 1/3 dưới ảnh — nên để phần dưới sáng, ít chi tiết."
+            hint="Ảnh ngang 190×170, cắm trong folder ở trang /courses; phần dưới bị thân folder che một chút, nên để chủ thể ở nửa trên. Màu folder theo màu của danh mục."
             value={formData.imageUrl}
             onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
-            previewClassName="w-[110px] h-[140px] rounded-xl"
+            previewClassName="w-[95px] h-[85px] rounded-t-xl"
           />
+          <div>
+            <p className="text-xs font-medium text-gray-600 mb-2">Xem trước folder ở /courses</p>
+            <CategoryFolderPreview
+              color={categories.find((c) => c.id === formData.categoryId)?.color ?? 'blue'}
+              title={formData.name || 'Tên khoá học'}
+              imageUrl={formData.imageUrl}
+              isNew={formData.isNew}
+            />
+          </div>
 
           {/* Checkboxes */}
           <div className="space-y-3">

@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from '@/components/ui/AppLink';
+import { IconArrow, IconHandTap } from './icons';
 
 /**
  * Hai section đầu của landing v2 — port 1:1 từ tepup-demo-v2/demo-landing-v2.html.
@@ -213,11 +215,22 @@ export default function HeroScroller() {
                 <span>Stép out</span>
               </h1>
               <p className="lp-p1-sub">
-                Nền tảng học những điều cơ bản về xã hội bạn đang sống{' '}
-                <br />— thuế, tư duy, quyền số — theo cách dễ hiểu, gần gũi,{' '}
+                Học kiến thức công dân qua những trải nghiệm tương tác, miễn phí{' '}
                 <br />
-                và hoàn toàn miễn phí.
+                và mã nguồn mở, được xây dựng từ đời sống thực tế tại Việt Nam
               </p>
+              {/* Hai lối vào ngay màn đầu: người học và người đóng góp (cùng đích với
+                  header và section "Nền tảng mở"). */}
+              <div className="lp-p1-ctas">
+                <Link href="/courses" className="lp-btn lp-btn--solid">
+                  Bắt đầu học
+                  <IconArrow />
+                </Link>
+                <Link href="/contributor" className="lp-btn lp-btn--outline">
+                  Trở thành người đóng góp
+                  <IconHandTap />
+                </Link>
+              </div>
             </div>
           </div>
 
@@ -273,24 +286,16 @@ export default function HeroScroller() {
               </h2>
               <div className="lp-p2-body">
                 <p>
-                  <span className="lp-em">Tepup</span> là nền tảng giúp bạn hiểu những điều thiết
-                  thực về xã hội mình đang sống —{' '}
-                  <br />
-                  làm sao để nhận diện thông tin sai lệch, làm sao bảo vệ chính mình trên không gian
-                  số.
+                  <span className="lp-em">Tépup</span> tin rằng kiến thức công dân không phải là một hệ
+                  tư tưởng cần tiếp nhận, mà là <span className="lp-em">kỹ năng thiết yếu</span> trong
+                  cuộc sống. Mỗi người, bất kể nơi sống, thu nhập hay trình độ học vấn, đều cần có cơ hội
+                  tiếp cận và hiểu về quyền, nghĩa vụ của mình, đặt những câu hỏi có cơ sở với các thiết
+                  chế công và tham gia có ý nghĩa vào đời sống xã hội.
                 </p>
                 <p>
-                  Tất cả bằng tiếng Việt, qua các <span className="lp-em">câu chuyện ngắn</span> và{' '}
-                  <span className="lp-em">tương tác</span>,{' '}
-                  <br />
-                  dựa trên đời sống thực tế ở Việt Nam. Không lý thuyết xa vời, không thuật ngữ khó
-                  hiểu — chỉ có kiến thức bạn có thể dùng ngay.
-                </p>
-                <p>
-                  <span className="lp-em">Miễn phí</span>, mã nguồn mở và{' '}
-                  <span className="lp-em">không lưu dữ liệu cá nhân</span> của bạn.{' '}
-                  <br />
-                  Bạn có thể học ẩn danh, bất cứ lúc nào.
+                  Chúng mình hướng đến một Việt Nam nơi mọi người không chỉ tiếp nhận thông tin một cách
+                  thụ động, mà còn có khả năng <span className="lp-em">suy nghĩ độc lập</span>, đối thoại
+                  và chủ động góp tiếng nói vào những vấn đề chung của xã hội
                 </p>
               </div>
             </div>

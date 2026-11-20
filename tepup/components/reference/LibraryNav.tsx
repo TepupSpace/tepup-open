@@ -12,23 +12,18 @@ const ITEMS = [
   { href: '/thu-vien/da-luu', label: 'Đã lưu' },
 ];
 
-/** Thanh chuyển giữa các phần của thư viện (docs/design-reference-library.md §7.4). */
+/**
+ * Thanh chuyển giữa các phần của thư viện (docs/design-reference-library.md §7.4).
+ * Thanh pill trắng kiểu giấy (app/(library)/library.css), cuộn ngang trên màn hẹp.
+ */
 export default function LibraryNav() {
   const current = usePathname();
   return (
-    <nav aria-label="Các phần của thư viện" className="mb-6 overflow-x-auto">
-      <ul className="flex gap-2 whitespace-nowrap">
+    <nav aria-label="Các phần của thư viện" className="lib-nav">
+      <ul>
         {ITEMS.map((it) => (
           <li key={it.href}>
-            <Link
-              href={it.href}
-              aria-current={it.href === current ? 'page' : undefined}
-              className={`inline-flex px-3 py-1.5 rounded-full text-sm border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600 ${
-                it.href === current
-                  ? 'bg-purple-600 border-purple-600 text-white'
-                  : 'border-gray-300 text-gray-800 hover:bg-gray-50'
-              }`}
-            >
+            <Link href={it.href} aria-current={it.href === current ? 'page' : undefined}>
               {it.label}
             </Link>
           </li>

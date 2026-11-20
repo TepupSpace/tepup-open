@@ -1,0 +1,1253 @@
+/* ============================================================================
+   Trang học "giấy" (demo-course-stories, màn 4 — Figma 376-67819 / 477-73180).
+
+   Mọi quy tắc nằm dưới lớp .pl (gốc của LessonPlayer, cùng phần tử với .reader),
+   nên các nơi khác dùng chung component block (xem trước của người duyệt,
+   /contributor-guide/block-demo, admin) giữ nguyên giao diện cũ.
+
+   Màu: chỉ dùng token --pl-* (định nghĩa sáng + tối trong scripts/gen-reader-css.mjs
+   → app/reader.css). Không viết mã màu ở đây.
+
+   File không nằm trong @layer nên thắng các tiện ích Tailwind (nằm trong
+   @layer utilities) mà không cần !important. Vì thế không viết bộ chọn thẻ trần
+   (kiểu `.pl button`) — chỉ bộ chọn theo lớp.
+
+   Phần cuối file trỏ bảng màu Tailwind (--color-gray-*, --color-blue-* …) về token
+   giấy bên trong .pl: các block tương tác viết cứng class màu Tailwind tự đổi theo,
+   kể cả chế độ tối.
+   ========================================================================= */
+
+.pl {
+  --pl-sans: var(--font-be-vietnam), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --pl-serif: var(--font-fraunces), var(--font-be-vietnam), Georgia, serif;
+  --pl-bar: 5rem;
+  --pl-col: 52.5rem;
+  --pl-ease-out: cubic-bezier(0.2, 0.85, 0.3, 1);
+  position: relative;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: auto;
+  background-color: var(--pl-page);
+  color: var(--pl-ink);
+  font-family: var(--pl-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+/* Nền giấy, phủ 50% như Figma; chế độ tối gần như tắt. */
+.pl::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/paper/page-bg.webp') center top / 100% auto repeat-y;
+  opacity: var(--pl-texture-opacity);
+  pointer-events: none;
+}
+
+.pl__serif {
+  font-family: var(--pl-serif);
+  font-weight: 600;
+  font-style: italic;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+}
+
+.pl__col {
+  width: min(var(--pl-col), 100% - 2rem);
+  margin-inline: auto;
+}
+
+.pl :focus-visible {
+  outline: 2px solid var(--pl-red);
+  outline-offset: 2px;
+}
+
+/* ---------- Screen 1: tem + tên ---------- */
+/* Trong lúc Screen 1 chạy, khung học ẩn; tên và tem chờ hiệu ứng (JS) đưa vào. */
+.pl[data-phase='intro'] .pl__bar,
+.pl[data-phase='intro'] .pl__scroll,
+.pl[data-phase='intro'] .pl__foot {
+  visibility: hidden;
+}
+.pl__pre {
+  opacity: 0;
+}
+.pl__intro {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(46.8rem, 100% - 2rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  pointer-events: none;
+  z-index: 3;
+}
+.pl__stamp {
+  width: 210px;
+  height: 210px;
+  display: block;
+}
+.pl__name {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.3;
+  text-align: center;
+  color: var(--pl-ink);
+}
+/* Tem nhận từ trang câu chuyện: vẽ ở tâm màn rồi trượt về chỗ của nó (FLIP). */
+.pl__fly {
+  position: fixed;
+  z-index: 4;
+  pointer-events: none;
+  display: block;
+}
+
+/* ---------- thanh trên ---------- */
+.pl__bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: var(--pl-bar);
+  display: flex;
+  align-items: center;
+  z-index: 2;
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pl__tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.pl__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  margin: -0.625rem;
+  padding: 0.625rem;
+  border: 0;
+  border-radius: 1000px;
+  background: none;
+  color: var(--pl-ink);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.pl__icon-btn:hover {
+  background-color: color-mix(in srgb, var(--pl-ink) 8%, transparent);
+}
+.pl__icon-btn[aria-disabled='true'] {
+  cursor: wait;
+}
+.pl__progress {
+  flex: 0 1 37.5rem;
+  height: 0.5rem;
+  border-radius: 1000px;
+  background: var(--pl-track);
+  overflow: hidden;
+}
+.pl__progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 1000px;
+  background: var(--pl-progress);
+  transition: width 0.6s var(--pl-ease-out);
+}
+.pl__icons {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  flex: none;
+}
+.pl__icons > * {
+  flex: none;
+}
+
+/* ---------- vùng cuộn ---------- */
+.pl__scroll {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--pl-bar) + env(safe-area-inset-top, 0px));
+  bottom: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  /* Nội dung chạy xuống dưới nút: tan dần ~72px ngay trên nút (--foot = mép trên cụm nút tính từ đáy). */
+  -webkit-mask: linear-gradient(#000 calc(100% - var(--foot, 104px) - 72px), transparent calc(100% - var(--foot, 104px) - 4px));
+  mask: linear-gradient(#000 calc(100% - var(--foot, 104px) - 72px), transparent calc(100% - var(--foot, 104px) - 4px));
+}
+.pl__scroll--free {
+  -webkit-mask: none;
+  mask: none;
+}
+.pl__flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 0.25rem 0 2rem;
+}
+.pl__flow > .pl__group {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.pl__group:focus {
+  outline: none;
+}
+/* Khối cũ mang lề riêng (mb-6, my-6): trong luồng giấy, nhịp dọc do gap lo. */
+.pl__block > * {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+/* Mỗi đoạn trình soạn là một block: hai đoạn liền nhau cách 12px như đoạn trong `.lt`, không 24px. */
+.pl__block:has(> .lt__html) + .pl__block:has(> .lt__html),
+.pl__group:has(> .pl__block:last-child > .lt__html) + .pl__group:has(> .pl__block:first-child > .lt__html) {
+  margin-top: -0.75rem;
+}
+.pl__notices {
+  margin-bottom: -0.5rem;
+}
+
+/* ---------- chân trang ---------- */
+.pl__foot {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+  z-index: 2;
+}
+.pl__foot > .pl__col {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.pl__next {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+.pl__next > span:first-child {
+  color: var(--pl-muted);
+}
+.pl__next > span:last-child {
+  color: var(--pl-ink);
+  font-weight: 500;
+}
+.pl__btns {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.lbtn {
+  min-height: 3rem;
+  padding: 0.5rem 1.25rem 0.5rem 1.5rem;
+  border: 0;
+  border-radius: 1000px;
+  background: var(--pl-red-fill);
+  color: var(--pl-on-red);
+  font: 600 1rem/1.5 var(--pl-sans);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex: 1 1 auto;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.lbtn:hover {
+  background: var(--pl-red-fill-hover);
+}
+.lbtn > svg {
+  transform: rotate(-90deg);
+  flex: none;
+}
+.lbtn--green {
+  background: var(--pl-green-fill);
+  color: var(--pl-on-green);
+}
+.lbtn--green:hover {
+  background: var(--pl-green-fill-hover);
+}
+.lbtn--ghost {
+  flex: none;
+  padding: 0.5rem 1.75rem;
+  background: var(--pl-card);
+  color: var(--pl-ink);
+}
+.lbtn--ghost:hover {
+  background: var(--pl-card-hover);
+}
+/* aria-disabled, không phải disabled: nút giữ focus (xem CLAUDE.md, Accessibility). */
+.lbtn[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.lbtn--off,
+.lbtn--off:hover {
+  background: var(--pl-disabled-bg);
+  color: var(--pl-disabled-text);
+}
+.lbtn[aria-busy='true'] {
+  cursor: wait;
+}
+
+/* ---------- màn chọn khi mở lại (Figma 490-73629) ---------- */
+.pl__choose {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 0.25rem 0 2rem;
+}
+.pl__choose-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.pl__choose-head h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.3;
+  color: var(--pl-ink);
+}
+.pl__choose-head h1:focus {
+  outline: none;
+}
+.pl__choose-head p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+.pl__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.lstudy {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  width: 100%;
+  padding: 1rem;
+  border: 1.5px solid transparent;
+  border-radius: 1.25rem;
+  background: var(--pl-card);
+  text-align: left;
+  font: 400 1rem/1.75rem var(--pl-sans);
+  color: var(--pl-ink);
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+.lstudy > svg {
+  flex: none;
+}
+.lstudy b {
+  display: block;
+  font-weight: 600;
+}
+.lstudy--review > svg {
+  color: var(--pl-green-text);
+}
+.lstudy--reset > svg {
+  color: var(--pl-red-text);
+}
+.lstudy--review.is-sel,
+.lstudy--review:hover {
+  background: var(--pl-right-bg);
+  border-color: var(--pl-green);
+}
+.lstudy--reset.is-sel,
+.lstudy--reset:hover {
+  background: var(--pl-sel-bg);
+  border-color: var(--pl-red);
+}
+
+/* ---------- màn trống (bài/chương chưa có nội dung) ---------- */
+.pl__empty {
+  position: relative;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.pl__empty h1 {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.3;
+}
+.pl__empty p {
+  margin: 0;
+  color: var(--pl-muted);
+}
+.pl__empty .lbtn {
+  flex: none;
+  text-decoration: none;
+  margin-top: 1rem;
+}
+.pl__link {
+  color: var(--pl-red-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* ============================ khối nội dung ============================ */
+
+/* đoạn đọc */
+.lt {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.lt__title {
+  margin: 0;
+  font-size: 2.25rem;
+  line-height: 1.3;
+  color: var(--pl-ink);
+}
+.lt__paras {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.lt__p,
+.lt__paras > p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+  white-space: pre-line;
+}
+.lt__html {
+  font-size: 1rem;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+}
+.pl .lt__html a,
+.pl .lt__p a,
+.pl .lco a,
+.pl .lnative a {
+  color: var(--pl-red-text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lt__gap {
+  height: 0;
+}
+
+/* tiêu đề, trích dẫn, danh sách… (khối gốc từ trình soạn) */
+.lnative-h {
+  margin: 0.5rem 0 0;
+  font-size: 2.25rem;
+  line-height: 1.3;
+  color: var(--pl-ink);
+}
+.lnative-h--sm {
+  font-size: 1.75rem;
+}
+.lnative-quote {
+  margin: 0;
+  padding: 0.25rem 0 0.25rem 1rem;
+  border-left: 3px solid var(--pl-red);
+  font-family: var(--pl-serif);
+  font-style: italic;
+  font-size: 1.125rem;
+  line-height: 1.85rem;
+  color: var(--pl-ink);
+}
+.lnative-code {
+  margin: 0;
+  padding: 1rem;
+  border-radius: 1rem;
+  background: var(--pl-card);
+  color: var(--pl-ink);
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+  overflow-x: auto;
+}
+.lnative-list {
+  margin: 0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 1rem;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+}
+.lnative-list .lnative-list {
+  margin-top: 0.5rem;
+}
+.lnative-list li::marker {
+  color: var(--pl-red);
+}
+.lnative-checks {
+  list-style: none;
+  padding-left: 0;
+}
+.lnative-checks svg {
+  color: var(--pl-muted);
+}
+.lnative-checks svg.is-on {
+  color: var(--pl-green-text);
+}
+.lnative-toggle {
+  border-radius: 1.25rem;
+  background: var(--pl-card);
+  padding: 1rem;
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+.lnative-toggle > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--pl-ink);
+}
+.lnative-toggle > div {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.lnative-table {
+  overflow-x: auto;
+  border-radius: 1.25rem;
+  background: var(--pl-card);
+  padding: 0.5rem;
+}
+.lnative-table table {
+  min-width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+.lnative-table th,
+.lnative-table td {
+  border-bottom: 1px solid var(--pl-line);
+  padding: 0.625rem 0.75rem;
+  text-align: left;
+  color: var(--pl-ink);
+}
+.lnative-table th {
+  font-weight: 600;
+}
+.lnative-table tr:last-child td {
+  border-bottom: 0;
+}
+.lmedia {
+  margin: 0;
+}
+.lmedia figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--pl-muted);
+  text-align: center;
+}
+.lmedia img,
+.lmedia video {
+  border-radius: 1.25rem;
+}
+.lmedia__ph {
+  border-radius: 1.25rem;
+  background: var(--pl-track);
+}
+.lmedia__err {
+  border-radius: 1.25rem;
+  background: var(--pl-card);
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--pl-muted);
+}
+.ltranscript {
+  margin-top: 0.75rem;
+  border-radius: 1rem;
+  background: var(--pl-card);
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5rem;
+}
+.ltranscript summary {
+  cursor: pointer;
+  font-weight: 500;
+}
+.lfile {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.5rem;
+  padding: 0.375rem 1rem;
+  border: 1.5px solid var(--pl-line);
+  border-radius: 1000px;
+  background: var(--pl-card);
+  color: var(--pl-red-text);
+  font-weight: 500;
+  text-decoration: none;
+}
+.lfile:hover {
+  border-color: var(--pl-line-strong);
+}
+
+/* callout: info / warning / success / explain / complete ("Bạn đã học được gì") */
+.lco {
+  border: 1.5px solid;
+  border-radius: 1.25rem;
+  padding: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+.lco__icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lco__body {
+  flex: 1;
+  min-width: 0;
+}
+.lco__body > p {
+  margin: 0;
+  white-space: pre-line;
+}
+.lco__title {
+  font-weight: 600;
+}
+.lco--info,
+.lco--explain {
+  background: var(--pl-info-bg);
+  border-color: var(--pl-info-line);
+  color: var(--pl-info-text);
+}
+.lco--info .lco__icon,
+.lco--explain .lco__icon {
+  color: var(--pl-info-line);
+}
+.lco--warning {
+  background: var(--pl-warning-bg);
+  border-color: var(--pl-warning-line);
+  color: var(--pl-warning-text);
+}
+.lco--warning .lco__icon {
+  color: var(--pl-warning-line);
+}
+.lco--success,
+.lco--complete {
+  background: var(--pl-success-bg);
+  border-color: var(--pl-success-line);
+  color: var(--pl-success-text);
+}
+.lco--success .lco__icon,
+.lco--complete .lco__icon {
+  color: var(--pl-success-line);
+}
+.lco__ticks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lco__ticks li {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.lco__ticks svg {
+  flex: none;
+  margin-top: 0.25rem;
+  color: var(--pl-success-text);
+}
+
+/* câu hỏi trắc nghiệm */
+.lq {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.lq__q {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+  white-space: pre-line;
+}
+.lq__hint {
+  margin: -0.5rem 0 0;
+  font-size: 0.875rem;
+  color: var(--pl-muted);
+}
+.lq__opts {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.lopt {
+  min-height: 3.25rem;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid transparent;
+  border-radius: 1000px;
+  background: var(--pl-card);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  font: 400 1rem/1.75rem var(--pl-sans);
+  color: var(--pl-ink);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.lopt[aria-disabled='true'] {
+  cursor: default;
+}
+.lopt:not([aria-disabled='true']):hover {
+  border-color: var(--pl-line-strong);
+}
+.lopt__dot {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 1000px;
+  background: var(--pl-page);
+  flex: none;
+  display: block;
+}
+.lopt__dot--sq {
+  border-radius: 0.375rem;
+}
+.lopt__dot--on {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pl-red);
+  color: var(--pl-on-red);
+}
+.lopt > svg {
+  flex: none;
+}
+.lopt__text {
+  flex: 1;
+  min-width: 0;
+}
+/* đáp án dài 2-3 dòng: bo góc 28px, đệm 16, dòng 24px (Figma 483-73352) */
+.lopt.is-multi {
+  border-radius: 1.75rem;
+  padding: 1rem;
+  line-height: 1.5rem;
+}
+.lopt.is-sel {
+  background: var(--pl-sel-bg);
+  border-color: var(--pl-red);
+  color: var(--pl-red-text);
+  font-weight: 500;
+}
+.lopt.is-sel > svg {
+  color: var(--pl-red);
+}
+.lopt.is-wrong {
+  background: var(--pl-wrong-bg);
+  border-color: var(--pl-wrong);
+  color: var(--pl-wrong);
+  font-weight: 500;
+}
+.lopt.is-right {
+  background: var(--pl-right-bg);
+  border-color: var(--pl-green);
+  color: var(--pl-green-text);
+  font-weight: 500;
+}
+.lopt.is-right > svg {
+  color: var(--pl-green-fill);
+}
+.lopt.is-missed {
+  background: var(--pl-right-bg);
+  border-color: var(--pl-green);
+  border-style: dashed;
+  color: var(--pl-green-text);
+}
+.lopt.is-missed > svg {
+  color: var(--pl-green-fill);
+}
+.lopt__badge {
+  flex: none;
+  margin-left: auto;
+  padding: 0 0.625rem;
+  border-radius: 1000px;
+  background: var(--pl-green-fill);
+  color: var(--pl-on-green);
+  font-size: 0.75rem;
+  line-height: 1.5rem;
+  font-weight: 600;
+}
+.lq .lco {
+  margin-top: 0.25rem;
+}
+
+/* thẻ "Bài đọc" (library-document) */
+.ldoc__chip {
+  align-self: flex-start;
+  padding: 0.125rem 0.75rem;
+  border-radius: 1000px;
+  background: var(--pl-subtle);
+  font-size: 0.8125rem;
+  line-height: 1.375rem;
+  color: var(--pl-muted);
+}
+.ldoc__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--pl-muted);
+}
+
+/* ===================== khối tương tác: thẻ chung (.lw) ===================== */
+.lw {
+  margin: 0;
+  background: var(--pl-card);
+  border: 0;
+  border-radius: 1.25rem;
+  padding: 1.25rem;
+  font-size: 1rem;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+  box-shadow: none;
+}
+.lw--flat {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* Tiêu đề khối: 20px đậm vừa, không biểu tượng (demo không có). */
+.pl .lw h2 {
+  font-family: var(--pl-sans);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+}
+.pl .lw > :first-child:has(> h2) > svg {
+  display: none;
+}
+.pl .lw input[type='range'] {
+  accent-color: var(--pl-red);
+}
+.pl .lw input[type='number'],
+.pl .lw input[type='text'] {
+  border-color: var(--pl-line-strong);
+  background: var(--pl-card);
+  color: var(--pl-ink);
+}
+.pl .lw input[type='number']:focus,
+.pl .lw input[type='text']:focus {
+  border-color: var(--pl-red);
+}
+.lw__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  color: var(--pl-ink);
+}
+.lw__hint {
+  margin: 0;
+  color: var(--pl-muted);
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+.lpill {
+  min-height: 2.5rem;
+  padding: 0.375rem 1rem;
+  border: 1.5px solid var(--pl-line);
+  border-radius: 1000px;
+  background: var(--pl-card);
+  font: 500 0.9375rem/1.5rem var(--pl-sans);
+  color: var(--pl-ink);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.lpill:hover {
+  border-color: var(--pl-line-strong);
+}
+.lpill--red {
+  background: var(--pl-red-fill);
+  border-color: var(--pl-red-fill);
+  color: var(--pl-on-red);
+  text-align: center;
+}
+.lpill--red:hover {
+  background: var(--pl-red-fill-hover);
+  border-color: var(--pl-red-fill-hover);
+}
+
+/* lật thẻ: mặt sau xanh info như demo `.lflip__face--back` */
+.pl .lw .flip-card-face {
+  border-width: 1.5px;
+  border-color: var(--pl-line);
+  background: var(--pl-subtle);
+  color: var(--pl-ink);
+  border-radius: 1rem;
+}
+.pl .lw .flip-card-face.flip-card-back {
+  border-color: var(--pl-info-line);
+  background: var(--pl-info-bg);
+  color: var(--pl-info-text);
+}
+
+/* ---------- chuyển động ---------- */
+.pl .lrise {
+  animation: lrise 0.8s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes lrise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pl .lshake {
+  animation: lshake 0.35s ease;
+}
+@keyframes lshake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+/* Trong trang học, hiệu ứng hiện khối do JS lo (fadeInGroup); tắt fade-in cũ của các block con. */
+.pl .pl__flow .animate-fade-in {
+  animation: none;
+}
+
+@media (max-width: 600px) {
+  .pl {
+    --pl-bar: 4rem;
+  }
+  .pl__stamp {
+    width: 170px;
+    height: 170px;
+  }
+  .pl__intro {
+    gap: 1.75rem;
+  }
+  .pl__name,
+  .pl__choose-head h1,
+  .pl__empty h1,
+  .lt__title,
+  .lnative-h {
+    font-size: 1.75rem;
+  }
+  .lnative-h--sm {
+    font-size: 1.5rem;
+  }
+  .pl__choose {
+    gap: 1.75rem;
+  }
+  .pl__foot {
+    bottom: calc(1.25rem + env(safe-area-inset-bottom, 0px));
+  }
+  .pl__progress {
+    margin: 0 0.25rem;
+  }
+  .pl__icons {
+    gap: 0.875rem;
+  }
+  .lbtn--ghost {
+    padding: 0.5rem 1.25rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl .lrise,
+  .pl .lshake {
+    animation: none;
+  }
+  .pl__progress > span,
+  .lbtn,
+  .lopt,
+  .lstudy,
+  .lpill {
+    transition: none;
+  }
+}
+
+/* ---- Bảng màu Tailwind trỏ về token giấy (sinh bằng script, xem ghi chú đầu file) ---- */
+.pl {
+  --color-white: var(--pl-card);
+  --color-gray-50: var(--pl-subtle);
+  --color-gray-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-gray-200: var(--pl-line);
+  --color-gray-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-gray-400: var(--pl-n400);
+  --color-gray-500: var(--pl-muted);
+  --color-gray-600: var(--pl-n600);
+  --color-gray-700: var(--pl-n700);
+  --color-gray-800: var(--pl-ink);
+  --color-gray-900: var(--pl-ink);
+  --color-gray-950: var(--pl-ink-strong);
+  --color-slate-50: var(--pl-subtle);
+  --color-slate-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-slate-200: var(--pl-line);
+  --color-slate-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-slate-400: var(--pl-n400);
+  --color-slate-500: var(--pl-muted);
+  --color-slate-600: var(--pl-n600);
+  --color-slate-700: var(--pl-n700);
+  --color-slate-800: var(--pl-ink);
+  --color-slate-900: var(--pl-ink);
+  --color-slate-950: var(--pl-ink-strong);
+  --color-zinc-50: var(--pl-subtle);
+  --color-zinc-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-zinc-200: var(--pl-line);
+  --color-zinc-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-zinc-400: var(--pl-n400);
+  --color-zinc-500: var(--pl-muted);
+  --color-zinc-600: var(--pl-n600);
+  --color-zinc-700: var(--pl-n700);
+  --color-zinc-800: var(--pl-ink);
+  --color-zinc-900: var(--pl-ink);
+  --color-zinc-950: var(--pl-ink-strong);
+  --color-neutral-50: var(--pl-subtle);
+  --color-neutral-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-neutral-200: var(--pl-line);
+  --color-neutral-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-neutral-400: var(--pl-n400);
+  --color-neutral-500: var(--pl-muted);
+  --color-neutral-600: var(--pl-n600);
+  --color-neutral-700: var(--pl-n700);
+  --color-neutral-800: var(--pl-ink);
+  --color-neutral-900: var(--pl-ink);
+  --color-neutral-950: var(--pl-ink-strong);
+  --color-stone-50: var(--pl-subtle);
+  --color-stone-100: color-mix(in srgb, var(--pl-subtle) 60%, var(--pl-line));
+  --color-stone-200: var(--pl-line);
+  --color-stone-300: color-mix(in srgb, var(--pl-line) 50%, var(--pl-line-strong));
+  --color-stone-400: var(--pl-n400);
+  --color-stone-500: var(--pl-muted);
+  --color-stone-600: var(--pl-n600);
+  --color-stone-700: var(--pl-n700);
+  --color-stone-800: var(--pl-ink);
+  --color-stone-900: var(--pl-ink);
+  --color-stone-950: var(--pl-ink-strong);
+  --color-blue-50: var(--pl-info-bg);
+  --color-blue-100: color-mix(in srgb, var(--pl-info-bg) 85%, var(--pl-info-line));
+  --color-blue-200: color-mix(in srgb, var(--pl-info-bg) 65%, var(--pl-info-line));
+  --color-blue-300: color-mix(in srgb, var(--pl-info-bg) 40%, var(--pl-info-line));
+  --color-blue-400: var(--pl-info-line);
+  --color-blue-500: var(--pl-info-line);
+  --color-blue-600: var(--pl-info-solid);
+  --color-blue-700: var(--pl-info-text);
+  --color-blue-800: var(--pl-info-text);
+  --color-blue-900: var(--pl-info-text);
+  --color-blue-950: var(--pl-info-text);
+  --color-green-50: var(--pl-right-bg);
+  --color-green-100: color-mix(in srgb, var(--pl-right-bg) 85%, var(--pl-green));
+  --color-green-200: color-mix(in srgb, var(--pl-right-bg) 65%, var(--pl-green));
+  --color-green-300: color-mix(in srgb, var(--pl-right-bg) 40%, var(--pl-green));
+  --color-green-400: var(--pl-green);
+  --color-green-500: var(--pl-green);
+  --color-green-600: var(--pl-green-solid);
+  --color-green-700: var(--pl-green-text);
+  --color-green-800: var(--pl-green-text);
+  --color-green-900: var(--pl-green-text);
+  --color-green-950: var(--pl-green-text);
+  --color-emerald-50: var(--pl-right-bg);
+  --color-emerald-100: color-mix(in srgb, var(--pl-right-bg) 85%, var(--pl-green));
+  --color-emerald-200: color-mix(in srgb, var(--pl-right-bg) 65%, var(--pl-green));
+  --color-emerald-300: color-mix(in srgb, var(--pl-right-bg) 40%, var(--pl-green));
+  --color-emerald-400: var(--pl-green);
+  --color-emerald-500: var(--pl-green);
+  --color-emerald-600: var(--pl-green-solid);
+  --color-emerald-700: var(--pl-green-text);
+  --color-emerald-800: var(--pl-green-text);
+  --color-emerald-900: var(--pl-green-text);
+  --color-emerald-950: var(--pl-green-text);
+  --color-lime-50: var(--pl-right-bg);
+  --color-lime-100: color-mix(in srgb, var(--pl-right-bg) 85%, var(--pl-green));
+  --color-lime-200: color-mix(in srgb, var(--pl-right-bg) 65%, var(--pl-green));
+  --color-lime-300: color-mix(in srgb, var(--pl-right-bg) 40%, var(--pl-green));
+  --color-lime-400: var(--pl-green);
+  --color-lime-500: var(--pl-green);
+  --color-lime-600: var(--pl-green-solid);
+  --color-lime-700: var(--pl-green-text);
+  --color-lime-800: var(--pl-green-text);
+  --color-lime-900: var(--pl-green-text);
+  --color-lime-950: var(--pl-green-text);
+  --color-teal-50: var(--pl-right-bg);
+  --color-teal-100: color-mix(in srgb, var(--pl-right-bg) 85%, var(--pl-green));
+  --color-teal-200: color-mix(in srgb, var(--pl-right-bg) 65%, var(--pl-green));
+  --color-teal-300: color-mix(in srgb, var(--pl-right-bg) 40%, var(--pl-green));
+  --color-teal-400: var(--pl-green);
+  --color-teal-500: var(--pl-green);
+  --color-teal-600: var(--pl-green-solid);
+  --color-teal-700: var(--pl-green-text);
+  --color-teal-800: var(--pl-green-text);
+  --color-teal-900: var(--pl-green-text);
+  --color-teal-950: var(--pl-green-text);
+  --color-red-50: var(--pl-wrong-bg);
+  --color-red-100: color-mix(in srgb, var(--pl-wrong-bg) 85%, var(--pl-wrong));
+  --color-red-200: color-mix(in srgb, var(--pl-wrong-bg) 65%, var(--pl-wrong));
+  --color-red-300: color-mix(in srgb, var(--pl-wrong-bg) 40%, var(--pl-wrong));
+  --color-red-400: var(--pl-wrong);
+  --color-red-500: var(--pl-wrong);
+  --color-red-600: var(--pl-wrong-solid);
+  --color-red-700: var(--pl-wrong);
+  --color-red-800: var(--pl-wrong);
+  --color-red-900: var(--pl-wrong);
+  --color-red-950: var(--pl-wrong);
+  --color-rose-50: var(--pl-wrong-bg);
+  --color-rose-100: color-mix(in srgb, var(--pl-wrong-bg) 85%, var(--pl-wrong));
+  --color-rose-200: color-mix(in srgb, var(--pl-wrong-bg) 65%, var(--pl-wrong));
+  --color-rose-300: color-mix(in srgb, var(--pl-wrong-bg) 40%, var(--pl-wrong));
+  --color-rose-400: var(--pl-wrong);
+  --color-rose-500: var(--pl-wrong);
+  --color-rose-600: var(--pl-wrong-solid);
+  --color-rose-700: var(--pl-wrong);
+  --color-rose-800: var(--pl-wrong);
+  --color-rose-900: var(--pl-wrong);
+  --color-rose-950: var(--pl-wrong);
+  --color-yellow-50: var(--pl-warning-bg);
+  --color-yellow-100: color-mix(in srgb, var(--pl-warning-bg) 85%, var(--pl-warning-line));
+  --color-yellow-200: color-mix(in srgb, var(--pl-warning-bg) 65%, var(--pl-warning-line));
+  --color-yellow-300: color-mix(in srgb, var(--pl-warning-bg) 40%, var(--pl-warning-line));
+  --color-yellow-400: var(--pl-warning-line);
+  --color-yellow-500: var(--pl-warning-line);
+  --color-yellow-600: var(--pl-warning-solid);
+  --color-yellow-700: var(--pl-warning-text);
+  --color-yellow-800: var(--pl-warning-text);
+  --color-yellow-900: var(--pl-warning-text);
+  --color-yellow-950: var(--pl-warning-text);
+  --color-amber-50: var(--pl-warning-bg);
+  --color-amber-100: color-mix(in srgb, var(--pl-warning-bg) 85%, var(--pl-warning-line));
+  --color-amber-200: color-mix(in srgb, var(--pl-warning-bg) 65%, var(--pl-warning-line));
+  --color-amber-300: color-mix(in srgb, var(--pl-warning-bg) 40%, var(--pl-warning-line));
+  --color-amber-400: var(--pl-warning-line);
+  --color-amber-500: var(--pl-warning-line);
+  --color-amber-600: var(--pl-warning-solid);
+  --color-amber-700: var(--pl-warning-text);
+  --color-amber-800: var(--pl-warning-text);
+  --color-amber-900: var(--pl-warning-text);
+  --color-amber-950: var(--pl-warning-text);
+  --color-orange-50: var(--pl-warning-bg);
+  --color-orange-100: color-mix(in srgb, var(--pl-warning-bg) 85%, var(--pl-warning-line));
+  --color-orange-200: color-mix(in srgb, var(--pl-warning-bg) 65%, var(--pl-warning-line));
+  --color-orange-300: color-mix(in srgb, var(--pl-warning-bg) 40%, var(--pl-warning-line));
+  --color-orange-400: var(--pl-warning-line);
+  --color-orange-500: var(--pl-warning-line);
+  --color-orange-600: var(--pl-warning-solid);
+  --color-orange-700: var(--pl-warning-text);
+  --color-orange-800: var(--pl-warning-text);
+  --color-orange-900: var(--pl-warning-text);
+  --color-orange-950: var(--pl-warning-text);
+}
+.pl [data-pl-accent='indigo'] {
+  --color-indigo-50: var(--pl-sel-bg);
+  --color-indigo-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-indigo-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-indigo-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-indigo-400: var(--pl-red);
+  --color-indigo-500: var(--pl-red);
+  --color-indigo-600: var(--pl-red-solid);
+  --color-indigo-700: var(--pl-red-text);
+  --color-indigo-800: var(--pl-red-text);
+  --color-indigo-900: var(--pl-red-text);
+  --color-indigo-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='violet'] {
+  --color-violet-50: var(--pl-sel-bg);
+  --color-violet-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-violet-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-violet-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-violet-400: var(--pl-red);
+  --color-violet-500: var(--pl-red);
+  --color-violet-600: var(--pl-red-solid);
+  --color-violet-700: var(--pl-red-text);
+  --color-violet-800: var(--pl-red-text);
+  --color-violet-900: var(--pl-red-text);
+  --color-violet-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='purple'] {
+  --color-purple-50: var(--pl-sel-bg);
+  --color-purple-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-purple-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-purple-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-purple-400: var(--pl-red);
+  --color-purple-500: var(--pl-red);
+  --color-purple-600: var(--pl-red-solid);
+  --color-purple-700: var(--pl-red-text);
+  --color-purple-800: var(--pl-red-text);
+  --color-purple-900: var(--pl-red-text);
+  --color-purple-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='sky'] {
+  --color-sky-50: var(--pl-sel-bg);
+  --color-sky-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-sky-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-sky-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-sky-400: var(--pl-red);
+  --color-sky-500: var(--pl-red);
+  --color-sky-600: var(--pl-red-solid);
+  --color-sky-700: var(--pl-red-text);
+  --color-sky-800: var(--pl-red-text);
+  --color-sky-900: var(--pl-red-text);
+  --color-sky-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='cyan'] {
+  --color-cyan-50: var(--pl-sel-bg);
+  --color-cyan-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-cyan-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-cyan-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-cyan-400: var(--pl-red);
+  --color-cyan-500: var(--pl-red);
+  --color-cyan-600: var(--pl-red-solid);
+  --color-cyan-700: var(--pl-red-text);
+  --color-cyan-800: var(--pl-red-text);
+  --color-cyan-900: var(--pl-red-text);
+  --color-cyan-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='fuchsia'] {
+  --color-fuchsia-50: var(--pl-sel-bg);
+  --color-fuchsia-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-fuchsia-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-fuchsia-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-fuchsia-400: var(--pl-red);
+  --color-fuchsia-500: var(--pl-red);
+  --color-fuchsia-600: var(--pl-red-solid);
+  --color-fuchsia-700: var(--pl-red-text);
+  --color-fuchsia-800: var(--pl-red-text);
+  --color-fuchsia-900: var(--pl-red-text);
+  --color-fuchsia-950: var(--pl-red-text);
+}
+.pl [data-pl-accent='pink'] {
+  --color-pink-50: var(--pl-sel-bg);
+  --color-pink-100: color-mix(in srgb, var(--pl-sel-bg) 85%, var(--pl-red));
+  --color-pink-200: color-mix(in srgb, var(--pl-sel-bg) 65%, var(--pl-red));
+  --color-pink-300: color-mix(in srgb, var(--pl-sel-bg) 40%, var(--pl-red));
+  --color-pink-400: var(--pl-red);
+  --color-pink-500: var(--pl-red);
+  --color-pink-600: var(--pl-red-solid);
+  --color-pink-700: var(--pl-red-text);
+  --color-pink-800: var(--pl-red-text);
+  --color-pink-900: var(--pl-red-text);
+  --color-pink-950: var(--pl-red-text);
+}

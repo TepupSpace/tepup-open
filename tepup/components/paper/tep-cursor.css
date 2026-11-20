@@ -1,0 +1,72 @@
+/* Con trỏ = con tôm Tépup và nét toả khi bấm (demo-course-stories §4 "Con trỏ chuột & click").
+   Chỉ nạp ở layout trang học viên (qua <TepCursor />), không có ở admin/contributor. */
+
+/* Dự phòng khi con trỏ tự vẽ không chạy: ảnh 48px viền trắng, điểm bấm = đầu tôm. */
+html.tep-cursor-css,
+html.tep-cursor-css body {
+  cursor: url('/paper/cursor-tep.png') 24 10, auto;
+  cursor: image-set(url('/paper/cursor-tep.png') 1x, url('/paper/cursor-tep@2x.png') 2x) 24 10, auto;
+}
+html.tep-cursor-css :is(button, a[href], [role='link'], [role='button'], [role='option'], label, select, summary, input[type='range'], input[type='checkbox'], input[type='radio']):not(:disabled, [aria-disabled='true']) {
+  cursor: url('/paper/cursor-tep-hand.png') 20 15, pointer;
+  cursor: image-set(url('/paper/cursor-tep-hand.png') 1x, url('/paper/cursor-tep-hand@2x.png') 2x) 20 15, pointer;
+}
+html.tep-cursor-css :is(input:not([type]), input[type='text'], input[type='search'], input[type='number'], input[type='email'], input[type='password'], textarea, [contenteditable='true']) {
+  cursor: text;
+}
+
+/* Con trỏ tự vẽ (chuột / trackpad): tôm 36px bám đúng vị trí chuột, ở chỗ bấm được
+   xoay mượt sang nghiêng 32° quanh đầu tôm (18, 7.5). */
+.tcur {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 36px;
+  height: 36px;
+  pointer-events: none;
+  z-index: 2147483000;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+.tcur.is-on {
+  opacity: 1;
+}
+.tcur img {
+  display: block;
+  width: 36px;
+  height: 36px;
+  transform-origin: 18px 7.5px;
+  transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+.tcur.is-hot img {
+  transform: rotate(-32deg);
+}
+html.has-tcur,
+html.has-tcur * {
+  cursor: none !important;
+}
+/* chỗ dùng con trỏ hệ thống: kéo kệ (bàn tay nắm), ô nhập chữ */
+html.has-tcur [data-dragging='true'],
+html.has-tcur [data-dragging='true'] * {
+  cursor: grabbing !important;
+}
+html.has-tcur :is(input:not([type]), input[type='text'], input[type='search'], input[type='number'], input[type='email'], input[type='password'], textarea, [contenteditable='true']) {
+  cursor: text !important;
+}
+
+/* click / tap ở đâu cũng toả 4 nét cong từ đầu tôm */
+.tap-burst {
+  position: fixed;
+  width: 60px;
+  height: 60px;
+  margin: -30px 0 0 -30px;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 2147483001;
+}
+.tap-burst path {
+  fill: none;
+  stroke: #e03e28;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+}

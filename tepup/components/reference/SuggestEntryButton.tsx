@@ -9,12 +9,8 @@ export default function SuggestEntryButton() {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-purple-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
-      >
-        <PencilLine className="w-4 h-4" aria-hidden="true" />
+      <button type="button" onClick={() => setOpen(true)} className="lib-suggest">
+        <PencilLine aria-hidden="true" />
         Đề xuất mục mới
       </button>
       <SuggestEditDialog open={open} onClose={() => setOpen(false)} contentType="new-entry" contentId="thu-vien" title="Thư viện" />

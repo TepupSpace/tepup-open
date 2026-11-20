@@ -14,7 +14,6 @@ import { IconArrow } from './icons';
 const NAV = [
   { href: '#gioi-thieu', label: 'Giới thiệu' },
   { href: '#cach-hoc', label: 'Cách học' },
-  { href: '#ba-tru-cot', label: 'Ba trụ cột' },
   { href: '#dong-gop', label: 'Đóng góp' },
 ];
 

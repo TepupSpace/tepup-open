@@ -8,6 +8,7 @@ import AIChatBox from '@/components/ai/AIChatBox';
 import ScrollJumpButtons from '@/components/ui/ScrollJumpButtons';
 import RouteProgressBar from '@/components/ui/RouteProgressBar';
 import NavigationHistoryTracker from '@/components/NavigationHistoryTracker';
+import FreshContent from '@/components/pwa/FreshContent';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -20,6 +21,8 @@ export default function Providers({ children }: ProvidersProps) {
     <NavigationProgressProvider>
       <RouteProgressBar />
       <NavigationHistoryTracker />
+      {/* App đã cài: mở lại thì tự lấy nội dung / bản deploy mới. */}
+      <FreshContent />
       <ProgressProvider>
         <AIChatProvider>
           {children}

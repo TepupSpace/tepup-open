@@ -118,6 +118,123 @@ html[data-reader-font='readable'] .reader {
   word-spacing: 0.08em;
 }
 
+/* Trang học "giấy" (components/learn/player-paper.css) đặt Be Vietnam Pro / Fraunces qua hai biến
+   này; phông dễ đọc phải thắng cả hai, kể cả tiêu đề nghiêng. */
+html[data-reader-font='readable'] .reader {
+  --pl-sans: var(--font-andika), Arial, Helvetica, sans-serif;
+  --pl-serif: var(--font-andika), Arial, Helvetica, sans-serif;
+}
+
+/* ---------- token màu "giấy" của trang học ----------
+   Dùng trong components/learn/player-paper.css (lớp .pl). Màu sáng và màu tối nằm cạnh nhau.
+   Các cặp chữ/nền chính đều ≥ 4.5:1:
+   sáng — ink/page 10.6, muted/page 4.7, muted/card 5.7, trắng/nút đỏ 4.5 (hover 5.2),
+          chọn 4.8, đúng 6.4, sai 5.0, trắng/nút xanh 4.8, callout info 7.9 · warning 7.0 ·
+          success 6.4, nút tắt 4.7; thanh tiến độ/rãnh 3.4 (đồ hoạ, cần 3:1);
+   tối  — ink/page 13.8, muted/card 6.6, trắng/nút đỏ 5.4, chọn 6.8, đúng 7.3, sai 6.1,
+          callout info 9.0 · warning 8.8 · success 8.7, nút tắt 4.9, tiến độ/rãnh 4.5.
+   Màu "solid" là nền của chữ text-white trong block tương tác: ở chế độ tối text-white là màu
+   thẻ (sẫm) nên solid phải sáng (≥ 6.4:1 với #2a2826). */
+.reader {
+  --pl-page: #e8e8e8;
+  --pl-texture-opacity: 0.5;
+  --pl-ink: #313131;
+  --pl-ink-strong: #141414;
+  --pl-muted: #666666;
+  --pl-card: #ffffff;
+  --pl-card-hover: #f8f8f8;
+  --pl-subtle: #f7f7f7;
+  --pl-line: #e1e1e1;
+  --pl-line-strong: #bdbdbd;
+  --pl-track: #d9d9d9;
+  --pl-red: #e03e28;
+  --pl-red-fill: #da3c27;
+  --pl-red-fill-hover: #c83622;
+  --pl-red-solid: #da3c27;
+  --pl-on-red: #ffffff;
+  --pl-red-text: #c3301c;
+  --pl-sel-bg: #ffeae8;
+  --pl-green: #2cab8b;
+  --pl-green-fill: #1e8068;
+  --pl-green-fill-hover: #196e59;
+  --pl-green-solid: #1e8068;
+  --pl-on-green: #ffffff;
+  --pl-green-text: #106852;
+  --pl-right-bg: #e6fff9;
+  --pl-progress: #1e8068;
+  --pl-wrong: #ca1414;
+  --pl-wrong-solid: #ca1414;
+  --pl-wrong-bg: #ffe8e8;
+  --pl-info-bg: #e6f3ff;
+  --pl-info-line: #3187d7;
+  --pl-info-solid: #2470b8;
+  --pl-info-text: #184c7d;
+  --pl-warning-bg: #fff3e6;
+  --pl-warning-line: #f1922c;
+  --pl-warning-solid: #a65a0c;
+  --pl-warning-text: #794815;
+  --pl-success-bg: #e6fff9;
+  --pl-success-line: #2cab8b;
+  --pl-success-text: #106852;
+  --pl-disabled-bg: #d9d9d9;
+  --pl-disabled-text: #5c5c5c;
+  --pl-seg-bg: #fff1c7;
+  --pl-seg-line: #f1922c;
+  /* Thang xám của block tương tác (xem player-paper.css). */
+  --pl-n400: #949494;
+  --pl-n600: #5c5c5c;
+  --pl-n700: #3f3f3f;
+}
+html[data-reader-theme='dark'] .reader {
+  --pl-page: #1f1d1b;
+  --pl-texture-opacity: 0.06;
+  --pl-ink: #ece8e3;
+  --pl-ink-strong: #faf7f2;
+  --pl-muted: #b3ada6;
+  --pl-card: #2a2826;
+  --pl-card-hover: #33302d;
+  --pl-subtle: #33302d;
+  --pl-line: #4a4642;
+  --pl-line-strong: #6b6560;
+  --pl-track: #45413d;
+  --pl-red: #f0705c;
+  --pl-red-fill: #c23a26;
+  --pl-red-fill-hover: #a93020;
+  --pl-red-solid: #f0705c;
+  --pl-on-red: #ffffff;
+  --pl-red-text: #ff9b8a;
+  --pl-sel-bg: #45231d;
+  --pl-green: #3cc29f;
+  --pl-green-fill: #1e8068;
+  --pl-green-fill-hover: #196e59;
+  --pl-green-solid: #3cc29f;
+  --pl-on-green: #ffffff;
+  --pl-green-text: #6fd9bc;
+  --pl-right-bg: #163a31;
+  --pl-progress: #3cc29f;
+  --pl-wrong: #ff8a80;
+  --pl-wrong-solid: #ff8a80;
+  --pl-wrong-bg: #4a1f1f;
+  --pl-info-bg: #1b2c3d;
+  --pl-info-line: #4a9be0;
+  --pl-info-solid: #7ab8ee;
+  --pl-info-text: #a9d2f5;
+  --pl-warning-bg: #3a2a17;
+  --pl-warning-line: #f1922c;
+  --pl-warning-solid: #f1a95c;
+  --pl-warning-text: #f7c690;
+  --pl-success-bg: #163a31;
+  --pl-success-line: #2cab8b;
+  --pl-success-text: #9ee6d0;
+  --pl-disabled-bg: #3d3a37;
+  --pl-disabled-text: #b0aaa3;
+  --pl-seg-bg: #4a3a12;
+  --pl-seg-line: #f1a95c;
+  --pl-n400: #8a847d;
+  --pl-n600: #c4beb7;
+  --pl-n700: #d6d1cb;
+}
+
 /* ---------- cỡ chữ: đổi cỡ gốc, mọi kích thước rem (chữ và khoảng cách) co giãn theo ---------- */
 html[data-reader-size='1']:has(.reader) { font-size: 90%; }
 html[data-reader-size='3']:has(.reader) { font-size: 112.5%; }

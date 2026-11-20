@@ -1,8 +1,40 @@
 'use client';
 
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { X, Check } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
+import { usePaperPlayer } from './paper-context';
+import { PaperCallout } from './CalloutBlock';
+import { IconCorrect, IconRadioOn, IconWrong } from './PaperIcons';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+/**
+ * Đáp án xuống từ 2 dòng trở lên → bo góc chữ nhật 28px thay cho viên thuốc
+ * (demo `fitOptions`, Figma 483-73352). Đo lại khi cột đổi rộng hoặc phông tải xong.
+ */
+function useMultiLineOptions(count: number) {
+  const groupRef = useRef<HTMLDivElement>(null);
+  const [multi, setMulti] = useState<boolean[]>([]);
+  useIsomorphicLayoutEffect(() => {
+    const group = groupRef.current;
+    if (!group) return;
+    const measure = () => {
+      const spans = group.querySelectorAll<HTMLElement>('[data-opt-text]');
+      const next = Array.from(spans, (el) => {
+        const lh = parseFloat(getComputedStyle(el).lineHeight) || 28;
+        return el.offsetHeight > lh * 1.5;
+      });
+      setMulti((prev) => (prev.length === next.length && prev.every((v, i) => v === next[i]) ? prev : next));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(group);
+    document.fonts?.ready.then(measure).catch(() => {});
+    return () => ro.disconnect();
+  }, [count]);
+  return { groupRef, multi };
+}
 
 /** Plain text for the live region: drop markdown marks and keep only link text (a link inside sr-only text would be an invisible Tab stop). */
 function plainText(s: string) {
@@ -40,6 +72,7 @@ export function QuestionBlockComponent({
   isCorrect: boolean | null;
   explanationRef?: React.RefObject<HTMLDivElement | null>;
 }) {
+  const paper = usePaperPlayer();
   const isMultiple = block.mode === 'multiple';
   const questionId = useId();
   const hintId = useId();
@@ -60,6 +93,23 @@ export function QuestionBlockComponent({
       ? 'Chính xác!'
       : `Chưa đúng. Đáp án đúng: ${correctTexts.join('; ')}.`;
     if (block.explanation) announcement += ` ${plainText(block.explanation)}`;
+  }
+
+  if (paper) {
+    return (
+      <PaperQuestion
+        block={block}
+        onSelect={onSelect}
+        isChecked={isChecked}
+        selectedAnswer={selectedAnswer}
+        isCorrect={isCorrect}
+        explanationRef={explanationRef}
+        checkedHere={checkedHere}
+        announcement={announcement}
+        questionId={questionId}
+        hintId={hintId}
+      />
+    );
   }
 
   return (
@@ -180,6 +230,139 @@ export function QuestionBlockComponent({
             {renderInlineMarkdown(block.explanation)}
           </p>
         </div>
+      )}
+    </div>
+  );
+}
+
+type QuestionData = {
+  type: 'question';
+  question: string;
+  mode?: 'single' | 'multiple';
+  options: { id: string; text: string; isCorrect: boolean }[];
+  explanation?: string;
+};
+
+/**
+ * Câu hỏi trong trang học giấy (demo `.lq` / `.lopt`): viên thuốc trắng có chấm tròn,
+ * chọn = đỏ + chấm radio, đúng = xanh + dấu tích, sai = đỏ đậm + dấu X. Đúng/sai luôn
+ * có biểu tượng và chữ cho trình đọc màn hình, không chỉ màu. Logic giống bản cũ.
+ */
+function PaperQuestion({
+  block,
+  onSelect,
+  isChecked,
+  selectedAnswer,
+  isCorrect,
+  explanationRef,
+  checkedHere,
+  announcement,
+  questionId,
+  hintId,
+}: {
+  block: QuestionData;
+  onSelect: (optionId: string) => void;
+  isChecked: boolean;
+  selectedAnswer: string[];
+  isCorrect: boolean | null;
+  explanationRef?: React.RefObject<HTMLDivElement | null>;
+  checkedHere: boolean;
+  announcement: string;
+  questionId: string;
+  hintId: string;
+}) {
+  const isMultiple = block.mode === 'multiple';
+  const { groupRef, multi } = useMultiLineOptions(block.options.length);
+
+  return (
+    <div className="lq">
+      <p id={questionId} className="lq__q">{renderInlineMarkdown(block.question)}</p>
+      {isMultiple && (
+        <p id={hintId} className="lq__hint">Chọn tất cả đáp án đúng.</p>
+      )}
+      <div
+        ref={groupRef}
+        role="group"
+        aria-labelledby={questionId}
+        aria-describedby={isMultiple ? hintId : undefined}
+        className="lq__opts"
+      >
+        {block.options.map((option, idx) => {
+          const optionId = option.id ?? String(idx);
+          const isSelected = selectedAnswer.includes(optionId);
+          const showCorrect = isChecked && option.isCorrect && (isSelected || !isMultiple);
+          const showWrong = isChecked && isSelected && !option.isCorrect;
+          const showMissed = isChecked && isMultiple && option.isCorrect && !isSelected;
+
+          let status = '';
+          if (isChecked && option.isCorrect) {
+            status = !isSelected
+              ? '— đáp án đúng bạn chưa chọn'
+              : checkedHere
+              ? '— đáp án đúng, bạn đã chọn'
+              : '— đáp án đúng';
+          } else if (showWrong) {
+            status = '— bạn chọn, chưa đúng';
+          }
+
+          const state = showCorrect
+            ? 'is-right'
+            : showMissed
+            ? 'is-missed'
+            : showWrong
+            ? 'is-wrong'
+            : isSelected && !isChecked
+            ? 'is-sel'
+            : '';
+
+          return (
+            <button
+              key={optionId}
+              type="button"
+              onClick={() => !isChecked && onSelect(optionId)}
+              // aria-disabled, not disabled: after checking, options stay reachable by Tab so each result can be heard.
+              aria-disabled={isChecked || undefined}
+              aria-pressed={isSelected}
+              className={`lopt ${multi[idx] ? 'is-multi' : ''} ${state}`}
+            >
+              {showCorrect || showMissed ? (
+                <IconCorrect size={24} />
+              ) : showWrong ? (
+                <IconWrong size={24} />
+              ) : isSelected && !isChecked ? (
+                isMultiple ? (
+                  <span className="lopt__dot lopt__dot--sq lopt__dot--on" aria-hidden="true">
+                    <Check className="w-4 h-4" aria-hidden="true" />
+                  </span>
+                ) : (
+                  <IconRadioOn size={24} />
+                )
+              ) : (
+                <span className={`lopt__dot ${isMultiple ? 'lopt__dot--sq' : ''}`} aria-hidden="true" />
+              )}
+              <span className="lopt__text" data-opt-text="">
+                {renderInlineMarkdown(option.text, { links: false })}
+                {status && <span className="sr-only"> {status}</span>}
+              </span>
+              {showMissed && (
+                <span aria-hidden="true" className="lopt__badge">Còn thiếu</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Always mounted, only the text changes: a live region mounted with its content is often not read. */}
+      <p className="sr-only" aria-live="polite" aria-atomic="true">{announcement}</p>
+
+      {isChecked && block.explanation && (
+        <PaperCallout
+          calloutRef={explanationRef}
+          variant={isCorrect ? 'success' : 'explain'}
+          title={isCorrect ? 'Chính xác!' : 'Giải thích'}
+          text={block.explanation}
+          className={checkedHere ? 'lrise' : ''}
+        />
       )}
     </div>
   );

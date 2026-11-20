@@ -69,7 +69,7 @@ export default function ScrollJumpButtons() {
     'flex items-center justify-center w-11 h-11 rounded-full bg-white border border-gray-300 text-gray-700 shadow-md hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600';
 
   return (
-    <div className="above-bottom-chrome fixed left-4 sm:left-6 z-[54] flex flex-col gap-2 print:hidden">
+    <div className="scroll-jump above-bottom-chrome fixed left-4 sm:left-6 z-[54] flex flex-col gap-2 print:hidden">
       {state.up && (
         <button type="button" onClick={() => jump('top')} className={btn} aria-label="Lên đầu trang" title="Lên đầu trang">
           <ArrowUp className="w-5 h-5" aria-hidden="true" />

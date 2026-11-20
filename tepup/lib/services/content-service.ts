@@ -15,6 +15,7 @@ import type {
   CourseDisplay,
   CharacterDisplay,
   StoryDisplay,
+  StoryTeaserDisplay,
   LessonPage,
   ChapterPage,
   ContentBlock,
@@ -144,6 +145,7 @@ async function getCategoriesLightweight(): Promise<CategoryDisplay[]> {
     name: cat.name,
     description: cat.description || '',
     icon: cat.icon,
+    color: cat.color,
     courses: cat.courses.map(mapCourseToDisplay),
   }));
 }
@@ -151,7 +153,7 @@ async function getCategoriesLightweight(): Promise<CategoryDisplay[]> {
 // Cached version of getCategories
 export const getCategories = unstable_cache(
   getCategoriesLightweight,
-  ['categories'],
+  ['categories-v2'], // v2: kèm `color` (màu danh mục ở /courses)
   { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
 );
 
@@ -161,6 +163,7 @@ async function getCourseBySlugInternal(slug: string): Promise<CourseDisplay | nu
   const course = await prisma.course.findFirst({
     where: { slug, isActive: true },
     include: {
+      category: { select: { name: true, color: true } },
       levels: {
         orderBy: { sortOrder: 'asc' },
         select: {
@@ -183,14 +186,18 @@ async function getCourseBySlugInternal(slug: string): Promise<CourseDisplay | nu
   if (!course) return null;
   // A level with no visible lesson isn't shown: its name would otherwise leak to learners
   // (e.g. a level inserted by an approved outline proposal, holding only hidden new lessons).
-  return mapCourseToDisplay({ ...course, levels: course.levels.filter((l) => l.lessons.length > 0) });
+  return {
+    ...mapCourseToDisplay({ ...course, levels: course.levels.filter((l) => l.lessons.length > 0) }),
+    categoryName: course.category.name,
+    categoryColor: course.category.color,
+  };
 }
 
 // Cached version. React `cache` dedupes it within one render: the course route's layout
 // (which turns a missing course into a real 404) and its page both call it in parallel.
 export const getCourseBySlug = cache((slug: string) => unstable_cache(
   () => getCourseBySlugInternal(slug),
-  ['course-by-slug-v3', slug], // v3: levels without visible lessons are dropped
+  ['course-by-slug-v4', slug], // v3: levels without visible lessons are dropped; v4: + category name/colour
   { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
 )())
 
@@ -534,6 +541,38 @@ export const getStoriesByCharacter = (characterSlug: string) => unstable_cache(
   ['stories-by-character', characterSlug],
   { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
 )()
+
+/**
+ * Mọi câu chuyện đang hiện của mọi nhân vật đang hiện, chỉ các trường của thẻ.
+ * Trang nhân vật dùng để đổi nhân vật ngay trên sổ mà không tải trang mới.
+ * Giống nhau cho mọi người xem (cache công khai được).
+ */
+async function getStoryTeasersInternal(): Promise<StoryTeaserDisplay[]> {
+  const stories = await prisma.story.findMany({
+    where: { isActive: true, character: { isActive: true } },
+    orderBy: { sortOrder: 'asc' },
+    select: {
+      slug: true,
+      title: true,
+      teaser: true,
+      estimatedTime: true,
+      character: { select: { slug: true } },
+    },
+  });
+  return stories.map((s) => ({
+    slug: s.slug,
+    characterSlug: s.character.slug,
+    title: s.title,
+    teaser: s.teaser ?? '',
+    estimatedTime: s.estimatedTime,
+  }));
+}
+
+export const getStoryTeasers = unstable_cache(
+  getStoryTeasersInternal,
+  ['story-teasers'],
+  { revalidate: CACHE_DURATION, tags: [CONTENT_TAG] }
+);
 
 async function getStoryBySlugInternal(slug: string): Promise<StoryDisplay | null> {
   const story = await prisma.story.findFirst({

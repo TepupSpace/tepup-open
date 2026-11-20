@@ -65,6 +65,22 @@
   align-items: center;
   white-space: nowrap;
 }
+/* Dải nền giấy sau header (như bản mobile): nội dung cuộn bên dưới không lộ ra
+   giữa logo, menu và nút. Không blur (máy yếu bị giật). Header có transform nên
+   ::before z-index -1 vẫn nằm trong header, sau các nút. */
+.lp-hdr::before {
+  content: '';
+  position: absolute;
+  top: -200px; /* phủ quá mép trên: header dịch xuống một chút khi cuộn */
+  bottom: -12px;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  z-index: -1;
+  background: var(--paper); /* đặc: chữ phía sau không lộ qua */
+  box-shadow: 0 1px 0 rgb(0 0 0 / 5%);
+  pointer-events: none;
+}
 .lp-hdr__logo {
   height: 60px;
   width: auto;
@@ -115,6 +131,7 @@
 .lp-cta:hover {
   background: #c9351f;
 }
+
 .lp-cta svg {
   width: 22px;
   height: 22px;
@@ -276,6 +293,21 @@
   opacity: 0;
   transform: translateY(14px);
   animation: lp-rise 0.75s ease 2.8s forwards;
+}
+
+/* Hai CTA dưới câu giới thiệu: hiện sau câu giới thiệu một nhịp. */
+.lp-p1-ctas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(16 * var(--u)) calc(20 * var(--u));
+  opacity: 0;
+  transform: translateY(14px);
+  animation: lp-rise 0.75s ease 3.1s forwards;
+}
+.lp-p1-ctas .lp-btn {
+  height: max(48px, calc(56 * var(--u)));
+  font-size: max(16px, calc(20 * var(--u)));
 }
 
 /* dải đất taupe, tràn hết bề ngang */
@@ -541,7 +573,9 @@
 .lp-card__title {
   font-weight: 600;
   font-size: 28px;
-  line-height: 28px;
+  /* 1.25 chứ không bằng đúng cỡ chữ: tiêu đề hai dòng thì dấu tiếng Việt không chạm nhau */
+  line-height: 1.25;
+  text-wrap: balance;
   color: var(--ink);
 }
 .lp-card__body {
@@ -558,7 +592,6 @@
 /* Neo cho link trên header: header nổi cố định che mất ~90px đầu trang, nếu
    không chừa thì nhảy tới section nào cũng bị cụt mất tiêu đề. */
 .lp-how,
-.lp-pillars,
 .lp-open {
   scroll-margin-top: 110px;
 }
@@ -591,55 +624,6 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-}
-
-/* --- B · 03 trụ cột kiến thức --- */
-.lp-pillars {
-  display: flex;
-  flex-direction: column;
-  gap: 60px;
-}
-.lp-pillars .lp-sec__head {
-  width: 100%;
-}
-.lp-pillars__row {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 80px;
-}
-.lp-pillars__col {
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
-.lp-pillars__col > div:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.lp-eyebrow {
-  font-weight: 600;
-  font-size: 16px;
-  line-height: 20.2px;
-}
-.lp-link {
-  align-self: center;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-  font-weight: 600;
-  font-size: 20px;
-  line-height: 25.3px;
-  color: var(--o);
-  text-decoration: none;
-}
-.lp-link svg {
-  width: 28px;
-  height: 28px;
-  transition: transform 0.18s;
-}
-.lp-link:hover svg {
-  transform: translateX(4px);
 }
 
 /* --- C · Nền tảng mở cho tất cả --- */
@@ -830,9 +814,6 @@
     column-gap: 64px;
     row-gap: 56px;
   }
-  .lp-pillars__row {
-    gap: 48px;
-  }
   .lp-final {
     padding: 40px;
   }
@@ -850,10 +831,6 @@
   }
   .lp-hdr__nav a {
     font-size: 16px;
-  }
-  .lp-pillars__row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 56px;
   }
 }
 
@@ -877,8 +854,11 @@
     gap: 0;
     justify-content: flex-start;
     white-space: normal;
-    background: color-mix(in srgb, var(--paper) 98%, transparent);
+    background: var(--paper); /* đặc: chữ phía sau không lộ qua */
     box-shadow: 0 1px 0 rgb(0 0 0 / 5%);
+  }
+  .lp-hdr::before {
+    display: none;
   }
   .lp-burger {
     display: flex;
@@ -887,12 +867,26 @@
     height: 42px;
     position: absolute;
     top: 13px; /* level with the burger, inside the 64px bar */
-    left: 50%;
-    transform: translateX(-50%);
+    /* ngay cạnh hamburger, chừa chỗ cho nút "Bắt đầu học" ở góc phải */
+    left: 70px;
   }
-  .lp-hdr__nav,
-  .lp-hdr > .lp-cta {
+  .lp-hdr__nav {
     display: none;
+  }
+  /* "Bắt đầu học" ở góc phải, ngang hàng hamburger (landing không có nút Cài đặt:
+     nút ⚙ chỉ có ở các trang sau, components/paper/PaperHeader). */
+  .lp-hdr > .lp-cta {
+    position: absolute;
+    top: 14px;
+    right: 16px;
+    height: 42px;
+    padding: 0 12px 0 14px;
+    font-size: 14px;
+    gap: 2px;
+  }
+  .lp-hdr > .lp-cta svg {
+    width: 18px;
+    height: 18px;
   }
   .lp-mmenu {
     position: absolute;
@@ -958,9 +952,24 @@
   .lp-p1-sub {
     font-size: 14px;
     line-height: 1.5;
+    text-wrap: balance; /* các dòng dài đều nhau, không để một chữ rơi xuống dòng cuối */
   }
   .lp-p1-sub br {
     display: none;
+  }
+  /* hai CTA xếp dọc, cùng bề rộng */
+  .lp-p1-ctas {
+    flex-direction: column;
+    align-items: stretch;
+    width: min(320px, 100%);
+    gap: 10px;
+  }
+  .lp-p1-ctas .lp-btn {
+    height: 48px;
+    padding: 0 18px;
+    font-size: 16px;
+    justify-content: center;
+    white-space: nowrap;
   }
   .lp-ground {
     height: 11.3vh;
@@ -999,8 +1008,11 @@
   .lp-cast .lp-c19 { width: 33vw; }
 
   /* section 2 — chữ lên trên; 4 nhân vật rải so le dưới đáy; bỏ đường kẻ */
+  /* Neo từ mép trên (ngay dưới header 64px) thay vì căn giữa ở 28%: đoạn giới thiệu
+     dài hơn thì chỉ kéo xuống dưới, không chạm header, và chừa chỗ cho nhân vật. */
   .lp-p2-center {
-    top: 28%;
+    top: 84px;
+    transform: translate(-50%, 0);
     width: 90vw;
     gap: 14px;
   }
@@ -1011,12 +1023,14 @@
   .lp-p2-body {
     gap: 14px;
   }
+  /* cùng cỡ với mô tả của "Học như thế nào?" (15/23) */
   .lp-p2-body p {
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 15px;
+    line-height: 23px;
+    text-wrap: pretty; /* không để một chữ rơi xuống dòng cuối */
   }
   .lp-p2-body .lp-em {
-    font-size: 16px;
+    font-size: 17px;
   }
   .lp-p2-body br {
     display: none;
@@ -1026,10 +1040,10 @@
   }
   /* 4 nhân vật rải ra (giữ aspect), không chồng nhau, nằm dưới khối chữ */
   .lp-ch--05 { display: none; }
-  .lp-ch--10 { left: 17%; top: 63%; width: 26vw; }
-  .lp-ch--07 { left: 79%; top: 57%; width: 31vw; }
-  .lp-ch--04 { left: 30%; top: 88%; width: 42vw; }
-  .lp-ch--06 { left: 73%; top: 85%; width: 37vw; }
+  .lp-ch--10 { left: 16%; top: 74%; width: 20vw; }
+  .lp-ch--07 { left: 80%; top: 66%; width: 27vw; }
+  .lp-ch--04 { left: 30%; top: 90%; width: 40vw; }
+  .lp-ch--06 { left: 73%; top: 88%; width: 35vw; }
 
   /* các section sau */
   .lp-flow {
@@ -1056,9 +1070,40 @@
     font-size: 22px;
     line-height: 30px;
   }
+  /* "Học như thế nào?": mỗi mục là một hàng ngang (icon nhỏ trái, chữ phải) thay
+     vì icon to chồng lên tiêu đề — bốn mục gọn trong khoảng một màn hình. */
+  .lp-how {
+    gap: 32px;
+  }
   .lp-how__grid {
     grid-template-columns: minmax(0, 1fr);
-    row-gap: 48px;
+    row-gap: 28px;
+  }
+  .lp-how__item {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .lp-how__item > div:last-child {
+    gap: 6px;
+    min-width: 0;
+  }
+  .lp-how__item .lp-icon {
+    width: 44px;
+    height: 44px;
+    flex: none;
+  }
+  .lp-how .lp-card__title {
+    font-size: 18px;
+    line-height: 24px;
+    text-wrap: pretty; /* lấp đầy dòng đầu, chỉ xuống dòng khi thật sự cần */
+  }
+  .lp-how .lp-sub {
+    text-wrap: balance;
+  }
+  .lp-how .lp-card__body {
+    font-size: 15px;
+    line-height: 23px;
   }
   .lp-icon {
     width: 56px;
@@ -1115,7 +1160,8 @@
     animation: none !important;
   }
   .lp-slogan span,
-  .lp-p1-sub {
+  .lp-p1-sub,
+  .lp-p1-ctas {
     opacity: 1 !important;
     transform: none !important;
     animation: none !important;
@@ -1140,5 +1186,39 @@
   .lp-redline path {
     stroke-dashoffset: 0 !important;
     animation: none !important;
+  }
+}
+
+/* Điện thoại thấp (iPhone SE…): đoạn giới thiệu chiếm gần nửa màn, chỉ giữ hai
+   nhân vật ở đáy để không đè lên chữ. */
+@media (max-width: 640px) and (max-height: 720px) {
+  .lp-ch--10,
+  .lp-ch--07 {
+    display: none;
+  }
+  .lp-ch--04 { top: 89%; width: 36vw; }
+  .lp-ch--06 { top: 87%; width: 31vw; }
+}
+
+/* Màn rất thấp (iPhone SE đời đầu, ~568px): slogan + câu giới thiệu + 2 CTA không
+   vừa → thu slogan và nút để dòng "Tép riu" không chui dưới header. */
+@media (max-width: 640px) and (max-height: 620px) {
+  .lp-slogan span {
+    font-size: 40px;
+  }
+  .lp-p1-center {
+    top: 45%;
+    gap: 12px;
+  }
+  .lp-p1-ctas {
+    gap: 8px;
+  }
+  .lp-p1-ctas .lp-btn {
+    height: 42px;
+    font-size: 15px;
+  }
+  /* "Tépup là gì?" chiếm gần hết màn: bỏ nhân vật để không đè lên chữ */
+  .lp-page--2 .lp-ch {
+    display: none;
   }
 }

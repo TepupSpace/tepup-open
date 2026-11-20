@@ -127,7 +127,7 @@ export default function RuleDiscoveryBlockComponent({ block, onComplete }: Props
     .join('; ');
 
   return (
-    <BlockShell>
+    <BlockShell accent="indigo">
       <div className="flex items-center gap-2 mb-3">
         <FlaskConical className="w-5 h-5 text-indigo-600" aria-hidden="true" />
         <h2 className="font-semibold text-gray-900">{block.title || 'Tìm quy luật bí mật'}</h2>

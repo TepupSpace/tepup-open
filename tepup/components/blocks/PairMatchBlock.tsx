@@ -15,7 +15,7 @@ interface Props {
 
 /** Colour per solved pair, so a matched couple is recognisable at a glance. */
 const PAIR_COLORS = [
-  'bg-sky-50 border-sky-300 text-sky-900',
+  'bg-blue-50 border-blue-300 text-blue-900',
   'bg-emerald-50 border-emerald-300 text-emerald-900',
   'bg-violet-50 border-violet-300 text-violet-900',
   'bg-amber-50 border-amber-300 text-amber-900',
@@ -150,7 +150,7 @@ export default function PairMatchBlockComponent({ block, onComplete }: Props) {
   const colorFor = (pairId: string) => PAIR_COLORS[(solved[pairId] - 1) % PAIR_COLORS.length];
 
   return (
-    <BlockShell>
+    <BlockShell accent="sky">
       <div className="flex items-center gap-2 mb-1">
         <Waypoints className="w-5 h-5 text-sky-500" aria-hidden="true" />
         <h2 className="font-semibold text-gray-900">{block.title || 'Nối cặp'}</h2>

@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useMemo, useEffect, useRef } from 'react';
-import type { LevelDisplay, LessonDisplay } from '@/lib/types/content';
+import type { LevelDisplay } from '@/lib/types/content';
 import { useProgress } from '@/lib/contexts/ProgressContext';
 import LessonNode from './LessonNode';
-import LessonPopup from './LessonPopup';
+import LessonStartCard from './LessonStartCard';
 
 interface LearningPathProps {
   levels: LevelDisplay[];
@@ -12,9 +12,11 @@ interface LearningPathProps {
 }
 
 export default function LearningPath({ levels, courseSlug }: LearningPathProps) {
-  const [selectedLesson, setSelectedLesson] = useState<{ lesson: LessonDisplay; isSkippingAhead: boolean } | null>(null);
+  /** Bài người học bấm chọn; chưa chọn thì thẻ đáy hiện bài đang học. */
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const startRef = useRef<HTMLAnchorElement>(null);
   const { isCompleted, getCurrentLessonIndex, isSkippingAhead, refreshProgress } = useProgress();
-  const currentLessonRef = useRef<HTMLDivElement>(null);
+  const currentLessonRef = useRef<HTMLLIElement>(null);
   const hasScrolledRef = useRef(false);
   const [isProgressLoaded, setIsProgressLoaded] = useState(false);
 
@@ -71,74 +73,69 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
     }
   }, [isProgressLoaded, currentLessonIndex]);
 
-  return (
-    <div className="relative">
-      {levels.map((level, levelIndex) => (
-        <div key={level.id} className="mb-12">
-          {/* Level Header */}
-          <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-8 text-center shadow-sm">
-            <span className="text-blue-600 text-sm font-semibold uppercase tracking-wide">
-              Chương {levelIndex + 1}
-            </span>
-            {/* h2: ngay dưới h1 tên khoá, không nhảy cấp */}
-            <h2 className="text-lg font-bold text-gray-900 mt-1">{level.name}</h2>
-          </div>
+  const shownId = selectedId ?? activeLessonId ?? allLessonIds[0];
+  const shownIndex = allLessonIds.indexOf(shownId);
+  const shown = levels.flatMap((l) => l.lessons).find((l) => l.id === shownId);
+  const shownState = (() => {
+    const st = getLessonState(shownId);
+    if (st.completed) return 'done' as const;
+    if (shownId === activeLessonId) return 'go' as const;
+    return st.isSkippingAhead ? ('ahead' as const) : ('idle' as const);
+  })();
 
-          {/* Lessons Path */}
-          <div className="flex flex-col items-center gap-8">
+  // Vị trí so le của từng nút trong chương: giữa → trái → giữa → phải → …
+  const OFFSETS = [0, -1, 0, 1];
+
+  return (
+    <div className="cp-path">
+      {levels.map((level, levelIndex) => (
+        <section key={level.id} className="cp-level" aria-labelledby={`cp-level-${level.id}`}>
+          <header className="cp-level__head">
+            <p className="cp-level__kicker">Chương {levelIndex + 1}</p>
+            {/* h2: ngay dưới h1 tên khoá, không nhảy cấp */}
+            <h2 id={`cp-level-${level.id}`} className="paper-serif">
+              {level.name}
+            </h2>
+          </header>
+
+          <ol className="cp-nodes">
             {level.lessons.map((lesson, lessonIndex) => {
               const state = getLessonState(lesson.id);
-              // Create lesson with computed state
-              const lessonWithState = {
-                ...lesson,
-                isCompleted: state.completed,
-                isLocked: false, // All lessons are now unlocked
-              };
-
+              const lessonWithState = { ...lesson, isCompleted: state.completed, isLocked: false };
               const isCurrentLesson = lesson.id === activeLessonId;
-
               return (
-                <div
+                <li
                   key={lesson.id}
-                  className="relative"
                   ref={isCurrentLesson ? currentLessonRef : undefined}
+                  style={{ ['--x' as string]: OFFSETS[lessonIndex % OFFSETS.length] }}
+                  data-side={OFFSETS[lessonIndex % OFFSETS.length] > 0 ? 'right' : undefined}
                 >
-                  {/* Connector Line */}
-                  {lessonIndex < level.lessons.length - 1 && (
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-1 h-8 bg-gray-200" />
-                  )}
-
-                  {/* Zigzag positioning — độ lệch nhỏ lại trên màn hẹp, vì lệch
-                      64px trên màn 390px đẩy nút gần sát mép phải. */}
-                  <div
-                    className={`
-                      transform transition-transform
-                      ${lessonIndex % 2 === 0 ? '' : 'translate-x-8 sm:translate-x-16'}
-                    `}
-                  >
-                    <LessonNode
-                      lesson={lessonWithState}
-                      isActive={isCurrentLesson}
-                      isCurrent={state.isCurrent}
-                      isSkippingAhead={state.isSkippingAhead}
-                      isOpen={selectedLesson?.lesson.id === lesson.id}
-                      onClick={() => setSelectedLesson({ lesson: lessonWithState, isSkippingAhead: state.isSkippingAhead })}
-                    />
-                  </div>
-                </div>
+                  <LessonNode
+                    lesson={lessonWithState}
+                    isActive={isCurrentLesson}
+                    isCurrent={state.isCurrent}
+                    isSkippingAhead={state.isSkippingAhead}
+                    isSelected={lesson.id === shownId}
+                    onClick={() => {
+                      setSelectedId(lesson.id);
+                      // Đưa focus tới nút vào học của thẻ đáy (nội dung vừa đổi).
+                      requestAnimationFrame(() => startRef.current?.focus({ preventScroll: true }));
+                    }}
+                  />
+                </li>
               );
             })}
-          </div>
-        </div>
+          </ol>
+        </section>
       ))}
 
-      {/* Lesson Popup */}
-      {selectedLesson && (
-        <LessonPopup
-          lesson={selectedLesson.lesson}
-          href={`/courses/${courseSlug}/${selectedLesson.lesson.slug}`}
-          isSkippingAhead={selectedLesson.isSkippingAhead}
-          onClose={() => setSelectedLesson(null)}
+      {shown && (
+        <LessonStartCard
+          ref={startRef}
+          title={shown.name}
+          number={shownIndex + 1}
+          href={`/courses/${courseSlug}/${shown.slug}`}
+          state={shownState}
         />
       )}
     </div>

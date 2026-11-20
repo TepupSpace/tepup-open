@@ -35,7 +35,20 @@ const choiceClass =
  * Nút "Aa" mở bảng tuỳ chọn đọc: giao diện sáng/tối, phông dễ đọc, cỡ chữ. Dùng ở
  * thanh đầu trình phát bài và đầu trang khoá học/câu chuyện.
  */
-export default function ReaderSettings({ className = '' }: { className?: string }) {
+export default function ReaderSettings({
+  className = '',
+  buttonClassName = 'p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors',
+  icon,
+  defaultFontHint = 'Geist',
+}: {
+  className?: string;
+  /** Class của nút mở bảng (trang học giấy dùng nút tròn của nó). */
+  buttonClassName?: string;
+  /** Biểu tượng thay cho "Aa" mặc định (trang học giấy dùng icon trong Figma). */
+  icon?: React.ReactNode;
+  /** Tên phông "Mặc định" hiển thị trong bảng (trang học giấy: Be Vietnam Pro). */
+  defaultFontHint?: string;
+}) {
   const [open, setOpen] = useState(false);
   // Đọc localStorage ngay khi khởi tạo ở trình duyệt (server dùng mặc định). Không
   // lệch hydrate: mọi thứ phụ thuộc `prefs` chỉ render khi bảng đã mở.
@@ -108,9 +121,9 @@ export default function ReaderSettings({ className = '' }: { className?: string 
         aria-controls={panelId}
         aria-label="Tuỳ chọn đọc: giao diện, phông chữ, cỡ chữ"
         title="Tuỳ chọn đọc"
-        className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+        className={buttonClassName}
       >
-        <ALargeSmall className="w-6 h-6" aria-hidden="true" />
+        {icon ?? <ALargeSmall className="w-6 h-6" aria-hidden="true" />}
       </button>
 
       {open && (
@@ -144,7 +157,9 @@ export default function ReaderSettings({ className = '' }: { className?: string 
           <fieldset className="mt-4">
             <legend className="text-sm font-semibold mb-2">Phông chữ</legend>
             <div className="flex gap-2">
-              {FONTS.map(({ value, label, hint, sampleClass }) => (
+              {FONTS.map(({ value, label, hint: fontHint, sampleClass }) => {
+                const hint = value === 'default' ? defaultFontHint : fontHint;
+                return (
                 <label key={value} className={choiceClass}>
                   <input
                     type="radio"
@@ -161,7 +176,8 @@ export default function ReaderSettings({ className = '' }: { className?: string 
                     {label} <span>· {hint}</span>
                   </span>
                 </label>
-              ))}
+                );
+              })}
             </div>
           </fieldset>
 

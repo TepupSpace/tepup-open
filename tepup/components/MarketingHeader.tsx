@@ -9,7 +9,6 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 const anchorItems = [
   { href: '#gioi-thieu', label: 'Giới thiệu' },
   { href: '#cach-hoc', label: 'Cách học' },
-  { href: '#ba-tru-cot', label: 'Ba trụ cột' },
   { href: '#dong-gop', label: 'Đóng góp' },
 ];
 

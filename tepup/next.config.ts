@@ -41,7 +41,15 @@ const publicPages = [
   '/contributor-guide',
 ];
 
+// Dấu của bản build, nướng vào cả server lẫn bundle trình duyệt lúc `next build`.
+// App đã cài (PWA) so nó với /api/version mỗi lần được mở lại: khác nhau nghĩa là
+// đã có bản deploy mới → tải lại toàn trang (components/pwa/FreshContent.tsx).
+// Vercel có VERCEL_DEPLOYMENT_ID lúc build; workflow xoá .git nên không dựa vào commit SHA.
+const BUILD_ID =
+  process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || `local-${Date.now()}`;
+
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
   // Mark Prisma and pg as external to avoid bundling issues
   serverExternalPackages: ['@prisma/client', '@prisma/adapter-pg', 'pg'],
   async headers() {

@@ -67,7 +67,8 @@ export default function PwaBootstrap() {
   // Đăng ký service worker.
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('/sw.js').catch(() => {
+    // updateViaCache 'none': luôn tải sw.js từ mạng khi kiểm tra cập nhật, không qua HTTP cache.
+    navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {
       // Không đăng ký được thì trang vẫn chạy bình thường, chỉ mất nút cài trên Android.
     });
   }, []);

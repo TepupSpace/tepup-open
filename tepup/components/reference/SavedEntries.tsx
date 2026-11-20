@@ -33,7 +33,7 @@ export default function SavedEntries() {
   }, [key]);
 
   if (saved.length === 0) {
-    return <p className="text-gray-600">Bạn chưa lưu mục nào. Mở một mục trong bài học hoặc thư viện rồi bấm ☆ Lưu.</p>;
+    return <p className="lib-empty">Bạn chưa lưu mục nào. Mở một mục trong bài học hoặc thư viện rồi bấm ☆ Lưu.</p>;
   }
 
   return (
@@ -41,21 +41,21 @@ export default function SavedEntries() {
       <p className="sr-only" aria-live="polite">
         {message}
       </p>
-      <ul className="divide-y divide-gray-100">
+      <ul className="lib-saved">
         {saved.map((s) => {
           const p = previews?.[s.slug];
           return (
-            <li key={s.slug} className="py-3 flex gap-3 items-start">
+            <li key={s.slug}>
               <div className="flex-1 min-w-0">
                 {p === null ? (
-                  <p className="text-gray-600">Mục này không còn trong thư viện.</p>
+                  <p className="lib-muted">Mục này không còn trong thư viện.</p>
                 ) : (
                   <>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-purple-700">{p?.typeLabel ?? ''}</p>
-                    <a href={tvHref(s.slug)} data-tv={s.slug} className="font-semibold">
+                    <p className="lib-kicker">{p?.typeLabel ?? ''}</p>
+                    <a href={tvHref(s.slug)} data-tv={s.slug} className="lib-term">
                       {p?.title ?? s.slug}
                     </a>
-                    {p?.summary && <p className="text-sm text-gray-700 mt-0.5">{p.summary}</p>}
+                    {p?.summary && <p className="lib-desc">{p.summary}</p>}
                   </>
                 )}
               </div>
@@ -65,10 +65,10 @@ export default function SavedEntries() {
                   removeSaved(s.slug);
                   setMessage(`Đã bỏ “${p?.title ?? s.slug}” khỏi danh sách`);
                 }}
-                className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-600"
+                className="lib-remove"
                 aria-label={`Bỏ “${p?.title ?? s.slug}” khỏi danh sách đã lưu`}
               >
-                <X className="w-4 h-4" aria-hidden="true" />
+                <X aria-hidden="true" />
               </button>
             </li>
           );

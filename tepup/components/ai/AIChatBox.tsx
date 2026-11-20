@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useId, useCallback, KeyboardEvent } from 'react';
+import { usePathname } from 'next/navigation';
 import { MessageSquare, X, Settings, Trash2, Send } from 'lucide-react';
 import { useAIChat } from '@/lib/contexts/AIChatContext';
 import { PERSONAS } from '@/lib/ai/personas';
@@ -24,7 +25,27 @@ function describeReply(msg: ChatMessage | undefined, personaName: string): strin
   return `${personaName} đã trả lời: ${short}`;
 }
 
+/**
+ * Nút trợ lý AI chỉ có ở nơi người học đang đọc nội dung cụ thể:
+ *   /story/<nhân vật>/<câu chuyện>            chi tiết một câu chuyện
+ *   /story/<nhân vật>/<câu chuyện>/<chương>   trang học chương
+ *   /courses/<khoá>/<bài>                     trang học bài
+ * (nhân viên xem bài ẩn ở đúng URL công khai, proxy rewrite sang /staff-view nên
+ * usePathname vẫn trả URL công khai). Mọi trang khác: ẩn.
+ */
+const CHAT_PATHS = [/^\/story\/[^/]+\/[^/]+(\/[^/]+)?\/?$/, /^\/courses\/[^/]+\/[^/]+\/?$/];
+
+export function chatAllowedAt(pathname: string | null): boolean {
+  return !!pathname && CHAT_PATHS.some((re) => re.test(pathname));
+}
+
 export default function AIChatBox() {
+  const pathname = usePathname();
+  if (!chatAllowedAt(pathname)) return null;
+  return <AIChatBoxInner />;
+}
+
+function AIChatBoxInner() {
   const {
     isOpen, toggleChat, closeChat,
     isSettingsOpen, toggleSettings,

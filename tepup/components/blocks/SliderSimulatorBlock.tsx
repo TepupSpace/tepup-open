@@ -104,7 +104,7 @@ export default function SliderSimulatorBlockComponent({ block, onComplete }: Pro
   };
 
   return (
-    <BlockShell skin="bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200">
+    <BlockShell accent="sky" skin="bg-gradient-to-br from-sky-50 to-indigo-50 border-2 border-sky-200">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <SlidersHorizontal className="w-6 h-6 text-sky-600" aria-hidden="true" />

@@ -1,0 +1,461 @@
+/* ============================================================================
+   Trang chi tiết câu chuyện = kệ folder các chương (demo-course-stories, màn 3,
+   Figma 340:125036). Hình học kệ tính bằng px vì JS (lib/paper/useShelfRunner.ts)
+   tính vị trí theo đúng các số này (folder gốc 300×359); trang giấy có theme cố
+   định, không theo cỡ chữ của .reader.
+   ========================================================================= */
+
+/* nền gradient theo trạng thái folder đang chọn: Học ngay cam, Nhảy cóc xám, Hoàn thành xanh */
+@property --tint {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: rgba(224, 62, 40, 0);
+}
+.lesson-tint {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1000px;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(to bottom, var(--tint), rgba(255, 255, 255, 0));
+  opacity: 0;
+  transition: opacity 0.7s var(--ease), --tint 0.7s var(--ease);
+}
+.lesson[data-tint='go'] {
+  --tint: rgba(224, 62, 40, 0.2);
+}
+.lesson[data-tint='skip'] {
+  --tint: rgba(102, 102, 102, 0.2);
+}
+.lesson[data-tint='done'] {
+  --tint: rgba(44, 171, 139, 0.2);
+}
+.lesson[data-ready] .lesson-tint {
+  opacity: 1;
+}
+.lesson[data-leaving] .lesson-tint {
+  opacity: 0;
+  transition-duration: 0.3s;
+}
+
+/* trang chi tiết: tắt cử chỉ vuốt 2 ngón = Back của trình duyệt, để vuốt trái/phải chỉ đổi folder */
+html:has(.lesson),
+html:has(.lesson) body {
+  overscroll-behavior-x: none;
+}
+
+.lesson {
+  padding: 42px 16px 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+/* chưa hydrate: ẩn phần sẽ chạy hiệu ứng vào (không nháy hiện rồi tắt); <noscript> mở lại */
+.lesson:not([data-ready]) [data-rise],
+.lesson:not([data-ready]) .lfolder {
+  opacity: 0;
+}
+
+.lesson__head {
+  width: 750px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.lesson__titles {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.lesson__part {
+  color: var(--red);
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: normal;
+}
+.lesson__title {
+  font-size: 2.25rem;
+  line-height: normal;
+  color: var(--ink);
+}
+.lesson__quote {
+  font-size: 1rem;
+  line-height: 1.75rem;
+}
+.lesson__meta {
+  display: flex;
+  gap: 32px;
+  color: var(--muted);
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: normal;
+}
+.lesson__meta > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lesson__meta img {
+  width: 1.5rem;
+  height: 1.5rem;
+  display: block;
+}
+
+/* kệ kiểu cover-flow: folder đang chọn đứng thẳng ở giữa (85% cỡ Figma); hai bên nghiêng 3D,
+   mép ngoài xoay về phía người xem, cách nhau 16px trên màn hình (shelfPose tự tính).
+   Mỗi folder có phối cảnh riêng (perspective() trong transform), mép xa tối dần (--shade). */
+.lshelf {
+  position: relative;
+  z-index: 0; /* z-index của folder chỉ xếp trong kệ, không đè header */
+  width: 100vw;
+  margin: 41px calc(50% - 50vw) 0;
+  height: 335px;
+  overflow-x: clip;
+  overflow-y: visible;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lfolder {
+  position: absolute;
+  left: 50%;
+  top: -27px;
+  width: 300px;
+  height: 359px;
+  margin-left: -150px;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform, opacity; /* JS vẽ từng khung hình, không dùng transition */
+  filter: drop-shadow(8px 8px 6px rgba(0, 0, 0, 0.2));
+}
+.lfolder::after {
+  /* bóng mờ dưới chân */
+  content: '';
+  position: absolute;
+  left: 6%;
+  right: 6%;
+  bottom: -30px;
+  height: 34px;
+  pointer-events: none;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.16), rgba(0, 0, 0, 0));
+}
+.lfolder.is-pulled::after {
+  opacity: 0;
+  transition: opacity 0.4s ease-in 0.3s;
+}
+.lshelf[data-dragging='true'],
+.lshelf[data-dragging='true'] .lfolder {
+  cursor: grabbing;
+}
+.lfolder__shade {
+  /* tối dần về mép xa; hướng theo bên trái/phải, độ đậm theo bậc */
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: var(--shade, 0);
+  background: linear-gradient(to var(--shade-to, right), rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0) 85%);
+}
+.lfolder__body > .lfolder__shade {
+  -webkit-mask: url('/paper/lesson-union-go.webp') center / 100% 100% no-repeat;
+  mask: url('/paper/lesson-union-go.webp') center / 100% 100% no-repeat;
+}
+.lshelf img {
+  -webkit-user-drag: none;
+  pointer-events: none; /* kéo ảnh sẽ huỷ thao tác vuốt */
+}
+.lfolder:focus-visible {
+  outline: none;
+}
+.lfolder:focus-visible .lfolder__body {
+  outline: 2px solid var(--red);
+  outline-offset: 4px;
+  border-radius: 24px;
+}
+.lfolder__stamp {
+  position: absolute;
+  top: 0;
+  left: calc(50% + 0.33px);
+  width: 260.65px;
+  height: 260.65px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lfolder__card {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+  transform: rotate(-2.5deg);
+}
+.lfolder--skip .lfolder__card {
+  background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), #fff;
+}
+.lfolder__card img {
+  position: absolute;
+  left: 20px;
+  top: 20px;
+  width: 210px;
+  height: 210px;
+  display: block;
+}
+.lfolder__body {
+  position: absolute;
+  left: 0;
+  top: 139px;
+  width: 300px;
+  height: 220px;
+}
+.lfolder__body > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lfolder__text {
+  position: absolute;
+  left: 36px;
+  top: 80px;
+  bottom: 24px;
+  width: 228px;
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.25));
+}
+.lfolder__text img {
+  width: 22.43px;
+  height: 21.55px;
+  display: block;
+  flex: none;
+}
+.lfolder__title {
+  margin: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1.2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.lfolder--skip .lfolder__title {
+  color: #f2f2f2;
+}
+.lfolder__badge {
+  position: absolute;
+  left: 8px;
+  top: 147px;
+  width: 110px;
+  padding: 8px 12px;
+  border-radius: 1000px;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: normal;
+  text-align: center;
+  white-space: nowrap;
+}
+.lfolder--go .lfolder__badge {
+  background: var(--red-fill);
+}
+.lfolder--skip .lfolder__badge {
+  background: var(--grey-fill);
+}
+.lfolder--done .lfolder__badge {
+  background: var(--green-fill);
+}
+
+.lesson__cta {
+  margin-top: 50px;
+  height: 3rem;
+  padding: 0 1.25rem 0 1.5rem;
+  border-radius: 1000px;
+  background: var(--red-fill);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: normal;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+  transition: background 0.2s ease, filter 0.2s ease, transform 0.2s var(--ease-out);
+}
+.lesson__cta img {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: block;
+}
+.lesson__cta:hover {
+  transform: translateY(-1px);
+  background: var(--red-hover); /* tối đi khi hover (giữ AA cho chữ trắng) */
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.25));
+}
+.lesson__line {
+  width: 1.5px;
+  height: 120px;
+  margin-top: 36px;
+  background: var(--ink);
+}
+.lesson__related {
+  margin-top: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.lesson__related h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+  color: var(--ink);
+  text-transform: uppercase;
+}
+.lesson__related h2 img {
+  width: 1.75rem;
+  height: 1.75rem;
+  display: block;
+}
+/* thẻ chừa 31px trên ảnh cho hover nổi lên: lúc hover vẫn cách tiêu đề ~12px */
+.lesson__courses {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.lesson__courses a {
+  display: block;
+  text-decoration: none;
+  border-radius: 20px;
+}
+
+/* thẻ khoá học dạng folder (giống kệ /courses, bỏ nhãn "Mới") */
+.lcourse {
+  position: relative;
+  width: 220px;
+  height: 289px;
+  transition: filter 0.3s ease;
+}
+.lcourse__img {
+  position: absolute;
+  left: 15px;
+  top: 31px;
+  width: 190px;
+  height: 170px;
+  border-radius: 20px 20px 0 0;
+  object-fit: cover;
+  object-position: center top; /* như folder ở /courses: ảnh bìa dọc cũ không mất đầu chủ thể */
+  display: block;
+  background: #fff;
+  transition: top 0.35s var(--ease-out);
+}
+.lcourse__body {
+  position: absolute;
+  left: 0;
+  top: 156px;
+  width: 220px;
+  height: 133px;
+  padding: 20px 16px 0;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 -2px 2px rgba(0, 0, 0, 0.15));
+  transition: top 0.35s var(--ease-out);
+}
+.lcourse__body > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lcourse__title {
+  position: relative;
+  width: 100%;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  color: #fff;
+  font-size: 1.5rem;
+  line-height: 1.75rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+}
+@media (hover: hover) {
+  .lesson__courses a:hover .lcourse {
+    filter: drop-shadow(0 16px 12.5px rgba(0, 0, 0, 0.25));
+  }
+  .lesson__courses a:hover .lcourse__img {
+    top: 0;
+  }
+  .lesson__courses a:hover .lcourse__body {
+    top: 146px;
+  }
+}
+
+/* thẻ bay (tem rút khỏi folder → giữa màn), gắn vào <body> */
+.lesson-fly {
+  position: fixed;
+  z-index: 60;
+  pointer-events: none;
+  border-radius: 8px;
+  background: #fff;
+}
+.lesson-fly img {
+  position: absolute;
+  inset: 8%;
+  width: 84%;
+  height: 84%;
+  display: block;
+}
+
+@media (max-width: 600px) {
+  .lesson {
+    padding-top: 24px;
+  }
+  .lesson__title {
+    font-size: 1.75rem;
+  }
+  .lesson__quote {
+    font-size: 0.9375rem;
+    line-height: 1.625rem;
+  }
+  .lesson__meta {
+    gap: 20px;
+    font-size: 0.9375rem;
+  }
+  .lesson__line {
+    height: 72px;
+  }
+  /* folder thu 68% quanh tâm → kệ thấp lại, kéo folder lên cho khỏi hở trên/dưới */
+  .lshelf {
+    height: 275px;
+    margin-top: 20px;
+  }
+  .lfolder {
+    top: -57px;
+  }
+  .lesson__cta {
+    margin-top: 28px;
+  }
+}

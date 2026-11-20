@@ -101,7 +101,7 @@ export default function PerspectiveSwitchBlockComponent({ block, onComplete }: P
   const roleColors = ['bg-blue-100 text-blue-700 border-blue-300', 'bg-rose-100 text-rose-700 border-rose-300', 'bg-amber-100 text-amber-700 border-amber-300', 'bg-purple-100 text-purple-700 border-purple-300'];
 
   return (
-    <BlockShell skin="bg-gradient-to-br from-violet-50 to-fuchsia-50 border-2 border-violet-200">
+    <BlockShell accent="violet" skin="bg-gradient-to-br from-violet-50 to-fuchsia-50 border-2 border-violet-200">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Users className="w-6 h-6 text-violet-600" aria-hidden="true" />

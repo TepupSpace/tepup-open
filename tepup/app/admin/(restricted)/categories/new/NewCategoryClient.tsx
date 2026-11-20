@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save } from 'lucide-react';
 import IconPicker from '@/components/admin/IconPicker';
+import CategoryColorPicker from '@/components/admin/CategoryColorPicker';
 import {
   BackLink,
   FormError,
@@ -22,6 +23,7 @@ export default function NewCategoryClient() {
     name: '',
     description: '',
     icon: 'brain',
+    color: 'blue',
   });
 
   async function handleSubmit(e: React.FormEvent) {
@@ -118,6 +120,13 @@ export default function NewCategoryClient() {
               onChange={(icon) => setFormData({ ...formData, icon })}
             />
           </div>
+
+          {/* Màu chủ đạo ở /courses */}
+          <CategoryColorPicker
+            value={formData.color}
+            onChange={(color) => setFormData({ ...formData, color })}
+            previewTitle={formData.name}
+          />
 
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">

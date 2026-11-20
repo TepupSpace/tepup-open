@@ -1,0 +1,432 @@
+/* ============================================================================
+   Bảng Cài đặt (nút ⚙ góc trên bên phải) + hướng dẫn cài Tépup.
+
+   Nằm trong header trang giấy (.paper) và landing (.lp): cả hai là theme sáng
+   cố định, nên bảng cũng sáng cố định. Màu lấy token của .paper, có giá trị dự
+   phòng cho landing. Chữ ≥ text-xs, kích thước theo rem.
+   ========================================================================= */
+
+.st-open {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 0;
+  border-radius: 1000px;
+  background: #fff;
+  color: var(--ink-strong, #141414);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.st-open:hover {
+  color: var(--red, #da3c27);
+}
+.st-open svg {
+  width: 24px;
+  height: 24px;
+}
+.st-open:focus-visible,
+.st-dialog :focus-visible {
+  outline: 2px solid var(--red, #da3c27);
+  outline-offset: 2px;
+}
+
+/* Gốc của portal (ra <body>, ngoài .paper/.lp): khai lại token cần dùng. */
+.st-root {
+  --ink: #313131;
+  --ink-strong: #141414;
+  --muted: #666;
+  --red: #da3c27;
+  --red-fill: #da3c27;
+  --red-hover: #c83622;
+  --sans: var(--font-be-vietnam), system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --serif: var(--font-fraunces), var(--font-be-vietnam), Georgia, serif;
+}
+
+.st-backdrop {
+  position: fixed;
+  inset: 0;
+  /* trên thanh tab đáy, nút cuộn, nút AI */
+  z-index: 1000;
+  background: rgb(20 20 20 / 45%);
+}
+.st-wrap {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: none;
+}
+.st-dialog {
+  pointer-events: auto;
+  width: min(560px, 100%);
+  max-height: min(88dvh, 820px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 28px;
+  background: #f4f4f4;
+  color: var(--ink, #313131);
+  font-family: var(--sans, var(--font-be-vietnam), system-ui, sans-serif);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 30%);
+  overflow: hidden;
+}
+@media (max-width: 600px) {
+  .st-wrap {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .st-dialog {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 28px 28px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+.st-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 20px 12px 24px;
+}
+.st-head h2 {
+  margin: 0;
+  font-family: var(--serif, var(--font-fraunces), Georgia, serif);
+  font-style: italic;
+  font-weight: 600;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  font-size: 1.75rem;
+  line-height: normal;
+}
+.st-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.st-section {
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px;
+  scroll-margin-top: 8px;
+}
+.st-section h3 {
+  margin: 0 0 12px;
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.75rem;
+}
+
+.st-round {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border: 0;
+  border-radius: 1000px;
+  background: #fff;
+  color: var(--ink, #313131);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.st-round svg {
+  width: 20px;
+  height: 20px;
+}
+.st-round:hover {
+  background: #ececec;
+}
+.st-round[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: default;
+}
+.st-section .st-round {
+  background: #f2f2f2;
+}
+
+/* ---------- tuỳ chọn đọc ---------- */
+.st-prefs {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.st-hint {
+  margin: -4px 0 0;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--muted, #666);
+}
+.st-field {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.st-field legend,
+.st-legend {
+  padding: 0;
+  margin-bottom: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.st-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.st-choice {
+  position: relative;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid #e1e1e1;
+  border-radius: 1000px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+.st-choice svg {
+  width: 18px;
+  height: 18px;
+}
+.st-choice input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  margin: 0;
+}
+.st-choice:hover {
+  border-color: #bdbdbd;
+}
+.st-choice:has(input:checked) {
+  background: #ffeae8;
+  border-color: var(--red-fill, #da3c27);
+  color: #c3301c;
+}
+.st-choice:has(input:focus-visible) {
+  outline: 2px solid var(--red, #da3c27);
+  outline-offset: 2px;
+}
+.st-size {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.st-size output {
+  min-width: 3.5rem;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* ---------- hướng dẫn cài ---------- */
+.ig {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  font-size: 0.9375rem;
+  line-height: 1.5rem;
+}
+.ig svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.ig b {
+  font-weight: 600;
+}
+.ig-benefits {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.ig-benefits li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f7f7f7;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+}
+.ig-benefits svg {
+  color: var(--red, #da3c27);
+  margin-top: 1px;
+}
+@media (max-width: 420px) {
+  .ig-benefits {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ig-note {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1.5px solid;
+}
+.ig-note > span {
+  flex: 1 1 260px;
+}
+.ig-note--ok {
+  background: #e6fff9;
+  border-color: #2cab8b;
+  color: #106852;
+}
+.ig-note--warn {
+  background: #fff3e6;
+  border-color: #f1922c;
+  color: #794815;
+}
+
+.ig-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 1000px;
+  background: #f2f2f2;
+}
+.ig-tab {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 1000px;
+  background: transparent;
+  color: var(--ink, #313131);
+  font: 600 0.9375rem / 1.25rem var(--sans);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+}
+.ig-tab[aria-selected='true'] {
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+}
+.ig-tab__here {
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1rem;
+  color: #c3301c;
+}
+
+.ig-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-radius: 12px;
+}
+.ig-panel[hidden] {
+  display: none;
+}
+.ig-quick {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  font-size: 0.875rem;
+  color: var(--muted, #666);
+}
+.ig-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: none;
+}
+.ig-step {
+  display: grid;
+  grid-template-columns: 28px 36px 1fr;
+  align-items: start;
+  gap: 10px;
+}
+.ig-step__num {
+  width: 28px;
+  height: 28px;
+  border-radius: 1000px;
+  background: var(--red-fill, #da3c27);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ig-step__icon {
+  width: 36px;
+  height: 36px;
+  margin-top: -4px;
+  border-radius: 12px;
+  background: #f2f2f2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-strong, #141414);
+}
+.ig-step__body {
+  padding-top: 2px;
+}
+.ig-extra {
+  margin: 0;
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f7f7f7;
+  font-size: 0.875rem;
+  line-height: 1.375rem;
+  color: var(--ink, #313131);
+}
+
+.ig-btn {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 1000px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 0.9375rem / normal var(--sans);
+  white-space: nowrap;
+}
+.ig-btn--primary {
+  background: var(--red-fill, #da3c27);
+  color: #fff;
+}
+.ig-btn--primary:hover {
+  background: var(--red-hover, #c83622);
+}
+.ig-btn--ghost {
+  background: #fff;
+  color: #794815;
+  border: 1.5px solid #f1922c;
+}
+
+.st-refresh {
+  margin-top: 12px;
+}
+.st-refresh svg {
+  width: 18px;
+  height: 18px;
+}

@@ -1,14 +1,15 @@
 import type { Metadata } from 'next';
 import { fraunces, beVietnam } from '@/lib/fonts/paper';
-import HubHeader from '@/components/courses-hub/HubHeader';
+import PaperHeader from '@/components/paper/PaperHeader';
 import BottomTabBar from '@/components/mobile/BottomTabBar';
 import LicenceFooterLine from '@/components/LicenceFooterLine';
+import '../paper.css';
 import './courses-hub.css';
 
 /**
- * Layout riêng cho trang hub `/courses` (design demo-course-stories): nền giấy,
- * header pill. Tách khỏi nhóm (learn) để /library, /story và trang chi tiết
- * khoá học vẫn giữ LearnHeader cũ cho tới khi được thiết kế lại.
+ * Layout riêng cho trang hub `/courses` (design demo-course-stories): nền giấy
+ * (token chung trong app/paper.css), header pill. /story/**, /courses/[slug] (nhóm
+ * paper) và /thu-vien/** (nhóm library) dùng cùng giao diện qua PaperShell.
  */
 
 export const metadata: Metadata = {
@@ -18,8 +19,8 @@ export const metadata: Metadata = {
 
 export default function CoursesHubLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className={`ch ${fraunces.variable} ${beVietnam.variable}`}>
-      <HubHeader />
+    <div className={`paper ch ${fraunces.variable} ${beVietnam.variable}`}>
+      <PaperHeader current="courses" />
       {/* Chừa chỗ cho thanh tab dính ở đáy trên mobile. */}
       <div className="ch-page pb-tab-bar md:pb-0">
         {children}

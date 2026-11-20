@@ -55,7 +55,7 @@ export default function CalculatorBlockComponent({ block, onComplete }: Props) {
   };
 
   return (
-    <BlockShell skin="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
+    <BlockShell accent="cyan" skin="bg-gradient-to-br from-cyan-50 to-blue-50 border-2 border-cyan-200">
       {/* Header */}
       <div className="flex items-center gap-2 mb-3">
         <Calculator className="w-6 h-6 text-cyan-600" aria-hidden="true" />

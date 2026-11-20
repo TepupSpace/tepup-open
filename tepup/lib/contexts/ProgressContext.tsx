@@ -99,7 +99,14 @@ function storageToProgressArray(data: LocalStorageData): Progress[] {
 }
 
 export function ProgressProvider({ children }: { children: ReactNode }) {
-  const [storageData, setStorageData] = useState<LocalStorageData>(() => readFromStorage());
+  // Khởi tạo RỖNG như server (không có localStorage), rồi nạp ở effect dưới. Đọc
+  // localStorage ngay trong useState làm lần render đầu ở client khác HTML server
+  // (lỗi hydration ở trang khoá học khi đã học vài bài).
+  const [storageData, setStorageData] = useState<LocalStorageData>(() => ({
+    version: 1,
+    progress: {},
+    lastUpdated: '',
+  }));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -160,10 +167,13 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
       setError(null);
 
       try {
+        // Gốc là bản mới nhất trong localStorage, không phải state: state có thể chưa
+        // kịp nạp (effect nạp chạy sau effect của component con) → không ghi đè mất tiến độ.
+        const base = readFromStorage();
         const newData: LocalStorageData = {
-          ...storageData,
+          ...base,
           progress: {
-            ...storageData.progress,
+            ...base.progress,
             [contentId]: {
               contentType,
               completed: true,
@@ -189,7 +199,7 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
       }
     },
-    [storageData]
+    []
   );
 
   // Get current lesson index (first incomplete lesson)

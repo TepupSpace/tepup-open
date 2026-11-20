@@ -1,7 +1,6 @@
 import LandingHeader from '@/components/landing/LandingHeader';
 import HeroScroller from '@/components/landing/HeroScroller';
 import HowSection from '@/components/landing/sections/HowSection';
-import PillarsSection from '@/components/landing/sections/PillarsSection';
 import OpenSection from '@/components/landing/sections/OpenSection';
 import FinalCta from '@/components/landing/sections/FinalCta';
 import LandingFooter from '@/components/landing/LandingFooter';
@@ -25,7 +24,6 @@ export default function LandingPage() {
         <div className="lp-flow">
           <div className="lp-sections">
             <HowSection />
-            <PillarsSection />
             <OpenSection />
             <FinalCta />
           </div>

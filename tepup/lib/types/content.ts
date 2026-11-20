@@ -423,6 +423,9 @@ export interface CourseDisplay {
   /** Ảnh bìa thẻ ở /courses (220×280). */
   imageUrl: string | null;
   levels: LevelDisplay[];
+  /** Chỉ trang chi tiết khoá (getCourseBySlug): tên + màu danh mục cho giao diện giấy. */
+  categoryName?: string;
+  categoryColor?: string;
 }
 
 export interface CategoryDisplay {
@@ -431,6 +434,8 @@ export interface CategoryDisplay {
   name: string;
   description: string;
   icon: string;
+  /** Khoá màu preset (lib/paper/category-colors.ts); giá trị lạ hiển thị thành xanh dương. */
+  color: string;
   courses: CourseDisplay[];
 }
 
@@ -498,6 +503,15 @@ export interface StoryDisplay {
   estimatedTime: string;
   chaptersCount: number;
   parts: StoryPartDisplay[];
+}
+
+/** Một câu chuyện rút gọn cho thẻ giấy ở /story/[characterId] (getStoryTeasers). */
+export interface StoryTeaserDisplay {
+  slug: string;
+  characterSlug: string;
+  title: string;
+  teaser: string;
+  estimatedTime: string;
 }
 
 export interface ChapterContentDisplay {

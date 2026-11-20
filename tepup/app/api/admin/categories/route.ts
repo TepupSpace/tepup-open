@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateContent } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+import { categoryColorSchema, DEFAULT_CATEGORY_COLOR } from '@/lib/paper/category-colors';
 
 // GET /api/admin/categories - List all categories
 export async function GET() {
@@ -48,6 +49,12 @@ export async function POST(request: Request) {
       );
     }
 
+    // Màu chỉ nhận đúng các khoá preset (DB cũng có CHECK cùng danh sách).
+    const color = categoryColorSchema.safeParse(body.color ?? DEFAULT_CATEGORY_COLOR);
+    if (!color.success) {
+      return NextResponse.json({ error: 'Màu danh mục không hợp lệ' }, { status: 400 });
+    }
+
     // Generate slug from name if not provided
     const categorySlug = slug?.trim() || name.trim().toLowerCase()
       .replace(/\s+/g, '-')
@@ -65,6 +72,7 @@ export async function POST(request: Request) {
         name: name.trim(),
         description: description?.trim() || null,
         icon: icon || 'brain',
+        color: color.data,
         sortOrder: (maxSortOrder._max.sortOrder || 0) + 1,
       },
     });

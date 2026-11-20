@@ -184,7 +184,8 @@ html {
 :root {
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --tab-bar-height: 3.5rem;
+  /* Thanh tab nổi (mobile): cao 4rem + cách đáy 0.75rem + 0.75rem đệm cho nội dung. */
+  --tab-bar-height: 5.5rem;
 }
 
 .pt-safe {

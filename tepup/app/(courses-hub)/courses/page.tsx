@@ -1,4 +1,5 @@
-import StoryShowcase from '@/components/courses-hub/StoryShowcase';
+import StoryBook from '@/components/paper/StoryBook';
+import { toBookCharacters } from '@/components/paper/book-data';
 import CourseShelf from '@/components/courses-hub/CourseShelf';
 import { getCategories, getCharacters } from '@/lib/services/content-service';
 import InstallPrompt from '@/components/pwa/InstallPrompt';
@@ -19,18 +20,28 @@ export default async function CoursesPage() {
     id: c.slug,
     label: c.name,
     description: c.description,
+    color: c.color,
     courses: c.courses,
   }));
 
   return (
     <main id="main-content" className="ch-main">
-      <div className="ch-pagehead">
-        <h1 className="ch-serif">Khoá học</h1>
-        <p>Khám phá các khoá học của Tépup</p>
-      </div>
+      {/* Tiêu đề trang chỉ cho trình đọc màn hình: trang mở thẳng vào khối Câu chuyện. */}
+      <h1 className="sr-only">Khoá học</h1>
 
       <div className="ch-shell ch-sections">
-        <StoryShowcase characters={characters} />
+        {characters.length > 0 && (
+          <section className="sb-stories" aria-labelledby="hoc-qua-cau-chuyen">
+            <div className="paper-head">
+              <h2 id="hoc-qua-cau-chuyen" className="paper-serif">
+                Học qua <em>Câu chuyện</em>
+              </h2>
+              <p>Khám phá kiến thức qua hành trình của các nhân vật</p>
+            </div>
+            {/* Ảnh nhân vật lọc qua isAllowedMediaUrl ở server (toBookCharacters). */}
+            <StoryBook characters={toBookCharacters(characters)} mode="list" />
+          </section>
+        )}
 
         <CourseShelf
           id="chuyen-de"

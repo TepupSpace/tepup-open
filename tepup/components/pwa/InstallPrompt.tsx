@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
-import Image from 'next/image';
-import FocusTrap from 'focus-trap-react';
-import { Download, Share, SquarePlus, X } from 'lucide-react';
-import { useIsStandalone } from '@/lib/hooks/useMediaQuery';
+import { useRef, useState, useSyncExternalStore } from 'react';
+import { Download, X } from 'lucide-react';
+import {
+  detectPlatform,
+  getInstallPrompt,
+  isStandalone,
+  openSettings,
+  runInstallPrompt,
+  subscribeInstallPrompt,
+} from '@/lib/pwa/platform';
 
 const DISMISSED_KEY = 'tepup_install_dismissed';
 
-/** Đọc một lần từ trình duyệt; ở server thì coi như đã tắt (không hiện gì) và không phải iOS. */
+/** Đọc một lần từ trình duyệt; ở server coi như đã tắt (không hiện gì). */
 const noSubscribe = () => () => {};
 const readDismissed = () => {
   try {
@@ -17,194 +22,89 @@ const readDismissed = () => {
     return false;
   }
 };
-const readIsIosSafari = () => {
-  // iPad từ iPadOS 13 khai báo mình là Macintosh, phải kiểm tra thêm cảm ứng.
-  const ua = navigator.userAgent;
-  const iosLike = /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
-  return iosLike && isSafari;
-};
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-/** First focusable element after `el` in the page (focus goes there when `el` disappears). */
+/** Phần tử focus được kế tiếp sau `el` (focus về đó khi `el` biến mất). */
 function nextFocusableAfter(el: HTMLElement | null): HTMLElement | null {
   if (!el) return null;
   return (
     Array.from(document.querySelectorAll<HTMLElement>(FOCUSABLE)).find(
-      (candidate) =>
-        !el.contains(candidate) &&
-        !candidate.closest('[inert]') &&
-        Boolean(el.compareDocumentPosition(candidate) & Node.DOCUMENT_POSITION_FOLLOWING),
+      (c) =>
+        !el.contains(c) &&
+        !c.closest('[inert]') &&
+        Boolean(el.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING),
     ) ?? null
   );
 }
 
-/** Sự kiện riêng của Chromium, chưa nằm trong định nghĩa kiểu chuẩn. */
-interface BeforeInstallPromptEvent extends Event {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-}
-
 /**
- * Mời người học cài Tepup về màn hình chính.
+ * Lời mời cài Tépup ở cuối /courses (chỉ trên điện thoại, chưa cài, chưa tắt).
  *
- * Hai nền tảng đi hai đường khác nhau: Chromium cho phép gọi hộp thoại cài đặt
- * bằng mã, còn iOS không có API nào tương đương — ở đó chỉ có thể vẽ lại đúng các
- * bước bấm tay trong Safari.
- *
- * Tiến độ học vẫn theo sang được nhờ seed trong start_url, nên mời muộn cũng không
- * mất gì — xem lib/pwa/progress-seed.ts.
+ * Hướng dẫn đầy đủ (iOS / Android, trình duyệt trong Facebook/Zalo…) nằm trong
+ * bảng Cài đặt ở header (components/settings). Ở đây chỉ là lối tắt: Android
+ * cho cài một chạm thì cài luôn, còn lại mở bảng Cài đặt đúng phần hướng dẫn.
+ * Tiến độ học theo sang bản cài nhờ seed trong start_url (lib/pwa/progress-seed.ts).
  */
 export default function InstallPrompt() {
-  const isStandalone = useIsStandalone();
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const platform = useSyncExternalStore(noSubscribe, detectPlatform, () => 'other' as const);
+  const installed = useSyncExternalStore(noSubscribe, isStandalone, () => true);
+  const canPrompt = useSyncExternalStore(subscribeInstallPrompt, () => !!getInstallPrompt(), () => false);
   const storedDismissed = useSyncExternalStore(noSubscribe, readDismissed, () => true);
-  const [dismissedNow, setDismissed] = useState(false);
-  const dismissed = storedDismissed || dismissedNow;
-  const [showIosGuide, setShowIosGuide] = useState(false);
-  const isIos = useSyncExternalStore(noSubscribe, readIsIosSafari, () => false);
+  const [dismissedNow, setDismissedNow] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
 
-  useEffect(() => {
-    const onBeforeInstall = (event: Event) => {
-      // Chặn thanh mời mặc định để tự chọn thời điểm hỏi.
-      event.preventDefault();
-      setDeferredPrompt(event as BeforeInstallPromptEvent);
-    };
-
-    window.addEventListener('beforeinstallprompt', onBeforeInstall);
-    return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
-  }, []);
-
   const dismiss = () => {
-    // The whole invitation disappears, focused button included: hand focus to what comes next.
     const next = nextFocusableAfter(sectionRef.current);
-    setDismissed(true);
-    setShowIosGuide(false);
+    setDismissedNow(true);
     if (next) requestAnimationFrame(() => next.focus());
     try {
       localStorage.setItem(DISMISSED_KEY, '1');
     } catch {
-      // Chặn lưu trữ thì chấp nhận hỏi lại ở lần sau.
+      // Chặn lưu trữ thì chấp nhận hỏi lại lần sau.
     }
   };
 
-  const handleInstall = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt();
-      await deferredPrompt.userChoice;
-      setDeferredPrompt(null);
-      dismiss();
-      return;
-    }
-    setShowIosGuide(true);
-  };
+  if (installed || storedDismissed || dismissedNow) return null;
+  if (platform === 'other' && !canPrompt) return null;
 
-  // Đã cài rồi, đã từ chối rồi, hoặc nền tảng không cài được thì im lặng.
-  if (isStandalone || dismissed) return null;
-  if (!deferredPrompt && !isIos) return null;
+  const oneTap = platform === 'android' && canPrompt;
 
   return (
-    <>
-      <section
-        ref={sectionRef}
-        aria-labelledby="install-prompt-title"
-        className="relative mx-auto max-w-2xl rounded-2xl border border-gray-200 bg-gray-50 p-5 sm:p-6"
-      >
-        <button
-          type="button"
-          onClick={dismiss}
-          aria-label="Ẩn lời mời cài đặt"
-          className="absolute right-3 top-3 rounded-lg p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600"
-        >
-          <X className="h-4 w-4" aria-hidden="true" />
-        </button>
-
-        <div className="flex items-start gap-4">
-          <Image
-            src="/icons/icon-192.png"
-            alt=""
-            width={56}
-            height={56}
-            className="flex-shrink-0 rounded-xl"
-          />
-          <div className="min-w-0 flex-1">
-            <h2 id="install-prompt-title" className="font-semibold text-gray-900">Cài Tepup về máy</h2>
-            <p className="mt-1 text-sm text-gray-600">
-              Thêm Tepup vào màn hình chính để mở nhanh như một ứng dụng, không còn
-              thanh địa chỉ. Tiến độ học của bạn được mang theo.
-            </p>
+    <section ref={sectionRef} aria-labelledby="install-prompt-title" className="install-card">
+      <button type="button" onClick={dismiss} aria-label="Ẩn lời mời cài đặt" className="install-card__x">
+        <X aria-hidden="true" />
+      </button>
+      {/* eslint-disable-next-line @next/next/no-img-element -- favicon SVG tĩnh */}
+      <img src="/paper/favicon.svg" alt="" width={56} height={56} className="install-card__icon" />
+      <div className="install-card__text">
+        <h2 id="install-prompt-title">Cài Tépup về máy</h2>
+        <p>Mở nhanh từ màn hình chính như một ứng dụng, toàn màn hình, tiến độ học được mang theo.</p>
+        <div className="install-card__actions">
+          {oneTap ? (
             <button
               type="button"
-              onClick={handleInstall}
-              aria-haspopup={isIos && !deferredPrompt ? 'dialog' : undefined}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 sm:w-auto"
+              className="paper-btn"
+              onClick={async () => {
+                if (await runInstallPrompt()) dismiss();
+              }}
             >
-              <Download className="h-4 w-4" aria-hidden="true" />
-              Cài đặt
+              <Download aria-hidden="true" className="install-card__btn-icon" />
+              Cài đặt ngay
             </button>
-          </div>
+          ) : (
+            <button type="button" className="paper-btn" aria-haspopup="dialog" onClick={() => openSettings('install')}>
+              Xem hướng dẫn cài
+            </button>
+          )}
+          {oneTap && (
+            <button type="button" className="install-card__link" onClick={() => openSettings('install')}>
+              Hướng dẫn chi tiết
+            </button>
+          )}
         </div>
-      </section>
-
-      {/* iOS không cho gọi hộp thoại cài đặt, chỉ còn cách chỉ lại các bước bấm tay.
-          Hộp thoại modal: focus vào nút "Đã hiểu", Tab ở lại bên trong, Esc đóng, và focus
-          trở lại nút "Cài đặt" (focus-trap tự trả). Nền tối chỉ là lối tắt cho chuột/chạm. */}
-      {showIosGuide && (
-        <>
-          <div
-            className="fixed inset-0 z-[60] bg-black/50"
-            onMouseDown={() => setShowIosGuide(false)}
-            aria-hidden="true"
-          />
-          <FocusTrap
-            focusTrapOptions={{
-              allowOutsideClick: true,
-              initialFocus: '#ios-guide-ok',
-              onDeactivate: () => setShowIosGuide(false),
-            }}
-          >
-            <div
-              className="pointer-events-none fixed inset-0 z-[61] flex items-end justify-center p-3 sm:items-center"
-            >
-              <div
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="ios-guide-title"
-                className="pointer-events-auto w-full max-w-sm rounded-2xl bg-white p-5 pb-safe-4 shadow-2xl"
-              >
-                <h2 id="ios-guide-title" className="font-semibold text-gray-900">
-                  Thêm vào Màn hình chính
-                </h2>
-                <ol className="mt-4 space-y-4 text-sm text-gray-700">
-                  <li className="flex items-center gap-3">
-                    <Share className="h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
-                    <span>
-                      Bấm nút <strong>Chia sẻ</strong> ở thanh dưới của Safari
-                    </span>
-                  </li>
-                  <li className="flex items-center gap-3">
-                    <SquarePlus className="h-5 w-5 flex-shrink-0 text-blue-600" aria-hidden="true" />
-                    <span>
-                      Chọn <strong>Thêm vào Màn hình chính</strong>
-                    </span>
-                  </li>
-                </ol>
-                <button
-                  id="ios-guide-ok"
-                  type="button"
-                  onClick={() => setShowIosGuide(false)}
-                  className="mt-6 w-full rounded-xl bg-gray-900 py-3 font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-                >
-                  Đã hiểu
-                </button>
-              </div>
-            </div>
-          </FocusTrap>
-        </>
-      )}
-    </>
+      </div>
+    </section>
   );
 }

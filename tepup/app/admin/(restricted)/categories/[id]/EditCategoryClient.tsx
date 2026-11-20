@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from '@/components/ui/AppLink';
 import { Save } from 'lucide-react';
 import IconPicker from '@/components/admin/IconPicker';
+import CategoryColorPicker from '@/components/admin/CategoryColorPicker';
 import Spinner from '@/components/ui/Spinner';
 import {
   BackLink,
@@ -21,6 +22,7 @@ interface Category {
   name: string;
   description: string | null;
   icon: string;
+  color: string;
   isActive: boolean;
 }
 
@@ -38,6 +40,7 @@ export default function EditCategoryClient({
     name: '',
     description: '',
     icon: 'brain',
+    color: 'blue',
     isActive: true,
   });
 
@@ -56,6 +59,7 @@ export default function EditCategoryClient({
         name: category.name,
         description: category.description || '',
         icon: category.icon,
+        color: category.color || 'blue',
         isActive: category.isActive,
       });
     } catch (err) {
@@ -172,6 +176,13 @@ export default function EditCategoryClient({
               onChange={(icon) => setFormData({ ...formData, icon })}
             />
           </div>
+
+          {/* Màu chủ đạo ở /courses */}
+          <CategoryColorPicker
+            value={formData.color}
+            onChange={(color) => setFormData({ ...formData, color })}
+            previewTitle={formData.name}
+          />
 
           {/* Active Status */}
           <div>

@@ -5,23 +5,23 @@ import { IconStory, IconInteractive, IconPath, IconPrivate } from '../icons';
 const ITEMS = [
   {
     Icon: IconStory,
-    title: 'Học qua câu chuyện ngắn',
-    body: 'Mỗi bài học gắn với hành trình của những nhân vật đời thực ở Việt Nam — dễ hiểu và gần gũi với cuộc sống.',
+    title: 'Học qua những câu chuyện gần gũi',
+    body: 'Mỗi bài học bắt đầu từ những câu chuyện và tình huống quen thuộc trong đời sống Việt Nam, giúp bạn dễ dàng liên hệ kiến thức với những gì diễn ra xung quanh.',
   },
   {
     Icon: IconInteractive,
-    title: 'Tương tác thực tế',
-    body: 'Không chỉ đọc chay. Mỗi bài học đi kèm bài tập mô phỏng và câu hỏi để bạn dễ hiểu, không chỉ lướt qua.',
+    title: 'Học bằng cách tương tác',
+    body: 'Không chỉ đọc và tiếp nhận thông tin. Bạn sẽ được thử nghiệm, trả lời câu hỏi và khám phá các tình huống để hiểu sâu hơn về vấn đề.',
   },
   {
     Icon: IconPath,
-    title: 'Lộ trình rõ ràng',
-    body: 'Từ cơ bản đến nâng cao, chia thành từng bước nhỏ vừa sức. Bạn biết mình đang ở đâu và sẽ đi đến đâu.',
+    title: 'Lộ trình học từng bước',
+    body: 'Các chủ đề được sắp xếp từ cơ bản đến nâng cao, giúp bạn xây dựng kiến thức một cách có hệ thống và học theo tốc độ của riêng mình.',
   },
   {
     Icon: IconPrivate,
-    title: 'Riêng tư và miễn phí',
-    body: 'Tépup không thu thập dữ liệu cá nhân. Bạn có thể học ẩn danh, hoàn toàn không phí và không quảng cáo.',
+    title: 'Miễn phí và tôn trọng quyền riêng tư',
+    body: 'Tépup hoàn toàn miễn phí, không quảng cáo và không thu thập dữ liệu cá nhân. Bạn có thể học mà không cần tiết lộ danh tính.',
   },
 ];
 

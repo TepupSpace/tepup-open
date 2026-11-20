@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useLayoutEffect, useMemo, useCallback, useSyncExternalStore } from 'react';
-import { X, PencilLine, ArrowRight, BookOpen, RotateCcw, CircleCheck } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import { useNavigate } from '@/lib/hooks/useNavigate';
 import { getPreviousPath } from '@/lib/navigation-history';
 import Spinner from '@/components/ui/Spinner';
@@ -17,6 +17,11 @@ import { isEmptyBlock } from '@/lib/editor/trim-empty-blocks';
 import type { NextItemLink } from '@/lib/utils/next-item';
 import ReferenceProvider from '@/components/reference/ReferenceProvider';
 import { collectTvSlugs } from '@/lib/library/refs';
+import { fraunces, beVietnam } from '@/lib/fonts/paper';
+import { takeStampHandoff, introStampSize } from '@/lib/paper/stamp-handoff';
+import { PaperPlayerContext } from './paper-context';
+import { IconAa, IconArrow, IconClose, IconNote, IconReset, IconReview } from './PaperIcons';
+import './player-paper.css';
 
 interface LessonPlayerProps {
   /** Stable database id — this is what progress is keyed by, never the slug. */
@@ -79,25 +84,32 @@ function computeGroups(blocks: ContentBlock[]): RevealItem[][] {
 }
 
 /**
- * Nhóm mới được đặt GIỮA dải nhìn thấy được (giữa header và footer dính). Trước
- * đây neo ở vạch 10% từ mép trên: trên laptop, nhóm ngắn dính lên đầu màn hình
- * và cả phần dưới bỏ trống. Nhóm cao hơn dải thì neo đầu nhóm cách mép trên
- * một khoảng nhỏ, để người học bắt đầu đọc từ đầu phần vừa mở.
+ * Nhịp chuyển động của trang học (demo-course-stories, giữ nguyên giá trị):
+ * khối mới vượt đường 75% chiều cao màn thì cả nội dung trượt lên vừa đủ để mép
+ * dưới khối mới đậu đúng đường đó; khối cao hơn chỗ còn lại thì canh mép trên
+ * (chừa 28px khối trước cho biết mạch).
  */
-const TALL_GROUP_MARGIN = 24;
-
-/**
- * Nút chân trang khi chưa bấm được (chưa chọn đáp án, chưa xong bài tập). Chữ là
- * lời hướng dẫn nên phải đọc được: gray-600 trên gray-100 ≈ 7:1, vẫn nhạt hẳn so
- * với nút đen đang hoạt động.
- */
-const DISABLED_BUTTON_STYLE = 'bg-gray-100 text-gray-600 cursor-not-allowed';
+const FLOW_LINE = 0.75;
+const FLOW_CONTEXT = 28;
+const EASE_FLY = 'cubic-bezier(.65,0,.25,1)';
+const EASE_UP = 'cubic-bezier(.16,1,.3,1)';
+const EASE_RISE = 'cubic-bezier(.22,1,.36,1)';
+const STAMP_SRC = '/paper/lesson-stamp-go.webp';
 
 /** Tiến độ không phát sự kiện riêng cho từng bài; ProgressContext render lại là đủ. */
 const subscribeNever = () => () => {};
 
 /** `useLayoutEffect` cảnh báo khi render phía server; trang bài học có SSR. */
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * - `intro`: Screen 1 (tem + tên) đang chạy, khung học còn ẩn.
+ * - `ready`: khung học (thanh trên, nội dung, nút dưới) đã hiện.
+ */
+type Phase = 'intro' | 'ready';
 
 export default function LessonPlayer({
   contentId,
@@ -113,22 +125,36 @@ export default function LessonPlayer({
   // Every /tv/<slug> in the content, so the reader fetches all previews in one request.
   const refSlugs = useMemo(() => [...collectTvSlugs(blocks).keys()], [blocks]);
   const { navigate, goBack, isPending: isNavigating } = useNavigate();
+  const pathname = usePathname();
+  const isLesson = contentType === 'lesson';
+  const noun = isLesson ? 'bài học' : 'chương';
   // Anonymous "suggest a fix": null = closed, string = open with that passage pre-filled.
   const [suggestQuote, setSuggestQuote] = useState<string | null>(null);
   // One form for every kind of suggestion; the learner picks "sửa bài" or "thuật ngữ" in it.
   const closeSuggest = useCallback(() => setSuggestQuote(null), []);
   const openSuggestEdit = useCallback((q: string) => setSuggestQuote(q), []);
+
+  const [rootEl, setRootEl] = useState<HTMLDivElement | null>(null);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const setRoot = useCallback((el: HTMLDivElement | null) => {
+    rootRef.current = el;
+    setRootEl(el);
+  }, []);
+  const paperCtx = useMemo(() => ({ root: rootEl }), [rootEl]);
+
   const scrollRef = useRef<HTMLElement>(null);
-  const headerRef = useRef<HTMLElement>(null);
+  const flowRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLElement>(null);
   const footerRef = useRef<HTMLElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
   const groupStartRef = useRef<HTMLDivElement>(null);
-  const tailRef = useRef<HTMLDivElement>(null);
   const explanationRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
-  const nextButtonRef = useRef<HTMLButtonElement>(null);
+  const primaryButtonRef = useRef<HTMLButtonElement>(null);
+  const introRef = useRef<HTMLDivElement>(null);
+  const stampRef = useRef<HTMLImageElement>(null);
+  const nameRef = useRef<HTMLHeadingElement>(null);
   /**
-   * Nút vừa bấm có thể biến mất (màn hỏi xem lại, chân trang đổi sang "Học bài
+   * Nút vừa bấm có thể biến mất (màn hỏi xem lại, chân trang đổi sang "Đọc chương
    * tiếp"): ghi lại chỗ cần đưa focus tới sau lần render kế, để phím Tab không
    * rơi về <body> và bỏ qua phần vừa mở.
    */
@@ -147,6 +173,12 @@ export default function LessonPlayer({
   const [finishedHere, setFinishedHere] = useState(false);
   const mode: PlayerMode = choice ?? (wasCompleted && !finishedHere ? 'choose' : 'learn');
 
+  const [phase, setPhase] = useState<Phase>('intro');
+  // Tem Screen 1: ảnh của folder vừa bấm (nếu đi từ trang câu chuyện), mặc định tem "Học ngay".
+  const [stampSrc, setStampSrc] = useState(STAMP_SRC);
+  const [introShown, setIntroShown] = useState(true);
+  const leavingRef = useRef(false);
+
   const [visibleGroups, setVisibleGroups] = useState(1);
   const [points, setPoints] = useState(0);
   const hasMarkedRef = useRef(false);
@@ -161,149 +193,154 @@ export default function LessonPlayer({
   const groups = useMemo(() => computeGroups(blocks), [blocks]);
   const totalGroups = groups.length;
   const isComplete = visibleGroups > totalGroups;
-  const revealed = groups.slice(0, visibleGroups).flat();
+  const visible = groups.slice(0, visibleGroups);
   const currentGroup = groups[visibleGroups - 1] ?? [];
-  const showNext = isComplete && next !== null;
 
-  // Nút nổi (chat, lên/xuống đầu trang) phải đứng trên chân trang dính. Đo chiều cao thật
-  // của chân trang (cuối bài có thêm dòng "Tiếp theo", chữ to hơn khi người học phóng chữ);
-  // ước lượng cố định trước đây thấp hơn thực tế nên nút đè lên chân trang. Chưa đo được thì
-  // dùng ước lượng. Màn hỏi xem lại thì không có chân trang.
-  const [footerHeight, setFooterHeight] = useState(0);
+  // ---------------------------------------------------------------- đo chân trang
+  // --foot = mép trên cụm nút tính từ đáy: mask của vùng cuộn tan dần ngay trên nó, và
+  // nút nổi (chat) đứng trên nó. Chữ to hơn khi người học phóng chữ, nên phải đo thật.
+  const [footHeight, setFootHeight] = useState(0);
   useEffect(() => {
     const el = footerRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setFooterHeight(Math.ceil(el.getBoundingClientRect().height)));
+    const measure = () => {
+      const bottom = parseFloat(getComputedStyle(el).bottom) || 0;
+      setFootHeight(Math.ceil(el.offsetHeight + bottom));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [mode]);
-  useBottomChrome(mode === 'choose' ? '0rem' : footerHeight ? `${footerHeight}px` : showNext ? '6.5rem' : '4.75rem');
+  }, [mode, phase]);
+  useBottomChrome(mode === 'choose' || phase === 'intro' ? '0rem' : footHeight ? `${footHeight}px` : '6.5rem');
 
-  /**
-   * Phần tử cuộn thật. Root chỉ đặt `min-height` nên `flex-1` của <main> không
-   * resolve được thành chiều cao xác định — thường <main> cao bằng nội dung và
-   * chính TÀI LIỆU mới cuộn (đó cũng là lý do header/footer phải `sticky`).
-   * Trả về null nghĩa là cuộn tài liệu.
-   */
-  const getScroller = useCallback((): HTMLElement | null => {
-    const main = scrollRef.current;
-    if (!main || main.scrollHeight <= main.clientHeight) return null;
-    const overflowY = getComputedStyle(main).overflowY;
-    return overflowY === 'auto' || overflowY === 'scroll' ? main : null;
+  // ---------------------------------------------------------------- cuộn & hiện khối
+  /** Đường 75% màn, tính theo toạ độ trong vùng cuộn. */
+  const flowLimit = useCallback(() => {
+    const scroller = scrollRef.current;
+    if (!scroller) return 0;
+    return window.innerHeight * FLOW_LINE - scroller.getBoundingClientRect().top;
   }, []);
 
-  /** Dải còn nhìn thấy được, đã trừ header và footer dính. */
-  const getBand = useCallback(() => {
-    const top = headerRef.current?.getBoundingClientRect().bottom ?? 0;
-    const bottom = footerRef.current?.getBoundingClientRect().top ?? window.innerHeight;
-    return { top, height: Math.max(1, bottom - top) };
-  }, []);
-
-  /**
-   * Đỉnh phần tử so với khung nhìn, KHÔNG tính transform — block vừa hiện đang
-   * chạy `animate-fade-in` (translateY 10px) mà getBoundingClientRect thì cộng
-   * cả transform vào, nên phải đi theo chuỗi offsetTop.
-   */
-  const untransformedTop = useCallback((el: HTMLElement, scroller: HTMLElement | null) => {
-    let y = 0;
-    let node: HTMLElement | null = el;
-    while (node && node !== scroller) {
-      y += node.offsetTop;
-      node = node.offsetParent as HTMLElement | null;
+  /** Chừa chỗ trống dưới cùng để khối cuối vẫn đẩy lên được tới đường 75%. */
+  const padFlow = useCallback(() => {
+    const scroller = scrollRef.current;
+    const flow = flowRef.current;
+    if (!scroller || !flow) return;
+    if (mode === 'review') {
+      // Cuộn hết vẫn đọc được khối cuối, không nằm sau nút.
+      flow.style.paddingBottom = 'calc(var(--foot, 104px) + 6rem)';
+      return;
     }
-    if (scroller) return scroller.getBoundingClientRect().top + y - scroller.scrollTop;
-    return y - window.scrollY;
-  }, []);
+    flow.style.paddingBottom = `${Math.max(160, scroller.clientHeight - flowLimit() + 40)}px`;
+  }, [mode, flowLimit]);
 
-  /**
-   * Chiều cao nhóm hiện tại: từ đầu block đầu nhóm tới đầu phần đệm (ngay sau
-   * block cuối). Cả hai cùng offsetParent nên không bị transform hay đệm ảnh hưởng.
-   */
-  const groupHeight = useCallback(() => {
-    const start = groupStartRef.current;
-    const tail = tailRef.current;
-    if (!start || !tail) return 0;
-    return Math.max(0, tail.offsetTop - start.offsetTop);
-  }, []);
-
-  /** Đỉnh nhóm nên nằm ở đâu trong khung nhìn: giữa dải, hoặc sát trên nếu nhóm quá cao. */
-  const targetTop = useCallback((height: number) => {
-    const band = getBand();
-    const room = band.height - height;
-    return room >= 2 * TALL_GROUP_MARGIN ? band.top + room / 2 : band.top + TALL_GROUP_MARGIN;
-  }, [getBand]);
-
-  /**
-   * Đệm dưới cùng đủ cao để nhóm cuối — thường rất ngắn — vẫn cuộn lên được tới
-   * giữa dải. Không có nó thì trình duyệt kẹp lại ở cuối trang và nhóm rơi xuống dưới.
-   */
-  const syncTailPad = useCallback(() => {
-    const content = contentRef.current;
-    const tail = tailRef.current;
-    if (!content || !groupStartRef.current || !tail) return;
-
-    const height = groupHeight();
-    const band = getBand();
-    // Khoảng trống cần có dưới nhóm khi nhóm nằm đúng chỗ, trừ phần lề dưới sẵn có.
-    const below = band.top + band.height - (targetTop(height) + height);
-    const padBottom = parseFloat(getComputedStyle(content).paddingBottom) || 0;
-    tail.style.height = `${Math.max(0, below - padBottom)}px`;
-  }, [getBand, groupHeight, targetTop]);
-
-  /** Đưa nhóm hiện tại vào giữa dải nhìn thấy được. */
-  const anchorToGroupStart = useCallback((behavior?: ScrollBehavior) => {
-    const start = groupStartRef.current;
-    if (!start) return;
-    // Cuộn mượt bằng JS không chịu quy tắc CSS prefers-reduced-motion: tự kiểm tra.
-    behavior ??= window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-    const scroller = getScroller();
-    const delta = untransformedTop(start, scroller) - targetTop(groupHeight());
-    if (scroller) {
-      scroller.scrollTo({ top: Math.max(0, scroller.scrollTop + delta), behavior });
-    } else {
-      window.scrollTo({ top: Math.max(0, window.scrollY + delta), behavior });
+  const scrollRaf = useRef(0);
+  /** Cuộn ease-out (nhanh lúc đầu, chậm dần); cuộn mới thay cuộn đang chạy. Trả về thời lượng. */
+  const glideScroll = useCallback((to: number) => {
+    const scroller = scrollRef.current;
+    if (!scroller) return 0;
+    cancelAnimationFrame(scrollRaf.current);
+    const from = scroller.scrollTop;
+    const dist = to - from;
+    if (prefersReducedMotion() || Math.abs(dist) < 2) {
+      scroller.scrollTop = to;
+      return 0;
     }
-  }, [getScroller, untransformedTop, targetTop, groupHeight]);
+    const dur = Math.min(750, 420 + Math.abs(dist) * 0.5);
+    const t0 = performance.now();
+    const step = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      const e = 1 - Math.pow(1 - t, 3);
+      scroller.scrollTop = from + dist * e;
+      if (t < 1) scrollRaf.current = requestAnimationFrame(step);
+    };
+    scrollRaf.current = requestAnimationFrame(step);
+    return dur;
+  }, []);
+  useEffect(() => () => cancelAnimationFrame(scrollRaf.current), []);
 
-  // Nhóm mới hiện ra: đặt đệm rồi neo, cả hai trong cùng một lần bố cục để
-  // thanh cuộn không nhảy hai nhịp.
+  /**
+   * Đưa phần tử lên vừa đủ để mép dưới của nó đậu trên đường 75%. Chỉ cuộn xuống,
+   * không bao giờ kéo ngược lên. Đo bỏ phần lệch của hiệu ứng nổi lên (transform).
+   */
+  const reveal = useCallback((node: HTMLElement | null) => {
+    const scroller = scrollRef.current;
+    if (!node || !scroller) return 0;
+    const r = node.getBoundingClientRect();
+    const base = scroller.getBoundingClientRect().top - scroller.scrollTop;
+    const transform = getComputedStyle(node).transform;
+    const ty = transform && transform !== 'none' ? new DOMMatrix(transform).m42 : 0;
+    const top = r.top - base - ty;
+    const bottom = r.bottom - base - ty;
+    const limit = flowLimit();
+    let want = bottom - limit;
+    if (bottom - top > limit - FLOW_CONTEXT) want = top - FLOW_CONTEXT;
+    if (want <= scroller.scrollTop + 1) return 0;
+    return glideScroll(want);
+  }, [flowLimit, glideScroll]);
+
+  /** Khối mới hiện dần: mờ → rõ, nổi 8px; tiêu đề + từng đoạn nối đuôi 80ms. */
+  const fadeIn = useCallback((nodes: HTMLElement[], delay: number, gap = 80) => {
+    if (prefersReducedMotion()) return;
+    nodes.forEach((x, i) => {
+      x.animate(
+        [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 800, delay: delay + i * gap, easing: EASE_RISE, fill: 'backwards' },
+      );
+    });
+  }, []);
+
+  const groupParts = useCallback((group: HTMLElement) => {
+    const parts: HTMLElement[] = [];
+    group.querySelectorAll<HTMLElement>(':scope > .pl__block').forEach((block) => {
+      const lt = block.querySelector<HTMLElement>(':scope > .lt');
+      if (lt) parts.push(...lt.querySelectorAll<HTMLElement>(':scope > .lt__title, .lt__paras > p'));
+      else parts.push(block);
+    });
+    return parts;
+  }, []);
+
+  // Nhóm mới hiện ra (kể cả nhóm đầu khi khung học vừa hiện): đặt đệm, cuộn trước
+  // tạo chỗ, rồi nhóm hiện dần khi cuộn đi được ~55%. Focus vào nhóm (preventScroll
+  // để khung nhìn không nhảy khỏi chỗ vừa cuộn).
   useIsomorphicLayoutEffect(() => {
-    if (visibleGroups <= 1) return;
-    syncTailPad();
-    anchorToGroupStart();
-  }, [visibleGroups, syncTailPad, anchorToGroupStart]);
+    if (phase !== 'ready' || mode !== 'learn') return;
+    const group = groupStartRef.current;
+    padFlow();
+    if (!group) return;
+    const dur = visibleGroups > 1 ? reveal(group) : 0;
+    fadeIn(groupParts(group), dur ? dur * 0.55 : visibleGroups > 1 ? 0 : 200);
+  }, [visibleGroups, phase, mode, padFlow, reveal, fadeIn, groupParts]);
 
-  // Chạy sau hiệu ứng neo ở trên (cùng lượt, theo thứ tự khai báo); preventScroll
-  // để focus không kéo khung nhìn khỏi vị trí vừa neo.
   useIsomorphicLayoutEffect(() => {
     const target = pendingFocusRef.current;
-    if (!target) return;
+    if (!target || phase !== 'ready') return;
     pendingFocusRef.current = null;
     if (target === 'top') {
       headingRef.current?.focus({ preventScroll: true });
       return;
     }
-    // Nhóm mới: focus vào block đầu nhóm. Hết bài và có bài sau: nút vừa bấm đã
-    // bị thay bằng cặp nút cuối bài, nên chuyển sang nút chính.
-    (groupStartRef.current ?? nextButtonRef.current)?.focus({ preventScroll: true });
-  }, [mode, visibleGroups]);
+    // Nhóm mới: focus vào nhóm. Hết bài: nút vừa bấm có thể đã đổi, chuyển sang nút chính.
+    (isComplete ? primaryButtonRef.current : groupStartRef.current ?? primaryButtonRef.current)?.focus({ preventScroll: true });
+  }, [mode, visibleGroups, phase, isComplete]);
 
   // Xoay ngang / đổi cỡ cửa sổ làm chiều cao vùng cuộn đổi theo.
   useEffect(() => {
-    const onResize = () => syncTailPad();
+    const onResize = () => padFlow();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
-  }, [syncTailPad]);
+  }, [padFlow]);
 
   /**
    * Ảnh/video của nhóm hiện tại tải xong thì chiều cao thật mới lộ ra: tính lại
-   * đệm, và neo lại nếu media đó là block cuối (phần dịch chuyển nằm ngay dưới
+   * đệm, và cuộn thêm nếu media đó là block cuối (phần dịch chuyển nằm ngay dưới
    * tầm mắt người học).
    */
   const handleMediaSettled = useCallback((reanchor: boolean) => {
-    syncTailPad();
-    if (reanchor) anchorToGroupStart();
-  }, [syncTailPad, anchorToGroupStart]);
+    padFlow();
+    if (reanchor && mode === 'learn' && visibleGroups > 1) reveal(groupStartRef.current);
+  }, [padFlow, reveal, mode, visibleGroups]);
 
   // Nạp trước ảnh của cả bài ngay khi vào, để lúc block ảnh hiện ra thì ảnh đã
   // nằm sẵn trong cache trình duyệt — người học ít khi phải nhìn skeleton.
@@ -332,21 +369,127 @@ export default function LessonPlayer({
     return () => clearTimeout(id);
   }, [blocks]);
 
-  const handleClose = () => {
-    if (isNavigating) return;
-
-    // Vào bài học là `push`, nên thoát phải GỠ entry đó khỏi history. Trước đây
-    // thoát cũng `push` — back một bước là rơi ngược vào chính bài vừa thoát.
-    if (getPreviousPath() === exitHref) {
-      goBack();
+  // ---------------------------------------------------------------- Screen 1
+  // Lấy cờ "tem bay" đúng một lần (effect chạy hai lần ở StrictMode).
+  const handoffTakenRef = useRef(false);
+  const [handoff, setHandoff] = useState<boolean | null>(null);
+  useIsomorphicLayoutEffect(() => {
+    if (handoffTakenRef.current) return;
+    handoffTakenRef.current = true;
+    if (prefersReducedMotion()) {
+      // Giảm chuyển động: bỏ Screen 1, vào thẳng trang học.
+      setIntroShown(false);
+      setPhase('ready');
       return;
     }
+    const h = takeStampHandoff(pathname);
+    if (h?.stampSrc) setStampSrc(h.stampSrc);
+    setHandoff(!!h);
+  }, [pathname]);
 
-    // Mở thẳng link bài học hoặc F5 giữa bài: không có gì để lùi. `replace` để
-    // entry player biến mất thay vì bị đẩy xuống dưới.
-    navigate(exitHref, { replace: true });
+  // Chạy Screen 1 rồi trượt lên vào trang học (demo `toLearn` nửa nhận + `introThenFlow`).
+  useIsomorphicLayoutEffect(() => {
+    if (handoff === null) return;
+    const intro = introRef.current;
+    const stamp = stampRef.current;
+    const name = nameRef.current;
+    if (!intro || !stamp || !name) return;
+    const anims: Animation[] = [];
+    const tween = (el: Element, frames: Keyframe[], opts: KeyframeAnimationOptions) => {
+      const a = el.animate(frames, { fill: 'both', ...opts });
+      anims.push(a);
+      return a;
+    };
+
+    let introAt: number;
+    if (handoff) {
+      // Trang câu chuyện để lại tem ở tâm màn, cạnh introStampSize(): vẽ ngay ở đó rồi
+      // trượt về chỗ của nó trong Screen 1 (FLIP), trong lúc tên hiện dần.
+      const r = stamp.getBoundingClientRect();
+      const side = introStampSize(window.innerWidth);
+      const dx = window.innerWidth / 2 - (r.left + r.width / 2);
+      const dy = window.innerHeight / 2 - (r.top + r.height / 2);
+      const sc = r.width ? side / r.width : 1;
+      tween(
+        stamp,
+        [{ opacity: 1, transform: `translate(${dx}px, ${dy}px) scale(${sc})` }, { opacity: 1, transform: 'none' }],
+        { duration: 720, easing: EASE_FLY },
+      );
+      introAt = 600;
+    } else {
+      tween(stamp, [{ opacity: 0, transform: 'translateY(24px) scale(.96)' }, { opacity: 1, transform: 'none' }], { duration: 800, easing: EASE_UP });
+      introAt = 400;
+    }
+    tween(name, [{ opacity: 0, transform: 'translateY(20px)' }, { opacity: 1, transform: 'none' }], { duration: 700, delay: introAt, easing: EASE_UP });
+    // Tên hiện xong là đi tiếp, không đứng chờ.
+    const leaveAt = introAt + 600;
+    const up = tween(
+      intro,
+      [
+        { opacity: 1, transform: 'translate(-50%, -50%)' },
+        { opacity: 0, transform: 'translate(-50%, calc(-50% - 90px))' },
+      ],
+      { duration: 700, delay: leaveAt, easing: EASE_FLY },
+    );
+    // Screen 1 đi gần hết rồi khung học mới hiện, không chồng hình.
+    const timer = window.setTimeout(() => setPhase('ready'), leaveAt + 650);
+    up.finished.then(() => setIntroShown(false), () => {});
+    return () => {
+      window.clearTimeout(timer);
+      anims.forEach((a) => a.cancel());
+    };
+  }, [handoff]);
+
+  // Khung học hiện ra: thanh trên rơi xuống, nút dưới nổi lên.
+  useIsomorphicLayoutEffect(() => {
+    if (phase !== 'ready' || !introShown) return;
+    if (prefersReducedMotion()) return;
+    barRef.current?.animate(
+      [{ opacity: 0, transform: 'translateY(-12px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 600, easing: EASE_UP, fill: 'backwards' },
+    );
+    footerRef.current?.animate(
+      [{ opacity: 0, transform: 'translateY(24px)' }, { opacity: 1, transform: 'none' }],
+      { duration: 700, delay: 200, easing: EASE_UP, fill: 'backwards' },
+    );
+    // Chỉ một lần, lúc khung học vừa hiện (introShown vẫn true tới khi Screen 1 trượt xong).
+  }, [phase]);
+
+  // ---------------------------------------------------------------- thoát
+  /** Trang học mờ đi (~0.3s) rồi mới điều hướng (demo `fromLearn`). */
+  const leaveThen = useCallback((go: () => void) => {
+    const root = rootRef.current;
+    if (!root || prefersReducedMotion()) {
+      go();
+      return;
+    }
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    const a = root.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, easing: 'ease-in', fill: 'forwards' });
+    a.finished.then(go, go);
+    // Phòng khi điều hướng không xảy ra (cùng URL, lỗi mạng): hiện lại trang.
+    window.setTimeout(() => {
+      leavingRef.current = false;
+      a.cancel();
+    }, 4_000);
+  }, []);
+
+  const handleClose = () => {
+    if (isNavigating) return;
+    leaveThen(() => {
+      // Vào bài học là `push`, nên thoát phải GỠ entry đó khỏi history. Trước đây
+      // thoát cũng `push` — back một bước là rơi ngược vào chính bài vừa thoát.
+      if (getPreviousPath() === exitHref) {
+        goBack();
+        return;
+      }
+      // Mở thẳng link bài học hoặc F5 giữa bài: không có gì để lùi. `replace` để
+      // entry player biến mất thay vì bị đẩy xuống dưới.
+      navigate(exitHref, { replace: true });
+    });
   };
 
+  // ---------------------------------------------------------------- câu hỏi
   const handleSelect = (blockIndex: number, optionId: string) => {
     const block = blocks[blockIndex] as QuestionBlock;
     setQuestionStates((prev) => ({
@@ -371,11 +514,12 @@ export default function LessonPlayer({
 
     if (isCorrect) setPoints((prev) => prev + 10);
 
+    // Ô giải thích vừa mở: cuộn lên vừa đủ cho nó nằm trên đường 75%.
     if (block.explanation) {
       setTimeout(() => {
-        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-        explanationRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
-      }, 100);
+        padFlow();
+        reveal(explanationRef.current);
+      }, 60);
     }
   };
 
@@ -388,7 +532,7 @@ export default function LessonPlayer({
       markCompleted(contentType, contentId, points);
     }
     // `replace`: back từ bài sau đưa về trang khoá học, không lùi qua từng bài đã học.
-    if (goNext && next) navigate(next.href, { replace: true });
+    if (goNext && next) leaveThen(() => navigate(next.href, { replace: true }));
     else handleClose();
   };
 
@@ -413,13 +557,23 @@ export default function LessonPlayer({
     setVisibleGroups(totalGroups + 1);
     setChoice('review');
     pendingFocusRef.current = 'top';
-    window.scrollTo({ top: 0 });
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   };
 
   const startRetake = () => {
     setChoice('learn');
     pendingFocusRef.current = 'top';
   };
+
+  // Xem lại: vài khối đầu hiện nối đuôi, phần dưới đã sẵn.
+  useIsomorphicLayoutEffect(() => {
+    if (mode !== 'review' || phase !== 'ready') return;
+    padFlow();
+    const flow = flowRef.current;
+    if (!flow) return;
+    fadeIn(Array.from(flow.querySelectorAll<HTMLElement>('.pl__block')).slice(0, 6), 0, 70);
+    footerRef.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: prefersReducedMotion() ? 0 : 400, easing: 'ease-out' });
+  }, [mode, phase]);
 
   // Check every selected-but-unchecked question in the current group at once.
   const handleCheckGroup = () => {
@@ -430,48 +584,142 @@ export default function LessonPlayer({
     });
   };
 
-  // Button state logic — gated on ALL question/interactive blocks in the current group.
+  // ---------------------------------------------------------------- chân trang
+  // Gated on ALL question/interactive blocks in the current group.
   const groupQuestions = currentGroup.filter((it) => it.block.type === 'question');
   const groupInteractives = currentGroup.filter((it) => INTERACTIVE_BLOCK_TYPES.includes(it.block.type));
   const allSelected = groupQuestions.every((it) => (questionStates[it.index]?.selected?.length ?? 0) > 0);
   const allChecked = groupQuestions.every((it) => questionStates[it.index]?.checked);
   const allInteractiveDone = groupInteractives.every((it) => interactiveBlockCompleted[it.index]);
+  const gate: 'select' | 'check' | 'activity' | null =
+    groupQuestions.length > 0 && !allSelected
+      ? 'select'
+      : groupQuestions.length > 0 && !allChecked
+      ? 'check'
+      : groupInteractives.length > 0 && !allInteractiveDone
+      ? 'activity'
+      : null;
 
-  let buttonText = 'Tiếp tục';
-  let buttonAction: () => void | Promise<void> = handleContinue;
-  let buttonDisabled = false;
-  let buttonStyle = 'bg-gray-900 text-white hover:bg-gray-800';
+  // Tới nhóm cuối và không còn gì chặn = cuối bài (demo: khối cuối xong là hiện nút kết thúc).
+  const atEnd = mode === 'review' || isComplete || (visibleGroups >= totalGroups && gate === null);
 
-  if (isComplete) {
-    buttonText = mode === 'review' ? 'Xong' : 'Hoàn thành';
-    buttonStyle = 'bg-green-700 text-white hover:bg-green-800';
-  } else if (groupQuestions.length > 0 && !allSelected) {
-    buttonText = 'Chọn đáp án';
-    buttonDisabled = true;
-    buttonStyle = DISABLED_BUTTON_STYLE;
-  } else if (groupQuestions.length > 0 && !allChecked) {
-    buttonText = 'Kiểm tra';
-    buttonAction = handleCheckGroup;
-    buttonStyle = 'bg-blue-600 text-white hover:bg-blue-700';
-  } else if (groupInteractives.length > 0 && !allInteractiveDone) {
-    buttonText = 'Hoàn thành bài tập';
-    buttonDisabled = true;
-    buttonStyle = DISABLED_BUTTON_STYLE;
-  }
-
-  const progress = Math.min((visibleGroups / Math.max(totalGroups, 1)) * 100, 100);
+  const progress =
+    mode === 'choose' ? 100 : Math.min((Math.min(visibleGroups, totalGroups) / Math.max(totalGroups, 1)) * 100, 100);
 
   // Đọc cho trình đọc màn hình mỗi lần mở thêm một phần. Lúc vào bài hay xem lại
   // thì chuỗi rỗng, nên không đọc gì.
   const revealAnnouncement =
     mode !== 'learn' || visibleGroups <= 1
       ? ''
-      : isComplete
-      ? `Đã hết ${contentType === 'lesson' ? 'bài học' : 'chương'}.`
+      : isComplete || (visibleGroups >= totalGroups && gate === null)
+      ? `Phần ${Math.min(visibleGroups, totalGroups)}/${totalGroups}. Đã hết ${noun}.`
       : `Phần ${visibleGroups}/${totalGroups}`;
 
+  const busyLabel = (
+    <>
+      <Spinner size="sm" tone="onDark" />
+      Đang lưu…
+    </>
+  );
+
+  let footer: React.ReactNode;
+  if (atEnd) {
+    const backLabel = isLesson ? 'Về khoá học' : 'Về câu chuyện';
+    if (next) {
+      const goLabel = mode === 'review' ? 'Đi tiếp' : isLesson ? 'Học bài tiếp' : 'Đọc chương tiếp';
+      footer = (
+        <>
+          {mode !== 'review' && (
+            <p key="next" className="pl__next">
+              <span>{isLesson ? 'Bài tiếp theo:' : 'Chương tiếp theo:'}</span>
+              <span>{next.title}</span>
+            </p>
+          )}
+          <div key="btns" className="pl__btns">
+            <button
+              key="ghost"
+              type="button"
+              onClick={() => finish(false)}
+              aria-disabled={isNavigating || undefined}
+              className="lbtn lbtn--ghost"
+            >
+              {backLabel}
+            </button>
+            <button
+              key="primary"
+              ref={primaryButtonRef}
+              type="button"
+              onClick={() => finish(true)}
+              aria-disabled={isNavigating || undefined}
+              aria-busy={isNavigating}
+              className="lbtn"
+            >
+              {isNavigating ? busyLabel : (
+                <>
+                  {goLabel}
+                  <IconArrow size={22} />
+                </>
+              )}
+            </button>
+          </div>
+        </>
+      );
+    } else {
+      // Bài/chương cuối (Figma 490-73381): một nút xanh.
+      const doneLabel = mode === 'review' ? backLabel : isLesson ? 'Hoàn thành bài học' : 'Hoàn thành chương';
+      footer = (
+        <div key="btns" className="pl__btns">
+          <button
+            key="primary"
+            ref={primaryButtonRef}
+            type="button"
+            onClick={() => finish(false)}
+            aria-disabled={isNavigating || undefined}
+            aria-busy={isNavigating}
+            className={mode === 'review' ? 'lbtn' : 'lbtn lbtn--green'}
+          >
+            {isNavigating ? busyLabel : doneLabel}
+          </button>
+        </div>
+      );
+    }
+  } else {
+    const label =
+      gate === 'select' ? 'Chọn đáp án' : gate === 'check' ? 'Kiểm tra' : gate === 'activity' ? 'Hoàn thành bài tập' : 'Tiếp tục';
+    const off = gate === 'select' || gate === 'activity';
+    const action = gate === 'check' ? handleCheckGroup : handleContinue;
+    footer = (
+      <div key="btns" className="pl__btns">
+        <button
+          key="primary"
+          ref={primaryButtonRef}
+          type="button"
+          // aria-disabled thay cho disabled: nút bị khoá ngay sau khi bấm "Tiếp
+          // tục" sẽ đẩy focus về <body>. Nút giữ focus, chỉ là bấm không làm gì.
+          onClick={off || isNavigating ? undefined : action}
+          aria-disabled={off || isNavigating || undefined}
+          aria-busy={isNavigating}
+          className={off ? 'lbtn lbtn--off' : 'lbtn'}
+        >
+          {isNavigating ? busyLabel : (
+            <>
+              {label}
+              {gate === null && <IconArrow size={22} />}
+            </>
+          )}
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="reader min-h-screen-dvh bg-white flex flex-col">
+    <PaperPlayerContext.Provider value={paperCtx}>
+    <div
+      ref={setRoot}
+      className={`reader pl ${fraunces.variable} ${beVietnam.variable}`}
+      data-phase={phase}
+      style={(footHeight ? { '--foot': `${footHeight}px` } : undefined) as React.CSSProperties | undefined}
+    >
       <ReferenceProvider slugs={refSlugs} enabled={references}>
       <TextSelectionPopover onSuggest={openSuggestEdit} />
       <SuggestEditDialog
@@ -483,226 +731,201 @@ export default function LessonPlayer({
         title={title}
         initialQuote={suggestQuote ?? ''}
       />
-      {/* Header */}
-      <header ref={headerRef} className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3 pt-safe">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+
+      {/* Screen 1: tem + tên, không thanh trên. Trang trí: tên đọc qua h1 của luồng học. */}
+      {introShown && (
+        <div ref={introRef} className="pl__intro" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element -- ảnh tĩnh trong public/, kích thước cố định */}
+          <img ref={stampRef} className="pl__stamp pl__pre" src={stampSrc} alt="" width={210} height={210} />
+          <p ref={nameRef} className="pl__name pl__serif pl__pre">{title}</p>
+        </div>
+      )}
+
+      {/* Thanh trên: thoát, tiến độ, tuỳ chọn đọc, góp ý */}
+      <header ref={barRef} className="pl__bar">
+        <div className="pl__col pl__tools">
           <button
+            type="button"
             onClick={handleClose}
-            disabled={isNavigating}
+            aria-disabled={isNavigating || undefined}
             aria-busy={isNavigating}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:cursor-wait"
-            aria-label={contentType === 'lesson' ? 'Đóng bài học' : 'Đóng chương'}
+            className="pl__icon-btn"
+            aria-label={isLesson ? 'Thoát bài học' : 'Thoát chương'}
           >
-            {isNavigating
-              ? <Spinner size="md" tone="muted" />
-              : <X className="w-6 h-6 text-gray-600" aria-hidden="true" />}
+            {isNavigating ? <Spinner size="md" tone="muted" /> : <IconClose size={24} />}
           </button>
-          {/* Lề hẹp trên mobile: mx-8 cố định bóp thanh tiến độ còn một mẩu ở màn 390px. */}
-          <div className="flex-1 ml-2 mr-1 sm:mx-8">
-            <div
-              className="h-2 bg-gray-100 rounded-full overflow-hidden"
-              role="progressbar"
-              aria-valuenow={Math.round(progress)}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`Tiến độ: ${title}`}
-            >
-              <div
-                className="h-full bg-green-700 transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
+          <div
+            className="pl__progress"
+            role="progressbar"
+            aria-valuenow={Math.round(progress)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Tiến độ ${noun}: ${title}`}
+          >
+            <span style={{ width: `${progress}%` }} />
           </div>
-          <ReaderSettings />
-          <button
-            onClick={() => openSuggestEdit('')}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label={contentType === 'lesson' ? 'Góp ý chỉnh sửa bài học' : 'Góp ý chỉnh sửa chương'}
-            title="Góp ý chỉnh sửa"
-          >
-            <PencilLine className="w-5 h-5 text-gray-500" aria-hidden="true" />
-          </button>
-          {headerExtra}
+          <div className="pl__icons">
+            <ReaderSettings
+              buttonClassName="pl__icon-btn"
+              icon={<IconAa size={28} />}
+              defaultFontHint="Be Vietnam Pro"
+            />
+            <button
+              type="button"
+              onClick={() => openSuggestEdit('')}
+              className="pl__icon-btn"
+              aria-label={isLesson ? 'Góp ý chỉnh sửa bài học' : 'Góp ý chỉnh sửa chương'}
+              title="Góp ý chỉnh sửa"
+            >
+              <IconNote size={24} />
+            </button>
+            {headerExtra}
+          </div>
         </div>
       </header>
 
       {/* Luôn gắn sẵn, chỉ đổi chữ: vùng live mọc ra cùng nội dung thường bị bỏ qua. */}
       <p className="sr-only" aria-live="polite" aria-atomic="true">{revealAnnouncement}</p>
 
-      {/* Main Content */}
-      <main id="main-content" ref={scrollRef} className="relative flex-1 overflow-auto">
+      <main
+        id="main-content"
+        ref={scrollRef}
+        className={`pl__scroll ${mode === 'choose' ? 'pl__scroll--free' : ''}`}
+      >
         {mode === 'choose' ? (
-          <RevisitChooser
-            contentType={contentType}
-            title={title}
-            onReview={startReview}
-            onRetake={startRetake}
-          />
+          phase === 'ready' && (
+            <RevisitChooser
+              noun={noun}
+              onReview={startReview}
+              onRetake={startRetake}
+            />
+          )
         ) : (
-        <>
-        {/* Đúng một h1 mỗi màn (màn hỏi xem lại có h1 riêng). Nằm ngoài
-            contentRef để không phá bộ chọn :first-child bên dưới. */}
-        <h1 ref={headingRef} tabIndex={-1} className="sr-only">{title}</h1>
-        {notices && <div className="max-w-3xl mx-auto px-4 pt-4">{notices}</div>}
-        <div ref={contentRef} className="max-w-3xl mx-auto px-4 py-8 [&>div:first-child>*]:mt-0">
-          {revealed.map(({ block, index }, pos) => {
-            const isLast = pos === revealed.length - 1;
-            const inCurrentGroup = currentGroup.some((it) => it.index === index);
-            // Neo vào block ĐẦU của nhóm mới, không phải block cuối — người học
-            // bắt đầu đọc từ đầu phần vừa mở ra.
-            const isGroupStart = inCurrentGroup && currentGroup[0]?.index === index;
-            return (
-              <div
-                key={index}
-                // Đầu nhóm chỉ nhận focus bằng script sau khi mở nhóm (không phải
-                // điểm Tab) và không bấm được, nên không cần viền focus.
-                // eslint-disable-next-line no-restricted-syntax -- vùng chứa không tương tác, focus bằng script
-                className={isGroupStart ? 'animate-fade-in outline-none' : 'animate-fade-in'}
-                ref={isGroupStart ? groupStartRef : undefined}
-                tabIndex={isGroupStart ? -1 : undefined}
-              >
-                <BlockRenderer
-                  block={block}
-                  index={index}
-                  questionState={questionStates[index]}
-                  onSelectAnswer={handleSelect}
-                  onInteractiveComplete={(idx) => setInteractiveBlockCompleted((prev) => ({ ...prev, [idx]: true }))}
-                  isLastVisible={isLast}
-                  explanationRef={explanationRef}
-                  isCurrentBlock={inCurrentGroup}
-                  onMediaSettled={handleMediaSettled}
-                />
-              </div>
-            );
-          })}
-          {/* Đệm động: cho phép nhóm cuối cũng cuộn lên được giữa dải nhìn thấy. */}
-          <div ref={tailRef} aria-hidden="true" />
-        </div>
-        </>
+          <div ref={flowRef} className="pl__col pl__flow">
+            {/* Đúng một h1 mỗi màn (màn hỏi xem lại có h1 riêng). */}
+            <h1 ref={headingRef} tabIndex={-1} className="sr-only">{title}</h1>
+            {notices && <div className="pl__notices">{notices}</div>}
+            {visible.map((group, gi) => {
+              const isCurrent = gi === visibleGroups - 1;
+              return (
+                <div
+                  key={group[0]?.index ?? gi}
+                  className="pl__group"
+                  // Nhóm mới chỉ nhận focus bằng script sau khi mở (không phải điểm Tab).
+                  ref={isCurrent ? groupStartRef : undefined}
+                  tabIndex={isCurrent ? -1 : undefined}
+                >
+                  {group.map(({ block, index }, pos) => (
+                    <div key={index} className="pl__block">
+                      <BlockRenderer
+                        block={block}
+                        index={index}
+                        questionState={questionStates[index]}
+                        onSelectAnswer={handleSelect}
+                        onInteractiveComplete={(idx) => setInteractiveBlockCompleted((prev) => ({ ...prev, [idx]: true }))}
+                        isLastVisible={isCurrent && pos === group.length - 1}
+                        explanationRef={explanationRef}
+                        isCurrentBlock={isCurrent}
+                        onMediaSettled={handleMediaSettled}
+                      />
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
         )}
       </main>
 
-      {/* Footer — ẩn ở màn hỏi xem lại, vì hai lựa chọn đã nằm giữa màn hình. */}
+      {/* Chân trang — ẩn ở màn hỏi xem lại, vì hai lựa chọn đã nằm giữa màn hình. */}
       {mode !== 'choose' && (
-      <footer ref={footerRef} className="sticky bottom-0 z-40 bg-white border-t border-gray-100 px-4 pt-4 pb-safe-4">
-        <div className="max-w-3xl mx-auto">
-          {showNext && next ? (
-            <>
-              <p className="mb-3 text-sm text-gray-500 truncate">
-                {contentType === 'lesson' ? 'Bài tiếp theo' : 'Chương tiếp theo'}:{' '}
-                <span className="font-medium text-gray-800">{next.title}</span>
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => finish(false)}
-                  aria-disabled={isNavigating || undefined}
-                  className="shrink-0 px-4 sm:px-5 py-4 rounded-xl font-semibold text-gray-700 border border-gray-300 hover:bg-gray-50 transition-colors aria-disabled:cursor-wait"
-                >
-                  {contentType === 'lesson' ? 'Về khoá học' : 'Về câu chuyện'}
-                </button>
-                <button
-                  ref={nextButtonRef}
-                  type="button"
-                  onClick={() => finish(true)}
-                  aria-disabled={isNavigating || undefined}
-                  aria-busy={isNavigating}
-                  className="flex-1 basis-48 py-4 rounded-xl font-semibold text-lg bg-green-700 text-white hover:bg-green-800 transition-all active:scale-[0.99] aria-disabled:cursor-wait flex items-center justify-center gap-2"
-                >
-                  {isNavigating ? (
-                    <>
-                      <Spinner size="sm" tone="onDark" />
-                      Đang lưu…
-                    </>
-                  ) : (
-                    <>
-                      {contentType === 'lesson' ? 'Học bài tiếp' : 'Đọc chương tiếp'}
-                      <ArrowRight className="w-5 h-5" aria-hidden="true" />
-                    </>
-                  )}
-                </button>
-              </div>
-            </>
-          ) : (
-          <button
-            type="button"
-            // aria-disabled thay cho disabled: nút bị khoá ngay sau khi bấm "Tiếp
-            // tục" sẽ đẩy focus về <body>. Nút giữ focus, chỉ là bấm không làm gì.
-            onClick={buttonDisabled || isNavigating ? undefined : buttonAction}
-            aria-disabled={buttonDisabled || isNavigating || undefined}
-            aria-busy={isNavigating}
-            className={`w-full py-4 rounded-xl font-semibold text-lg transition-all flex items-center justify-center gap-2 ${buttonDisabled ? '' : 'active:scale-[0.99]'} ${isNavigating ? 'cursor-wait' : ''} ${buttonStyle}`}
-          >
-            {isNavigating ? (
-              <>
-                <Spinner size="sm" tone="onDark" />
-                Đang lưu…
-              </>
-            ) : (
-              buttonText
-            )}
-          </button>
-          )}
-        </div>
-      </footer>
+        <footer ref={footerRef} className="pl__foot">
+          <div className="pl__col">{footer}</div>
+        </footer>
       )}
       </ReferenceProvider>
     </div>
+    </PaperPlayerContext.Provider>
   );
 }
 
 /**
- * Màn hỏi khi người học mở lại bài đã hoàn thành: đọc lại toàn bộ một lượt, hay
- * học lại từ đầu như lần đầu.
+ * Màn hỏi khi người học mở lại bài đã hoàn thành (Figma 490-73629): xem lại toàn
+ * bộ một lượt, hay học lại từ đầu như lần đầu. Bấm thẻ là vào luôn.
  */
 function RevisitChooser({
-  contentType,
-  title,
+  noun,
   onReview,
   onRetake,
 }: {
-  contentType: 'lesson' | 'chapter';
-  title: string;
+  noun: string;
   onReview: () => void;
   onRetake: () => void;
 }) {
-  const noun = contentType === 'lesson' ? 'bài học' : 'chương';
+  const rootRef = useRef<HTMLElement>(null);
   const firstRef = useRef<HTMLButtonElement>(null);
-  // Đưa focus vào lựa chọn đầu để người dùng bàn phím/trình đọc màn hình biết ngay.
+  const [picked, setPicked] = useState<'review' | 'reset' | null>(null);
+
+  // Đưa focus vào lựa chọn đầu để người dùng bàn phím/trình đọc màn hình biết ngay;
+  // đầu trang và hai thẻ hiện nối đuôi.
   useEffect(() => {
-    firstRef.current?.focus();
+    firstRef.current?.focus({ preventScroll: true });
+    const root = rootRef.current;
+    if (!root || prefersReducedMotion()) return;
+    root.querySelectorAll<HTMLElement>('.pl__choose-head, .lstudy').forEach((x, i) => {
+      x.animate(
+        [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }],
+        { duration: 700, delay: i * 90, easing: EASE_RISE, fill: 'backwards' },
+      );
+    });
   }, []);
 
-  const option =
-    'w-full flex items-start gap-4 text-left p-5 rounded-2xl border border-gray-200 bg-white hover:border-gray-400 hover:bg-gray-50 transition-colors';
+  const pick = (kind: 'review' | 'reset') => {
+    if (picked) return;
+    setPicked(kind);
+    const go = kind === 'review' ? onReview : onRetake;
+    const root = rootRef.current;
+    if (!root || prefersReducedMotion()) {
+      go();
+      return;
+    }
+    window.setTimeout(() => {
+      root
+        .animate([{ opacity: 1 }, { opacity: 0 }], { duration: 260, easing: 'ease-in', fill: 'forwards' })
+        .finished.then(go, go);
+    }, 300);
+  };
 
   return (
-    <section aria-labelledby="revisit-title" className="max-w-xl mx-auto px-4 py-10 sm:py-16">
-      <CircleCheck className="w-10 h-10 text-green-600 mb-4" aria-hidden="true" />
-      <h1 id="revisit-title" className="text-2xl font-bold text-gray-900">
-        Bạn đã hoàn thành {noun} này
-      </h1>
-      <p className="mt-2 text-gray-600">
-        <span className="font-medium text-gray-800">{title}</span> — bạn muốn xem lại theo cách nào?
-      </p>
-
-      <div className="mt-8 flex flex-col gap-3">
-        <button ref={firstRef} type="button" onClick={onReview} className={option}>
-          <BookOpen className="w-6 h-6 mt-0.5 shrink-0 text-blue-600" aria-hidden="true" />
+    <section ref={rootRef} aria-labelledby="revisit-title" className="pl__col pl__choose">
+      <div className="pl__choose-head">
+        <h1 id="revisit-title" className="pl__serif">
+          Bạn đã hoàn thành {noun} này
+        </h1>
+        <p>Bạn muốn học lại theo cách nào?</p>
+      </div>
+      <div className="pl__opts">
+        <button
+          ref={firstRef}
+          type="button"
+          onClick={() => pick('review')}
+          className={`lstudy lstudy--review ${picked === 'review' ? 'is-sel' : ''}`}
+        >
+          <IconReview size={28} />
           <span>
-            <span className="block font-semibold text-gray-900">Đọc toàn bộ {noun}</span>
-            <span className="block mt-1 text-sm text-gray-600">
-              Hiện tất cả nội dung cùng lúc, câu hỏi kèm sẵn đáp án và lời giải.
-            </span>
+            <b>Xem lại toàn bộ {noun}</b>
+            Hiện tất cả nội dung cùng lúc, câu hỏi kèm sẵn đáp án và lời giải.
           </span>
         </button>
-        <button type="button" onClick={onRetake} className={option}>
-          <RotateCcw className="w-6 h-6 mt-0.5 shrink-0 text-gray-700" aria-hidden="true" />
+        <button
+          type="button"
+          onClick={() => pick('reset')}
+          className={`lstudy lstudy--reset ${picked === 'reset' ? 'is-sel' : ''}`}
+        >
+          <IconReset size={28} />
           <span>
-            <span className="block font-semibold text-gray-900">Học lại từ đầu</span>
-            <span className="block mt-1 text-sm text-gray-600">
-              Đi lại từng phần và tự trả lời câu hỏi như lần đầu.
-            </span>
+            <b>Học lại từ đầu</b>
+            Đi lại từng phần và tự trả lời câu hỏi như lần đầu.
           </span>
         </button>
       </div>

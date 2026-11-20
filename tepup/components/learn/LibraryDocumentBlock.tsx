@@ -4,7 +4,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, BookOpen, ChevronRight, Clock } from 'lucide-react';
 import { renderInlineMarkdown } from '@/lib/utils/renderInlineMarkdown';
+import { createPortal } from 'react-dom';
 import { useOpenEntry } from '@/components/reference/ReferenceProvider';
+import { usePaperPlayer, usePaperRoot } from './paper-context';
 
 export function LibraryDocumentBlockComponent({
   block,
@@ -46,6 +48,11 @@ export function LibraryDocumentBlockComponent({
   // (cờ tắt, hoặc block nằm ngoài bài học) thì vẫn dùng cửa sổ cũ bên dưới.
   const openEntry = useOpenEntry();
   const closeRef = useRef<HTMLButtonElement>(null);
+  const paper = usePaperPlayer();
+  // Trang học giấy: vùng cuộn có mask (tạo stacking context), nên cửa sổ tài liệu phải
+  // portal ra gốc `.pl` (vẫn trong `.reader`) để nằm trên thanh dưới.
+  const paperRoot = usePaperRoot();
+  const portal = (node: React.ReactNode) => (paperRoot ? createPortal(node, paperRoot) : node);
 
   // Fetch document if reference mode
   useEffect(() => {
@@ -103,6 +110,7 @@ export function LibraryDocumentBlockComponent({
 
   // Show error state
   if (mode === 'reference' && error) {
+    if (paper) return <PaperCalloutError text={error} />;
     return (
       <div className="mb-6 p-5 bg-red-50 border-2 border-red-200 rounded-2xl">
         <p className="text-red-700">{error}</p>
@@ -112,6 +120,13 @@ export function LibraryDocumentBlockComponent({
 
   // Show loading state for reference mode
   if (mode === 'reference' && loading) {
+    if (paper) {
+      return (
+        <div className="lw lw--flat" role="status">
+          <span className="ldoc__meta">Đang tải tài liệu...</span>
+        </div>
+      );
+    }
     return (
       <div className="mb-6 p-5 bg-purple-50 border-2 border-purple-200 rounded-2xl flex items-center justify-center">
         <div className="w-6 h-6 border-4 border-purple-500 border-t-transparent rounded-full animate-spin" />
@@ -125,9 +140,32 @@ export function LibraryDocumentBlockComponent({
     return null;
   }
 
+  const onOpen = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const slug = libraryDocument?.entryType ? (libraryDocument.slug as string) : null;
+    if (mode === 'reference' && slug && openEntry) openEntry(slug, e.currentTarget);
+    else setIsOpen(true);
+  };
+
   return (
     <>
       {/* Collapsed Preview */}
+      {paper ? (
+        // Thẻ tài liệu giấy (demo "library-document": chip loại · thời gian đọc, tiêu đề, mô tả, nút viên thuốc).
+        <div className="lw lw--flat">
+          {(displayData.category || displayData.estimatedReadTime) && (
+            <span className="ldoc__chip">
+              {[displayData.category, displayData.estimatedReadTime && `${displayData.estimatedReadTime} đọc`].filter(Boolean).join(' · ')}
+            </span>
+          )}
+          <div>
+            <h3 className="lw__title">{displayData.title}</h3>
+            {displayData.description && <p className="lw__hint">{displayData.description}</p>}
+          </div>
+          <button ref={openerRef} type="button" onClick={onOpen} className="lpill self-start">
+            Đọc tài liệu
+          </button>
+        </div>
+      ) : (
       <div className="mb-6 bg-purple-50 border-2 border-purple-200 rounded-2xl p-5">
         <div className="flex items-start gap-3 mb-3">
           <BookOpen className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" aria-hidden="true" />
@@ -150,11 +188,7 @@ export function LibraryDocumentBlockComponent({
           <button
             ref={openerRef}
             type="button"
-            onClick={(e) => {
-              const slug = libraryDocument?.entryType ? (libraryDocument.slug as string) : null;
-              if (mode === 'reference' && slug && openEntry) openEntry(slug, e.currentTarget);
-              else setIsOpen(true);
-            }}
+            onClick={onOpen}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors"
           >
             <span>Xem tài liệu</span>
@@ -170,6 +204,9 @@ export function LibraryDocumentBlockComponent({
         </div>
       </div>
 
+      )}
+
+      {portal(<>
       {/* Backdrop */}
       {isOpen && (
         <div
@@ -303,6 +340,17 @@ export function LibraryDocumentBlockComponent({
         </div>
         </FocusTrap>
       )}
+      </>)}
     </>
+  );
+}
+
+function PaperCalloutError({ text }: { text: string }) {
+  return (
+    <div className="lco lco--warning" role="note">
+      <div className="lco__body">
+        <p>{text}</p>
+      </div>
+    </div>
   );
 }

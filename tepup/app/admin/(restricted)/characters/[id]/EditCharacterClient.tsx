@@ -17,6 +17,7 @@ import {
   labelClass,
 } from '../../../_components/form';
 import CharacterColorPicker from '../CharacterColorPicker';
+import CharacterStampPreview from '../CharacterStampPreview';
 
 export default function EditCharacterClient({
   params,
@@ -167,10 +168,14 @@ export default function EditCharacterClient({
           {/* Description */}
           <div>
             <label htmlFor="character-description" className={labelClass}>
-              Mô tả
+              Câu trích dẫn trên tem
             </label>
+            <p id="character-description-hint" className="text-xs text-gray-600 mb-1">
+              Một câu ngắn nhân vật nói, in dưới tên và vai trò trên tem (khoảng 3 dòng).
+            </p>
             <textarea
               id="character-description"
+              aria-describedby="character-description-hint"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -194,18 +199,24 @@ export default function EditCharacterClient({
 
           {/* Ảnh ở trang /courses */}
           <ImageUploadField
-            label="Ảnh đại diện"
-            hint="Ảnh vuông, hiển thị cắt tròn ở khối “Học qua Câu chuyện”."
-            value={formData.avatarUrl}
-            onChange={(avatarUrl) => setFormData({ ...formData, avatarUrl })}
-            previewClassName="w-20 h-20 rounded-full"
-          />
-          <ImageUploadField
-            label="Ảnh nhân vật"
-            hint="Ảnh toàn thân hoặc bán thân, nền trong suốt (tỉ lệ khoảng 367×422)."
+            label="Ảnh tem"
+            hint="Ảnh chân dung, vuông khoảng 262×266, hiện trên tem ở /courses và trang nhân vật."
             value={formData.imageUrl}
             onChange={(imageUrl) => setFormData({ ...formData, imageUrl })}
-            previewClassName="w-[110px] h-[126px] rounded-xl"
+            previewClassName="w-[105px] h-[106px] rounded-md"
+          />
+          <ImageUploadField
+            label="Ảnh nhỏ"
+            hint="Ảnh vuông 90×90, hiện trên thẻ câu chuyện."
+            value={formData.avatarUrl}
+            onChange={(avatarUrl) => setFormData({ ...formData, avatarUrl })}
+            previewClassName="w-[90px] h-[90px] rounded-xl"
+          />
+          <CharacterStampPreview
+            name={formData.name}
+            role={formData.role}
+            quote={formData.description}
+            imageUrl={formData.imageUrl}
           />
 
           {/* Color */}

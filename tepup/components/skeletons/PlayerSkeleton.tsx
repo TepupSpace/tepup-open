@@ -1,37 +1,19 @@
-import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
+import '@/components/learn/player-paper.css';
 
 /**
- * Khung của `LessonPlayer` trong lúc chờ nội dung bài.
+ * Màn chờ của trang học: chỉ nền giấy, không khung xương.
  *
- * Dựng đúng ba tầng của trang thật (header dính, thân cuộn, chân trang dính) để
- * khi nội dung về thì chỉ có phần giữa được điền vào, không có cú nhảy layout.
+ * Trang học mở bằng Screen 1 (tem + tên, không thanh trên), và khi đi từ trang câu
+ * chuyện thì tem đang bay ở tâm màn. Một khung xương có thanh trên/nút dưới ở đây sẽ
+ * nháy lên giữa hai cảnh đó, nên màn chờ chỉ giữ nền giấy cùng màu và báo cho trình
+ * đọc màn hình biết đang tải.
  */
 export default function PlayerSkeleton() {
   return (
-    <div className="min-h-screen-dvh bg-white flex flex-col">
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-100 px-4 py-3 pt-safe">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
-          <Skeleton className="w-10 h-10 rounded-lg" />
-          <div className="flex-1 ml-2 mr-1 sm:mx-8">
-            <div className="h-2 bg-gray-100 rounded-full" />
-          </div>
-        </div>
-      </header>
-
-      <main className="relative flex-1 overflow-hidden">
-        <div className="max-w-3xl mx-auto px-4 py-8">
-          <Skeleton className="h-8 w-3/4 mb-6" />
-          <SkeletonText lines={4} className="mb-8" />
-          <Skeleton className="h-48 w-full rounded-2xl mb-8" />
-          <SkeletonText lines={3} />
-        </div>
-      </main>
-
-      <footer className="sticky bottom-0 z-40 bg-white border-t border-gray-100 px-4 pt-4 pb-safe-4">
-        <div className="max-w-3xl mx-auto">
-          <Skeleton className="h-14 w-full rounded-xl" />
-        </div>
-      </footer>
+    <div className="reader pl">
+      <p role="status" className="sr-only">
+        Đang mở bài học…
+      </p>
     </div>
   );
 }

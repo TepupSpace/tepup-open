@@ -97,7 +97,7 @@ export default function HotColdGuessBlockComponent({ block, onComplete }: Props)
   };
 
   return (
-    <BlockShell skin="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
+    <BlockShell accent="indigo" skin="bg-gradient-to-br from-indigo-50 to-purple-50 border-2 border-indigo-200">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-6 h-6 text-indigo-600" aria-hidden="true" />

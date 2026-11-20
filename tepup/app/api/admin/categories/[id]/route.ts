@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { revalidateContent } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSession } from '@/lib/admin-auth';
+import { categoryColorSchema } from '@/lib/paper/category-colors';
 
 // GET /api/admin/categories/[id] - Get single category
 export async function GET(
@@ -64,12 +65,23 @@ export async function PUT(
       );
     }
 
+    // Không gửi màu thì giữ màu cũ; gửi thì phải là một khoá preset.
+    let color: string | undefined;
+    if (body.color !== undefined) {
+      const parsed = categoryColorSchema.safeParse(body.color);
+      if (!parsed.success) {
+        return NextResponse.json({ error: 'Màu danh mục không hợp lệ' }, { status: 400 });
+      }
+      color = parsed.data;
+    }
+
     const category = await prisma.category.update({
       where: { id },
       data: {
         name: name.trim(),
         description: description?.trim() || null,
         icon: icon || 'brain',
+        color,
         isActive: isActive ?? true,
         sortOrder: sortOrder ?? undefined,
       },
@@ -115,6 +127,7 @@ export async function DELETE(
       where: { id },
     });
 
+    revalidateContent();
     return NextResponse.json({ message: 'Category deleted' });
   } catch (error) {
     console.error('Error deleting category:', error);

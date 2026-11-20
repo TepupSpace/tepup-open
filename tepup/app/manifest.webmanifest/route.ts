@@ -35,7 +35,7 @@ export function GET(request: NextRequest) {
       scope: '/',
       display: 'standalone',
       background_color: '#ffffff',
-      theme_color: '#ed282a',
+      theme_color: '#e03e28',
       categories: ['education'],
       icons: [
         { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },

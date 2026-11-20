@@ -7,6 +7,7 @@ import { tvReferencesEnabled } from '@/lib/library/flags';
 import { Wrench } from 'lucide-react';
 import { getLessonNotices } from '@/lib/services/lesson-notices';
 import LessonNotices from '@/components/learn/LessonNotices';
+import PaperEmptyState from '@/components/learn/PaperEmptyState';
 import { TERMS } from '@/lib/terms';
 
 /**
@@ -62,26 +63,21 @@ export default async function LessonRouteView({
   // what previously made an unreachable lesson look like a real (fake) one.
   if (!data.content || data.content.blocks.length === 0) {
     return (
-      <div className="reader min-h-screen bg-white flex items-center justify-center px-4">
-        {hiddenBadge}
-        <div className="text-center max-w-md">
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">{data.lesson.name}</h1>
-          <p className="text-gray-500 mb-6">Bài học này chưa có nội dung.</p>
-          {staffHubHref && (
-            <p className="mb-6">
-              <Link href={staffHubHref} className="text-teal-800 underline">
-                {TERMS.lessonTools} cho bài này
-              </Link>
-            </p>
-          )}
-          <Link
-            href={exitHref}
-            className="inline-block px-5 py-3 rounded-xl bg-gray-900 text-white font-semibold hover:bg-gray-800 transition-colors"
-          >
-            Quay lại khoá học
-          </Link>
-        </div>
-      </div>
+      <PaperEmptyState
+        title={data.lesson.name}
+        message="Bài học này chưa có nội dung."
+        backHref={exitHref}
+        backLabel="Quay lại khoá học"
+        before={hiddenBadge}
+      >
+        {staffHubHref && (
+          <p>
+            <Link href={staffHubHref} className="pl__link">
+              {TERMS.lessonTools} cho bài này
+            </Link>
+          </p>
+        )}
+      </PaperEmptyState>
     );
   }
 

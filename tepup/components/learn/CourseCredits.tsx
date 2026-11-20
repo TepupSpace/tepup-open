@@ -17,8 +17,8 @@ export default async function CourseCredits({ courseId }: { courseId: string }) 
   const hasReviewers = reviewers.length > 0 || anonymousReviewers > 0;
 
   return (
-    <section aria-labelledby="course-credits-heading" className="bg-white rounded-3xl p-5 sm:p-6 shadow-sm border border-gray-100">
-      <h2 id="course-credits-heading" className="text-lg font-bold text-gray-900">
+    <section aria-labelledby="course-credits-heading" className="cp-card cp-credits">
+      <h2 id="course-credits-heading" className="cp-card__title paper-serif">
         Tác giả và người đóng góp
       </h2>
       {people.length > 0 ? (

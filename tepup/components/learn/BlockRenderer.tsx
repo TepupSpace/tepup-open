@@ -9,6 +9,7 @@ import { ImageBlockComponent } from './ImageBlock';
 import { QuestionBlockComponent } from './QuestionBlock';
 import NativeBlock, { isNativeBlock } from './NativeBlock';
 import { sanitizeInlineHtml } from '@/lib/security/sanitize-html';
+import { usePaperPlayer } from './paper-context';
 
 /**
  * Khung xám giữ chỗ trong lúc chunk của block đang về.
@@ -17,6 +18,8 @@ import { sanitizeInlineHtml } from '@/lib/security/sanitize-html';
  * và neo cuộn, nên một ô giữ chỗ cao 0 sẽ làm bố cục nhảy khi block hiện ra.
  */
 function BlockSkeleton({ height = '16rem' }: { height?: string }) {
+  const paper = usePaperPlayer();
+  if (paper) return <div className="lw animate-pulse" style={{ minHeight: height }} aria-hidden="true" />;
   return (
     <div
       className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 animate-pulse"
@@ -128,6 +131,7 @@ export function BlockRenderer({
   isCurrentBlock,
   onMediaSettled,
 }: BlockRendererProps) {
+  const paper = usePaperPlayer();
   const onComplete = () => onInteractiveComplete(index);
   // Chỉ media của nhóm đang hiện mới làm xê dịch bố cục mà người học nhìn thấy.
   const settled = isCurrentBlock ? () => onMediaSettled?.(isLastVisible) : undefined;
@@ -148,7 +152,8 @@ export function BlockRenderer({
       // gap *between paragraphs* (16px) — it mirrors `space-y-4` in TextBlockComponent.
       const bare = safe.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim();
       // An empty block is the author deliberately leaving a blank line in the editor.
-      if (!bare) return <div className="h-4" aria-hidden="true" />;
+      if (!bare) return <div className={paper ? 'lt__gap' : 'h-4'} aria-hidden="true" />;
+      if (paper) return <div className="lt__html" dangerouslySetInnerHTML={{ __html: safe }} />;
       return (
         <div
           className="text-gray-700 leading-relaxed text-lg mb-4"

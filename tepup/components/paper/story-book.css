@@ -1,0 +1,827 @@
+/* ============================================================================
+   Sổ tem nhân vật (note-cover) + thẻ câu chuyện (story-topic).
+
+   Port từ demo-course-stories.html (CSS dòng ~129–267, ~444–499, ≤600px ~517–543).
+   Mọi kích thước bên trong .sb-cover__frame là px của Figma vì cả khung được
+   co bằng transform scale(var(--k)) — giữ đúng hình học ảnh nền/tem. Tiền tố
+   `sb-` để không đụng class của các màn khác trong .paper.
+   ========================================================================= */
+
+.sb-stories {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+/* ---------- note-cover: carousel tem ---------- */
+.sb-carousel {
+  position: relative;
+  width: 100%;
+  /* fit() trong StoryBook tính lại ngay khi mount; .85 = cỡ desktop để HTML từ
+     server không nhảy chiều cao trước khi JS chạy */
+  --k: 0.85;
+}
+/* sổ hiển thị 85% cỡ Figma (728x496) cho đỡ chiếm chỗ; fit() tự ra --k = .85 */
+.sb-cover {
+  position: relative;
+  width: 100%;
+  max-width: 728.45px;
+  margin: 0 auto;
+  height: calc(583px * var(--k));
+  touch-action: pan-y;
+}
+.sb-cover[data-dragging='true'] {
+  cursor: grabbing;
+}
+.sb-cover__frame {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 857px;
+  height: 583px;
+  transform: translateX(-50%) scale(var(--k));
+  transform-origin: top center;
+}
+.sb-cover__bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 36px;
+  box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+/* Rectangle 16 dưới tem chính: hard light, đứng yên khi hover (như state Hover trong Figma) */
+.sb-cover__shadow {
+  position: absolute;
+  left: 195px;
+  top: 13px;
+  width: 478px;
+  height: 560px;
+  display: block;
+  z-index: 4;
+  mix-blend-mode: hard-light;
+  pointer-events: none;
+}
+
+/* sổ tem lúc mới load (state Closed): bìa nửa khổ nằm giữa, lật sang trái quanh gáy,
+   cả sổ trượt sang phải nửa bìa -> mở xong trang đôi vừa đúng giữa. Mặt trong bìa = nửa trái cover */
+.sb-book {
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  perspective: 2200px;
+  pointer-events: none;
+}
+.sb-book[hidden] {
+  display: none;
+}
+.sb-book__page,
+.sb-book__pshadow,
+.sb-book__leaf {
+  position: absolute;
+  left: 428.5px;
+  top: 0;
+  width: 428.5px;
+  height: 583px;
+}
+.sb-book__pshadow {
+  border-radius: 0 36px 36px 0;
+  box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+}
+.sb-book__page {
+  border-radius: 0 36px 36px 0;
+  background: url('/paper/cover.webp') right top / 857px 583px no-repeat;
+}
+.sb-book__leaf {
+  transform-origin: 0 50%;
+  transform-style: preserve-3d;
+}
+.sb-book__face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+.sb-book__face--front {
+  border-radius: 8px 36px 36px 8px;
+  box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
+}
+.sb-book__face--front img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sb-book__face--back {
+  transform: rotateY(180deg);
+  border-radius: 36px 0 0 36px;
+  background: url('/paper/cover.webp') left top / 857px 583px no-repeat;
+  box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.35);
+  clip-path: inset(-40px 0 -40px -40px); /* không đổ bóng lên trang phải */
+}
+.sb-book__shade {
+  position: absolute;
+  inset: 0;
+  background: #2a0f0a;
+  opacity: 0;
+} /* bìa tối dần khi dựng đứng */
+.sb-carousel.is-closed .sb-book {
+  transform: translateX(-214.25px);
+}
+.sb-carousel.is-closed .sb-cover__bg,
+.sb-carousel.is-closed .sb-cover__shadow,
+.sb-carousel.is-closed .sb-stamp {
+  visibility: hidden;
+}
+/* tem chính trượt vào lúc bìa sắp đậu: nằm trên sổ (bìa đang hạ xuống bên trái), JS cắt phần ngoài mép sổ */
+.sb-carousel.is-dropping .sb-stamp.is-front,
+.sb-carousel.is-dropping .sb-cover__shadow {
+  visibility: visible;
+}
+.sb-carousel.is-dropping .sb-cover__shadow {
+  z-index: 10;
+}
+.sb-carousel.is-dropping .sb-stamp.is-front {
+  z-index: 11;
+}
+.sb-carousel.is-intro .sb-dots,
+.sb-carousel.is-intro .sb-navbtn {
+  opacity: 0;
+  visibility: hidden;
+}
+.sb-dots {
+  transition: opacity 0.45s var(--ease), visibility 0s;
+}
+
+/* N tem = 1 xấp bài: trước (is-front), 2 tem sau (is-left = nhân vật trước, is-right = nhân vật sau), còn lại ẩn.
+   --pose do JS đặt (bảng POSE), tem sau = tem chính thu về 291.5/350 như Figma */
+.sb-stamp {
+  position: absolute;
+  left: 259.6px;
+  top: 37.85px;
+  width: 350px;
+  height: 508px;
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  transform: var(--pose);
+  transition: transform 0.45s var(--ease-out);
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.sb-stamp.is-left {
+  z-index: 2;
+  opacity: 1;
+}
+.sb-stamp.is-right {
+  z-index: 3;
+  opacity: 1;
+}
+.sb-stamp.is-front {
+  z-index: 5;
+  opacity: 1;
+  pointer-events: auto;
+}
+.sb-stamp.is-moving {
+  transition: none;
+}
+.sb-stamp__shell {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+/* khung có bóng plus darker tính cho vị trí trước; tem sau dùng khung tính trên nền trơn */
+.sb-stamp__shell--front {
+  opacity: 0;
+  transition: opacity 0.7s var(--ease);
+}
+.sb-stamp.is-front .sb-stamp__shell--front {
+  opacity: 1;
+}
+.sb-stamp__photo {
+  position: absolute;
+  left: 38.9px;
+  top: 45.67px;
+  width: 262.5px;
+  height: 266.1px;
+  overflow: hidden;
+}
+.sb-stamp__photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+/* chưa có ảnh tem hợp lệ: ô giấy xám trung tính + chữ cái đầu */
+.sb-stamp__blank {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d9d6d0;
+  color: #5a5a5a;
+  font-size: 96px;
+  line-height: 1;
+}
+.sb-stamp__photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(49, 49, 49, 0.65);
+  mix-blend-mode: multiply;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.sb-stamp__tap {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 24px;
+  text-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.3s ease, transform 0.3s var(--ease-out);
+}
+.sb-stamp__text {
+  position: absolute;
+  left: calc(50% - 4.5px);
+  top: 64.17%;
+  width: 263px;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sb-stamp__name {
+  display: block;
+  font-size: 30px;
+  line-height: normal;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-stamp__role {
+  display: block;
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* Demo 14px; 15px để sau khi co --k (.8–.85) chữ vẫn ≥ 12px (mức tối thiểu text-xs). */
+.sb-stamp__quote {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  font-size: 15px;
+  line-height: 24px;
+}
+
+/* hover ở listing = state Hover của note-cover: tem thẳng lại, nhô lên, hiện "Tap để học" */
+@media (hover: hover) {
+  .sb-cover:not(.is-story) .sb-stamp.is-front:not(.is-moving):hover {
+    transform: translate(1.4px, -7.85px) scale(1.023);
+  }
+  .sb-cover:not(.is-story) .sb-stamp.is-front:not(.is-moving):hover .sb-stamp__photo::after {
+    opacity: 1;
+  }
+  .sb-cover:not(.is-story) .sb-stamp.is-front:not(.is-moving):hover .sb-stamp__tap {
+    opacity: 1;
+    transform: none;
+  }
+}
+.sb-cover:not(.is-story) .sb-stamp.is-front:focus-visible {
+  outline: none;
+  transform: translate(1.4px, -7.85px) scale(1.023);
+}
+.sb-cover:not(.is-story) .sb-stamp:focus-visible .sb-stamp__photo::after {
+  opacity: 1;
+}
+.sb-cover:not(.is-story) .sb-stamp:focus-visible .sb-stamp__tap {
+  opacity: 1;
+  transform: none;
+}
+/* Viền focus vẫn phải thấy được (outline của tem tắt ở trên): vẽ quanh khung ảnh. */
+.sb-cover:not(.is-story) .sb-stamp:focus-visible .sb-stamp__photo {
+  outline: 3px solid var(--red);
+  outline-offset: 4px;
+}
+.sb-cover.is-story .sb-stamp__tap {
+  display: none;
+}
+
+.sb-dots {
+  position: absolute;
+  left: calc(50% + 0.5px);
+  bottom: 13px;
+  transform: translateX(-50%);
+  display: flex;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sb-dots button {
+  width: 14px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 0;
+  padding: 0;
+}
+.sb-dots button::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e8e8e8;
+  opacity: 0.3;
+  transition: opacity 0.25s ease;
+}
+.sb-dots button[aria-current='true']::before {
+  opacity: 1;
+}
+.sb-dots button:hover::before {
+  opacity: 0.65;
+}
+.sb-dots button[aria-current='true']:hover::before {
+  opacity: 1;
+}
+.sb-dots button:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 0;
+  border-radius: 4px;
+}
+
+.sb-carousel__nav {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.sb-navbtn {
+  position: absolute;
+  top: calc(291.5px * var(--k));
+  width: 60px;
+  height: 60px;
+  border: 0;
+  padding: 0;
+  border-radius: 1000px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 4px 2px rgba(0, 0, 0, 0.25));
+  pointer-events: auto;
+  transform: translateY(-50%) scale(var(--k));
+  transition: transform 0.2s var(--ease-out), opacity 0.45s var(--ease), visibility 0s;
+}
+.sb-navbtn img {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.sb-navbtn--prev {
+  left: calc(50% - 363.5px * var(--k) - 30px);
+}
+.sb-navbtn--next {
+  left: calc(50% + 363.5px * var(--k) - 30px);
+}
+.sb-navbtn--prev img {
+  transform: rotate(180deg);
+}
+.sb-navbtn:hover {
+  transform: translateY(-50%) scale(calc(var(--k) * 1.06));
+}
+.sb-navbtn:active {
+  transform: translateY(-50%) scale(calc(var(--k) * 0.96));
+}
+
+/* Nút tạm dừng / tiếp tục tự chuyển (WCAG 2.2.2) — không có trong demo. Cùng
+   kiểu nút tròn trắng, nhỏ hơn, ở góc dưới phải của sổ; không co theo --k để
+   vùng bấm luôn ≥ 32px. */
+.sb-navbtn--pause {
+  top: auto;
+  bottom: calc(14px * var(--k));
+  left: calc(50% + 428.5px * var(--k) - 32px - 28px * var(--k));
+  width: 32px;
+  height: 32px;
+  color: var(--ink);
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.25));
+  transform: none;
+}
+.sb-navbtn--pause:hover {
+  transform: scale(1.06);
+}
+.sb-navbtn--pause:active {
+  transform: scale(0.96);
+}
+.sb-navbtn--pause svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.sb-vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- trang câu chuyện ---------- */
+.sb-story {
+  --shell: 1044px;
+  padding: 42px 0 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+.sb-listen {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+/* "Lắng nghe câu chuyện" (tiêu đề + thẻ) thu 85% cùng nhịp với sổ; điện thoại giữ nguyên */
+@media (min-width: 601px) {
+  .sb-listen {
+    zoom: 0.85;
+  }
+}
+/* lưới 2 cột: bề rộng = đúng lưới thẻ (1044) rồi mới zoom -> khối 887px, cha (align-items:center) căn giữa được */
+@media (min-width: 1100px) {
+  .sb-listen {
+    width: 1044px;
+  }
+}
+.sb-listen .paper-head h1 {
+  font-size: 2.25rem;
+  line-height: normal;
+}
+.sb-listen .paper-head p {
+  line-height: 1.5rem;
+}
+
+.sb-topics {
+  display: grid;
+  grid-template-columns: repeat(2, 500px);
+  column-gap: 28px;
+  row-gap: 20px;
+  width: 100%;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sb-topics__cell {
+  height: 240px;
+  display: flex;
+  align-items: center;
+}
+.sb-topics__empty {
+  font-size: 1rem;
+  line-height: 1.75rem;
+  text-align: center;
+}
+
+/* story-topic */
+.sb-topic {
+  position: relative;
+  display: block;
+  width: 500px;
+  height: 229px;
+  color: var(--ink);
+  text-decoration: none;
+  transition: filter 0.3s ease;
+}
+.sb-topic:focus-visible {
+  outline: none;
+}
+.sb-topic__back {
+  position: absolute;
+  left: 3.07px;
+  top: 8.42px;
+  width: 480px;
+  height: 212px;
+  border-radius: 6px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+  background: url('/paper/topic-paper-back.webp') center / cover;
+  transform: rotate(-1.72deg);
+  transition: transform 0.35s var(--ease-out);
+}
+.sb-topic__front {
+  position: absolute;
+  left: 15px;
+  top: 0;
+  width: 480px;
+  height: 212px;
+  padding: 24px;
+  border-radius: 6px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.15);
+  background: url('/paper/topic-paper-front.webp') center / 100% 157.48% no-repeat;
+  transition: transform 0.35s var(--ease-out);
+}
+.sb-topic__front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  border: 1.5px solid var(--red);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  pointer-events: none;
+}
+.sb-topic__body {
+  position: relative;
+  height: 164px;
+}
+.sb-topic__text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 250px;
+  height: 164px;
+  overflow: hidden;
+}
+.sb-topic__title {
+  font-size: 24px;
+  line-height: normal;
+}
+.sb-topic__desc {
+  font-size: 14px;
+  line-height: 24px;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.sb-topic__thumb {
+  position: absolute;
+  right: 1.97px;
+  top: 1.89px;
+  width: 90px;
+  height: 90px;
+  display: block;
+  object-fit: cover;
+  transform: rotate(2.46deg);
+}
+.sb-topic__thumb--blank {
+  background: #d9d6d0;
+  border-radius: 4px;
+}
+.sb-topic__arrow {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
+}
+.sb-topic__arrow img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity 0.25s ease, transform 0.3s var(--ease-out);
+}
+.sb-topic__arrow img + img {
+  opacity: 0;
+}
+.sb-topic__dot {
+  position: absolute;
+  left: -14px;
+  top: -15px;
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+@media (hover: hover) {
+  .sb-topic:hover {
+    filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
+  }
+  .sb-topic:hover .sb-topic__back {
+    transform: translate(1.23px, -1.75px) rotate(-2.45deg);
+  }
+  .sb-topic:hover .sb-topic__front {
+    transform: translate(1.2px, 5px) rotate(1.97deg);
+  }
+  .sb-topic:hover .sb-topic__front::after {
+    opacity: 1;
+  }
+  .sb-topic:hover .sb-topic__arrow img {
+    transform: translate(2px, -2px);
+  }
+  .sb-topic:hover .sb-topic__arrow img:first-child {
+    opacity: 0;
+  }
+  .sb-topic:hover .sb-topic__arrow img + img {
+    opacity: 1;
+  }
+}
+/* bàn phím: cùng dáng hover */
+.sb-topic:focus-visible {
+  filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.25));
+}
+.sb-topic:focus-visible .sb-topic__back {
+  transform: translate(1.23px, -1.75px) rotate(-2.45deg);
+}
+.sb-topic:focus-visible .sb-topic__front {
+  transform: translate(1.2px, 5px) rotate(1.97deg);
+}
+.sb-topic:focus-visible .sb-topic__front::after {
+  opacity: 1;
+  border-width: 3px;
+}
+
+/* ---------- màn hình nhỏ ---------- */
+@media (max-width: 1099px) {
+  .sb-story {
+    --shell: min(100% - 40px, 1044px);
+    padding-top: 28px;
+  }
+  .sb-topics {
+    grid-template-columns: minmax(0, 500px);
+    justify-content: center;
+  }
+}
+
+@media (max-width: 600px) {
+  .sb-story {
+    --shell: calc(100% - 32px);
+    gap: 28px;
+  }
+  /* sổ: bìa vừa khít khung -> trang đôi nằm sẵn dưới, chỉ bìa lật ra khỏi mép trái (không trượt) */
+  .sb-carousel.is-closed .sb-cover__bg {
+    visibility: visible;
+  }
+  .sb-book__page,
+  .sb-book__pshadow {
+    display: none;
+  }
+
+  /* cover cắt bớt hai mép, tem giữ cỡ đọc được; mũi tên xuống dưới */
+  .sb-cover {
+    overflow: hidden;
+    border-radius: 24px;
+    box-shadow: 7px 7px 20px rgba(0, 0, 0, 0.25);
+  }
+  .sb-carousel__nav {
+    position: static;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .sb-navbtn {
+    position: static;
+    width: 48px;
+    height: 48px;
+    transform: none;
+  }
+  .sb-navbtn img {
+    width: 28px;
+    height: 28px;
+  }
+  .sb-navbtn:hover,
+  .sb-navbtn:active {
+    transform: none;
+  }
+  .sb-navbtn--pause {
+    order: 1;
+    width: 40px;
+    height: 40px;
+  }
+  .sb-navbtn--next {
+    order: 2;
+  }
+
+  .sb-topics {
+    row-gap: 16px;
+  }
+  .sb-topics__cell {
+    height: auto;
+    padding: 6px 0;
+  }
+  .sb-topic {
+    width: 100%;
+    height: 229px;
+  }
+  .sb-topic__back {
+    width: calc(100% - 20px);
+  }
+  .sb-topic__front {
+    width: calc(100% - 20px);
+    left: 10px;
+  }
+  .sb-topic__text {
+    width: calc(100% - 100px);
+  }
+  .sb-topic__thumb {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+/* ---------- khung chờ (components/skeletons/StoryBookSkeleton.tsx) ---------- */
+.sb-skel-cover {
+  width: 100%;
+  max-width: 728.45px;
+  margin: 0 auto;
+  aspect-ratio: 857 / 583;
+  border-radius: 30px;
+}
+@media (max-width: 600px) {
+  .sb-skel-cover {
+    aspect-ratio: 430 / 583;
+    border-radius: 24px;
+  }
+}
+
+/* ---------- trang nhân vật trên điện thoại: sổ gọn ----------
+   Sổ chỉ cao ~36% màn (fit() trong StoryBook.tsx) để các câu chuyện hiện ngay
+   bên dưới. Ở cỡ đó chữ trên tem quá nhỏ: bỏ câu trích dẫn, phóng tên và vai trò
+   (trước khi co theo --k) để vẫn đọc được; hai nút ← → nằm hai bên sổ thay vì
+   chiếm thêm một hàng. */
+@media (max-width: 600px) {
+  .sb-carousel--story {
+    position: relative;
+  }
+  .sb-carousel--story .sb-stamp__quote {
+    display: none;
+  }
+  .sb-carousel--story .sb-stamp__name {
+    font-size: 48px;
+  }
+  .sb-carousel--story .sb-stamp__role {
+    font-size: 28px;
+    line-height: 38px;
+  }
+  .sb-carousel--story .sb-carousel__nav {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0 8px;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+  .sb-carousel--story .sb-navbtn {
+    width: 40px;
+    height: 40px;
+    pointer-events: auto;
+    box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+  }
+  .sb-carousel--story .sb-navbtn img {
+    width: 22px;
+    height: 22px;
+  }
+  /* nút "← Khoá học" đã ở ngay trên: bớt khoảng trống đầu trang */
+  .sb-story {
+    padding-top: 12px;
+    gap: 20px;
+  }
+  .sb-listen .paper-head h1 {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  .sb-listen .paper-head h1 em {
+    white-space: nowrap; /* tên nhân vật không bị tách đôi ("Bác / Tư") */
+  }
+  .sb-listen .paper-head p {
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+  }
+  .sb-listen {
+    gap: 16px;
+  }
+}

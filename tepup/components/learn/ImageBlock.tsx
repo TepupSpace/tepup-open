@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { isAllowedMediaUrl } from '@/lib/security/safe-url';
 import { BlockedMedia } from './BlockedMedia';
 import { imageAltText } from '@/lib/a11y/content-warnings';
+import { usePaperPlayer } from './paper-context';
 
 type ImageBlockProps = {
   block: { type: 'image'; src: string; alt: string; caption?: string; decorative?: boolean };
@@ -20,6 +21,7 @@ export function ImageBlockComponent({ block, onSettled }: ImageBlockProps) {
 }
 
 function AllowedImage({ block, onSettled }: ImageBlockProps) {
+  const paper = usePaperPlayer();
   const imgRef = useRef<HTMLImageElement>(null);
   const [state, setState] = useState<'loading' | 'loaded' | 'error'>('loading');
   // Ảnh trang trí → ""; thiếu mô tả → chú thích; không bao giờ là tên tệp.
@@ -40,18 +42,18 @@ function AllowedImage({ block, onSettled }: ImageBlockProps) {
   }, []);
 
   return (
-    <figure className="mb-6">
+    <figure className={paper ? 'lmedia' : 'mb-6'}>
       <div className="relative">
         {state === 'loading' && (
           // Giữ chỗ theo tỉ lệ 16/9 để khối không bị "sập" rồi giãn ra khi ảnh về.
           <div
-            className="w-full rounded-xl bg-gray-100 animate-pulse"
+            className={`w-full animate-pulse ${paper ? 'lmedia__ph' : 'rounded-xl bg-gray-100'}`}
             style={{ aspectRatio: '16 / 9' }}
             aria-hidden="true"
           />
         )}
         {state === 'error' ? (
-          <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+          <div className={paper ? 'w-full lmedia__err' : 'w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500'}>
             Không tải được ảnh{alt ? `: ${alt}` : ''}
           </div>
         ) : (
@@ -70,7 +72,7 @@ function AllowedImage({ block, onSettled }: ImageBlockProps) {
         )}
       </div>
       {block.caption && (
-        <figcaption className="text-sm text-gray-500 mt-2 text-center">
+        <figcaption className={paper ? undefined : 'text-sm text-gray-500 mt-2 text-center'}>
           {block.caption}
         </figcaption>
       )}

@@ -1,79 +1,55 @@
 import type { ReactNode } from 'react';
-import Link from '@/components/ui/AppLink';
+import CategoryShelf from '@/components/courses-hub/CategoryShelf';
 import type { CourseDisplay } from '@/lib/types/content';
-
-/** Màu xoay vòng theo thứ tự nhóm: xanh → tím → hồng. */
-const TONES = ['blue', 'purple', 'pink'] as const;
 
 export interface CourseShelfGroup {
   id: string;
-  /** Nhãn nhỏ đặt trên dải thẻ, kiểu nhãn dán trên kệ sách. */
+  /** Tên danh mục, thành tiêu đề Fraunces của kệ. */
   label: string;
-  /** Một dòng mô tả nằm trong nhãn, dưới tên nhóm. */
+  /** Một dòng mô tả dưới tên danh mục. */
   description?: string;
+  /** Khoá màu preset do admin chọn (lib/paper/category-colors.ts). */
+  color?: string;
   courses: CourseDisplay[];
 }
 
 interface CourseShelfProps {
   /** Dùng cho id của tiêu đề, để `aria-labelledby` trỏ đúng. */
   id: string;
-  /** Phần cần nhấn mạnh đặt trong `<em>` để lấy màu của kệ. */
+  /** Phần cần nhấn mạnh đặt trong `<em>`. */
   title: ReactNode;
   description?: string;
   groups: CourseShelfGroup[];
 }
 
-/** Một khối ở /courses: tiêu đề lớn, rồi từng nhóm khoá học có nhãn riêng trên nền loang màu. */
+/**
+ * Khối "Học qua Chuyên đề" ở /courses: tiêu đề lớn căn giữa, rồi mỗi danh mục là
+ * một kệ folder mang màu riêng của danh mục (design demo-course-stories, `.shelf`).
+ */
 export default function CourseShelf({ id, title, description, groups }: CourseShelfProps) {
   const shown = groups.filter((g) => g.courses.length > 0);
   if (shown.length === 0) return null;
   const headingId = `ch-shelf-${id}`;
 
   return (
-    <section className="ch-shelf ch-shelf--blue" aria-labelledby={headingId}>
-      <div className="ch-shelf__head">
-        <h2 id={headingId} className="ch-serif">
+    <section className="ch-topics" aria-labelledby={headingId}>
+      <div className="paper-head ch-topics__head">
+        <h2 id={headingId} className="paper-serif">
           {title}
         </h2>
         {description && <p>{description}</p>}
       </div>
 
-      {shown.map((group, i) => {
-        const labelId = `ch-group-${group.id}`;
-        return (
-          <div
-            key={group.id}
-            className={`ch-shelf__group ch-shelf--${TONES[i % TONES.length]}`}
-            role="group"
-            aria-labelledby={labelId}
-          >
-            <div className="ch-shelf__label">
-              <h3 id={labelId}>{group.label}</h3>
-              {group.description && <p>{group.description}</p>}
-            </div>
-
-            <div className="ch-shelf__stage">
-              <ul className="ch-shelf__row">
-                {group.courses.map((course) => (
-                  <li key={course.slug} className="ch-course">
-                    <Link
-                      className={`ch-course__card${course.imageUrl ? '' : ' ch-course__card--blank'}`}
-                      href={`/courses/${course.slug}`}
-                    >
-                      {course.imageUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element -- ảnh bìa 220×280 từ Supabase Storage
-                        <img src={course.imageUrl} alt="" loading="lazy" />
-                      )}
-                      <span className="ch-course__title ch-serif">{course.name}</span>
-                    </Link>
-                    {course.isNew && <span className="ch-course__badge">Mới</span>}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        );
-      })}
+      {shown.map((group) => (
+        <CategoryShelf
+          key={group.id}
+          id={group.id}
+          name={group.label}
+          description={group.description}
+          color={group.color ?? 'blue'}
+          courses={group.courses}
+        />
+      ))}
     </section>
   );
 }

@@ -5,6 +5,7 @@ import "./reader.css";
 import { READER_PREFS_SCRIPT } from "@/lib/reader-prefs";
 import Providers from "@/components/Providers";
 import PwaBootstrap from "@/components/pwa/PwaBootstrap";
+import TepCursor from "@/components/paper/TepCursor";
 
 // "vietnamese": thiếu tập này thì chữ có dấu (ế, ộ, ữ…) rơi về Arial, lệch nét
 // giữa chữ có dấu và không dấu trong cùng một từ.
@@ -36,7 +37,10 @@ export const metadata: Metadata = {
   // Href này được PwaBootstrap ghi đè ở phía trình duyệt để kèm theo tiến độ học.
   manifest: "/manifest.webmanifest",
   icons: {
+    // Favicon chốt ở bản demo-course-stories: nền cam bo góc, tôm trắng. PNG giữ cho
+    // trình duyệt không đọc SVG và cho PWA.
     icon: [
+      { url: "/paper/favicon.svg", type: "image/svg+xml" },
       { url: "/icons/icon-32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
     ],
@@ -89,6 +93,8 @@ export default function RootLayout({
           Chuyển đến nội dung chính
         </a>
         <PwaBootstrap />
+        {/* Con trỏ tôm + nét toả khi bấm; tự tắt ở /admin, /contributor. */}
+        <TepCursor />
         <Providers>{children}</Providers>
       </body>
     </html>
