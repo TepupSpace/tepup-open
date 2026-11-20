@@ -288,7 +288,6 @@ Source: `tepup-design-system/ui_kits/paper/` (handoff of demo-course-stories, 20
 - Learner text goes to an external AI service. Keep the disclaimer under the chat input, and never send an IP, user id or other identity to the AI.
 
 - **Anonymous analytics (2026-11-20):**
-  - Apply `prisma/sql/2026-11-20-anonymous-analytics.sql` to staging and production **before** merging `feat/anonymous-analytics`. (owner: maintainer who merges)
   - Add `CRON_SECRET` in Vercel (Secret, Production only), so the daily cleanup cron is authorised. (owner: maintainer)
   - Have someone with legal background review the wording of `/du-lieu` against Luật Bảo vệ dữ liệu cá nhân 2025. Tracking is on by default without consent; the team chose this knowingly, on the basis of the 30-day rotating id and the off switch. (owner: the organisation)
 ## Working agreements for AI assistants
