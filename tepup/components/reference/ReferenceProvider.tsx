@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useCallback, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { track } from '@/lib/analytics/client';
 import FocusTrap from 'focus-trap-react';
 import { ChevronLeft, X, Loader2 } from 'lucide-react';
 import type { EntryFull, EntryPreview } from '@/lib/library/entry-service';
@@ -145,6 +146,7 @@ export default function ReferenceProvider({
   }, [stack, enabled]);
 
   const openPanel = useCallback((layer: Layer, from?: HTMLElement | null) => {
+    if (isValidEntrySlug(layer.slug)) track({ name: 'ref_open', slug: layer.slug, mode: 'panel' });
     setStack((s) => {
       if (s.length === 0 && from) opener.current = from;
       const top = s[s.length - 1];
@@ -187,6 +189,8 @@ export default function ReferenceProvider({
       const slug = anchor.dataset.tv;
       if (!slug || !isValidEntrySlug(slug)) return;
       loadPreviews([slug]);
+      // Rê chuột lướt qua thì không tính (quá nhiễu); chạm/focus mới tính.
+      if (mode !== 'hover' && hoverRef.current?.anchor !== anchor) track({ name: 'ref_open', slug, mode: 'preview' });
       const prev = hoverRef.current;
       if (prev && prev.anchor !== anchor) prev.anchor.removeAttribute('aria-describedby');
       if (mode === 'hover') anchor.setAttribute('aria-describedby', cardId);

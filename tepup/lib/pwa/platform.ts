@@ -83,7 +83,7 @@ export async function runInstallPrompt(): Promise<boolean> {
 // ---------- mở bảng Cài đặt từ chỗ khác (vd. lời mời cài ở /courses) ----------
 
 export const OPEN_SETTINGS_EVENT = 'tepup:open-settings';
-export type SettingsSection = 'install' | 'reading';
+export type SettingsSection = 'install' | 'reading' | 'privacy';
 
 export function openSettings(section: SettingsSection = 'install'): void {
   window.dispatchEvent(new CustomEvent<SettingsSection>(OPEN_SETTINGS_EVENT, { detail: section }));

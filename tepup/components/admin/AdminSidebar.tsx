@@ -23,6 +23,7 @@ import {
   History,
   Bell,
   ScrollText,
+  BarChart3,
 } from 'lucide-react';
 import { useId, useRef, useState, useSyncExternalStore } from 'react';
 import FocusTrap from 'focus-trap-react';
@@ -135,6 +136,12 @@ const menuGroups = [
         title: 'Yêu cầu tính năng',
         href: '/admin/feature-requests',
         icon: Lightbulb,
+        minRole: 'ADMIN' as const,
+      },
+      {
+        title: 'Số liệu học',
+        href: '/admin/analytics',
+        icon: BarChart3,
         minRole: 'ADMIN' as const,
       },
       {

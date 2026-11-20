@@ -97,6 +97,7 @@ LibraryEntry (topic, source, term, acronym, tool) ⇄ LibraryLink;  LibraryUsage
   - Native: `heading`, `quote`, `code`, `bullet-list`, `numbered-list`, `check-list`, `toggle`, `table`, `video`, `audio`, `file`, `step-break`
 - The editor groups interactive blocks into **question** blocks (checkpoints, e.g. `question`, `pair-match`, `sort-bucket`) and **explainer** blocks (simulations that replace body text). The grouping lives in the `group` field of `blockTypes` in `components/admin/editor/block-utils.ts`.
 - **Only types in `INTERACTIVE_BLOCK_MAP` (`components/learn/BlockRenderer.tsx`) render. Any other type silently renders nothing.** The key doc's "only 6 types" list is out of date; the map is the source of truth.
+- **Section titles are `heading` blocks.** Old seeds put them in `text.title`; `scripts/split-text-titles.ts` (2026-11-21, staging and production) moved them into a level-2 `heading` before the text, and the player's "Tiến độ › Bài này" lists headings (levels 1–2, else all). New content and seeds should use `heading` blocks, not `text.title`. In lessons without `step-break`s the player reveals one block per tap, but **a heading joins the block after it** (`computeGroups` in `LessonPlayer.tsx`), so a heading is never a step on its own.
 - Learner queries filter `isActive: true` (on the course too, for course and lesson pages), so an inactive course is admin-only. Missing/hidden courses and lessons are real HTTP 404s: the check sits in each route's `layout.tsx`, because a `notFound()` inside the `loading.tsx` Suspense boundary only produces a soft 404 (status 200).
 - Learner progress lives only in `localStorage` (`lib/contexts/ProgressContext.tsx`). `UserProgress` and `/api/progress` exist but no client uses them.
 
@@ -171,6 +172,20 @@ Target: WCAG 2.2 AA. Full guide, with the reasons and a manual test checklist: `
 - **Browser check:** after UI changes, `bash a11y-e2e/run.sh` (Playwright + axe against the Docker stack) and read `a11y-e2e/results/summary.md`.
 - **Content:** images need alt text (or are marked decorative); videos need captions or a transcript. The editor warns about both; reviewers should not approve lessons with these warnings.
 - **New pages need a specific `<title>`** (`generateMetadata`). Next announces client navigation only when the title changes.
+
+## Analytics (anonymous learner metrics)
+Decided in a design session on 2026-11-20. The public explanation is `/du-lieu` (`app/(marketing)/du-lieu/page.tsx`). Goal: **a leaked database must not point to a specific learner.**
+- **Flow:** `lib/analytics/client.ts` (`track`, `tally`) → `POST /api/events` → `AnalyticsEvent` + `AnalyticsTally` (`prisma/sql/2026-11-20-anonymous-analytics.sql`). Self-hosted, no third-party script. Reports: `/admin/analytics` (`lib/analytics/reports.ts`).
+- **Identity:** `anonId` is random, kept in `localStorage` and rotated every 30 days (`lib/analytics/ids.ts`); `sessionId` lives in `sessionStorage` and rotates after 30 idle minutes. **Never store a link between an old and a new id**, and never derive an id from anything about the device.
+- **Never stored:** IP, full user agent, cookies, user id, or anything the learner typed (chat text, suggestions). The route turns `cf-ipcountry` and the UA into `country`, `device` and browser family, then drops them. **Don't `console.log` the request in `/api/events`** (Vercel logs would keep the IP).
+- **Time:** `sessionHour` is rounded down to the hour, plus `tOffsetS` within the session. Don't add a precise `createdAt`.
+- **Closed list:** `lib/analytics/schema.ts` uses zod `strictObject` for every event, tally and context. A new field or event goes there first. **If it adds a new kind of data, update `/du-lieu` in the same commit.** That page lists kinds of data, not individual events.
+- **Quiz answers:** an id-carrying event records only `correct`. The chosen option goes **only** to `AnalyticsTally` (`quiz_option`), with no id and no day (stored as `1970-01-01`), because answers can reveal political views (sensitive data under Nghị định 13/2023).
+- **Tallies:** everyone adds to `AnalyticsTally`, including learners who switched tracking off (starts and completions of lessons, chapters and courses; quiz options). Dashboards take totals from tallies, and journeys (drop-off, retention) from events.
+- **Switch:** "Đóng góp số liệu ẩn danh" (`components/analytics/TrackingToggle.tsx`) is on by default. It lives only in the ⚙ Cài đặt dialog under "Quyền riêng tư" (`openSettings('privacy')`), not in the player's "Aa" panel (by decision). Global Privacy Control (`navigator.globalPrivacyControl`) counts as off. Off means no id-carrying events, the id is deleted, and only tallies plus `error` events (no id) are sent.
+- **Staff aren't tracked:** the client skips `/admin`, `/contributor`, `/dev` and `/staff-view`. The route also keeps only `error` events (with no id) from any request carrying the session cookie, and drops its tallies.
+- **Retention:** `/api/cron/analytics-cleanup` (Vercel Cron, daily, `CRON_SECRET`) deletes events older than 365 days. Tallies are kept.
+- Tests: `tests/unit/analytics.test.ts`.
 
 ## Paper design (learner UI)
 Source: `tepup-design-system/ui_kits/paper/` (handoff of demo-course-stories, 2026-11). Tokens and shared classes live in `tepup/app/paper.css` (`.paper`).
@@ -272,6 +287,10 @@ Source: `tepup-design-system/ui_kits/paper/` (handoff of demo-course-stories, 20
 - The browser shows the route's `{ error }` text **verbatim** (`ChatApiError` in `lib/contexts/AIChatContext.tsx`). So error strings must be short, Vietnamese and non-technical: no keys, model names or upstream messages. Groq SDK retries are off on purpose (`maxRetries: 0`).
 - Learner text goes to an external AI service. Keep the disclaimer under the chat input, and never send an IP, user id or other identity to the AI.
 
+- **Anonymous analytics (2026-11-20):**
+  - Apply `prisma/sql/2026-11-20-anonymous-analytics.sql` to staging and production **before** merging `feat/anonymous-analytics`. (owner: maintainer who merges)
+  - Add `CRON_SECRET` in Vercel (Secret, Production only), so the daily cleanup cron is authorised. (owner: maintainer)
+  - Have someone with legal background review the wording of `/du-lieu` against Luật Bảo vệ dữ liệu cá nhân 2025. Tracking is on by default without consent; the team chose this knowingly, on the basis of the 30-day rotating id and the off switch. (owner: the organisation)
 ## Working agreements for AI assistants
 Several people work on this repo through AI coding assistants, and each needs to pick up the others' work without asking. Every assistant follows these rules:
 - **Before starting:** read `git log` since your last session, and any handover notes the maintainers keep. If the user's request touches an open item, say so.

@@ -3,5 +3,11 @@
   "regions": [
     "sin1"
   ],
-  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in external/*) echo \"external PR branch: build skipped\"; exit 0;; *) exit 1;; esac"
+  "ignoreCommand": "case \"$VERCEL_GIT_COMMIT_REF\" in external/*) echo \"external PR branch: build skipped\"; exit 0;; *) exit 1;; esac",
+  "crons": [
+    {
+      "path": "/api/cron/analytics-cleanup",
+      "schedule": "30 19 * * *"
+    }
+  ]
 }

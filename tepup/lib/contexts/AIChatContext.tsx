@@ -1,5 +1,6 @@
 'use client';
 
+import { track } from '@/lib/analytics/client';
 import {
   createContext,
   useContext,
@@ -154,6 +155,8 @@ export function AIChatProvider({ children }: { children: ReactNode }) {
       try {
         abortRef.current = new AbortController();
 
+        // Chỉ đếm lượt gửi; nội dung không bao giờ vào số liệu.
+        track({ name: 'chat_send' });
         const res = await fetch('/api/ai/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

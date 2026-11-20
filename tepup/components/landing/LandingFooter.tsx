@@ -14,6 +14,7 @@ import LicenceFooterLine from '@/components/LicenceFooterLine';
 const LINKS = [
   { href: '/#gioi-thieu', label: 'Giới thiệu', external: false },
   { href: '/contributor-guide', label: 'Cách đóng góp', external: false },
+  { href: '/du-lieu', label: 'Dữ liệu thu thập', external: false },
   { href: '/courses', label: 'Khóa học', external: false },
   { href: '/thu-vien', label: 'Thư viện', external: false },
 ];

@@ -6,6 +6,7 @@
  */
 
 import { useEffect } from 'react';
+import { trackBoundaryError } from '@/components/analytics/AnalyticsProvider';
 
 export default function GlobalError({
   error,
@@ -16,6 +17,7 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error(error);
+    trackBoundaryError(error, 'global');
   }, [error]);
 
   return (

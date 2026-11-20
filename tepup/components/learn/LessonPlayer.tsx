@@ -21,6 +21,10 @@ import { fraunces, beVietnam } from '@/lib/fonts/paper';
 import { takeStampHandoff, introStampSize } from '@/lib/paper/stamp-handoff';
 import { PaperPlayerContext } from './paper-context';
 import { IconAa, IconArrow, IconClose, IconNote, IconReset, IconReview } from './PaperIcons';
+import { flush, tally, track } from '@/lib/analytics/client';
+import { ListChecks } from 'lucide-react';
+import { stripTags } from '@/lib/diff/text';
+import ProgressDialog, { type CourseOutline, type LessonSection } from './ProgressDialog';
 import './player-paper.css';
 
 interface LessonPlayerProps {
@@ -39,6 +43,11 @@ interface LessonPlayerProps {
   headerExtra?: React.ReactNode;
   /** Notices above the content (flags, endorsements). Same for every visitor: cache-safe. */
   notices?: React.ReactNode;
+  /**
+   * Lessons only: the course outline (visible lessons), for the "Tiến độ" dialog and the anonymous
+   * "học xong cả khoá" tally. Same for every visitor (cached read), so cache-safe.
+   */
+  course?: CourseOutline | null;
 }
 
 /**
@@ -55,7 +64,8 @@ type RevealItem = { block: ContentBlock; index: number };
 /**
  * Split blocks into reveal groups. If any `step-break` marker is present, blocks
  * between markers form one group (revealed together). Otherwise falls back to the
- * legacy behavior: one block per group (revealed one-at-a-time).
+ * legacy behavior: one block per group (revealed one-at-a-time), except that a heading
+ * joins the block after it.
  *
  * Empty blocks (blank lines saved before saves trimmed them) are skipped, so they
  * never become a blank step. They keep their `index`, which question state is keyed by.
@@ -64,9 +74,18 @@ function computeGroups(blocks: ContentBlock[]): RevealItem[][] {
   const hasBreak = blocks.some((b) => b.type === 'step-break');
   const groups: RevealItem[][] = [];
   if (!hasBreak) {
+    // A heading is never a step on its own: it opens together with the block after it
+    // (legacy `text.title` became a separate heading block, scripts/split-text-titles.ts).
+    let pending: RevealItem[] = [];
     blocks.forEach((block, index) => {
-      if (block.type !== 'step-break' && !isEmptyBlock(block)) groups.push([{ block, index }]);
+      if (block.type === 'step-break' || isEmptyBlock(block)) return;
+      pending.push({ block, index });
+      if (block.type !== 'heading') {
+        groups.push(pending);
+        pending = [];
+      }
     });
+    if (pending.length) groups.push(pending);
     return groups;
   }
   let cur: RevealItem[] = [];
@@ -121,6 +140,7 @@ export default function LessonPlayer({
   references = false,
   headerExtra = null,
   notices = null,
+  course = null,
 }: LessonPlayerProps) {
   // Every /tv/<slug> in the content, so the reader fetches all previews in one request.
   const refSlugs = useMemo(() => [...collectTvSlugs(blocks).keys()], [blocks]);
@@ -195,6 +215,87 @@ export default function LessonPlayer({
   const isComplete = visibleGroups > totalGroups;
   const visible = groups.slice(0, visibleGroups);
   const currentGroup = groups[visibleGroups - 1] ?? [];
+
+  // ---------------------------------------------------------------- số liệu ẩn danh
+  // CLAUDE.md › Analytics. Chỉ ở chế độ học (không phải xem lại). track() tự bỏ qua khi
+  // người học tắt tracking; tally() là bộ đếm tổng không mã, ai cũng cộng.
+  const analyticsRef = useRef({ started: false, finished: false, lastGroup: 0 });
+  useEffect(() => {
+    const a = analyticsRef.current;
+    if (phase !== 'ready' || mode !== 'learn') return;
+    if (!a.started) {
+      a.started = true;
+      track({ name: 'content_start', contentType, contentId });
+      tally({ metric: 'content_start', contentType, contentId });
+    }
+    for (let g = a.lastGroup; g < Math.min(visibleGroups, totalGroups); g++) {
+      for (const it of groups[g]) {
+        track({ name: 'block_view', contentType, contentId, blockIndex: it.index, blockType: it.block.type });
+      }
+    }
+    a.lastGroup = Math.max(a.lastGroup, Math.min(visibleGroups, totalGroups));
+  }, [phase, mode, visibleGroups, totalGroups, groups, contentType, contentId]);
+
+  // ---------------------------------------------------------------- bảng "Tiến độ"
+  const [progressOpen, setProgressOpen] = useState(false);
+  const progressBtnRef = useRef<HTMLButtonElement>(null);
+  // Các phần của bài = heading cấp 1–2 (không có thì lấy mọi heading).
+  const sectionHeads = useMemo(() => {
+    const heads = blocks
+      .map((b, index) => ({ b, index }))
+      .filter((x): x is { b: Extract<ContentBlock, { type: 'heading' }>; index: number } => x.b.type === 'heading');
+    const top = heads.filter((h) => h.b.level <= 2);
+    return (top.length ? top : heads)
+      .map((h) => ({ blockIndex: h.index, title: stripTags(h.b.html).trim() }))
+      .filter((h) => h.title);
+  }, [blocks]);
+  const allRevealed = mode === 'review' || isComplete;
+  const lastRevealedIndex = allRevealed
+    ? Infinity
+    : (groups[Math.min(visibleGroups, totalGroups) - 1] ?? []).reduce((m, it) => Math.max(m, it.index), -1);
+  const sections: LessonSection[] = sectionHeads.map((h, i) => {
+    if (mode === 'choose' || allRevealed) return { ...h, status: 'done' };
+    if (h.blockIndex > lastRevealedIndex) return { ...h, status: 'todo' };
+    const next = sectionHeads[i + 1];
+    return { ...h, status: next && next.blockIndex <= lastRevealedIndex ? 'done' : 'current' };
+  });
+  const jumpToBlock = useCallback((blockIndex: number): HTMLElement | null => {
+    const el = flowRef.current?.querySelector<HTMLElement>(`[data-block-index="${blockIndex}"]`) ?? null;
+    if (!el) return null;
+    el.scrollIntoView({ block: 'start', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    // Một lần focus để trình đọc màn hình đọc từ phần vừa chọn, rồi dọn tabindex.
+    if (!el.hasAttribute('tabindex')) {
+      el.setAttribute('tabindex', '-1');
+      el.addEventListener('blur', () => el.removeAttribute('tabindex'), { once: true });
+    }
+    return el;
+  }, []);
+
+  // Rời bài giữa chừng (đóng tab, chuyển trang): ghi block cuối đã thấy.
+  useEffect(() => {
+    const a = analyticsRef.current;
+    const exit = () => {
+      if (!a.started || a.finished) return;
+      a.finished = true;
+      const lastGroup = groups[Math.max(0, a.lastGroup - 1)] ?? [];
+      track({
+        name: 'content_exit',
+        contentType,
+        contentId,
+        blockIndex: lastGroup[lastGroup.length - 1]?.index ?? 0,
+        totalBlocks: blocks.length,
+      });
+    };
+    const onPageHide = () => {
+      exit();
+      flush(true);
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      exit();
+    };
+  }, [groups, blocks.length, contentType, contentId]);
 
   // ---------------------------------------------------------------- đo chân trang
   // --foot = mép trên cụm nút tính từ đáy: mask của vùng cuộn tan dần ngay trên nó, và
@@ -514,6 +615,16 @@ export default function LessonPlayer({
 
     if (isCorrect) setPoints((prev) => prev + 10);
 
+    if (mode === 'learn' && !questionStates[blockIndex]?.checked) {
+      track({ name: 'question_answer', contentType, contentId, blockIndex, correct: isCorrect });
+      // Đáp án đã chọn chỉ vào bộ đếm tổng: không mã, không ngày (có thể lộ quan điểm).
+      const rawId = (blocks[blockIndex] as ContentBlock).id;
+      const blockKey = rawId && /^[A-Za-z0-9_-]{1,64}$/.test(rawId) ? rawId : `i${blockIndex}`;
+      for (const optionId of questionStates[blockIndex]?.selected ?? []) {
+        if (/^[A-Za-z0-9_-]{1,64}$/.test(optionId)) tally({ metric: 'quiz_option', contentId, blockKey, optionId });
+      }
+    }
+
     // Ô giải thích vừa mở: cuộn lên vừa đủ cho nó nằm trên đường 75%.
     if (block.explanation) {
       setTimeout(() => {
@@ -530,6 +641,19 @@ export default function LessonPlayer({
       hasMarkedRef.current = true;
       setFinishedHere(true);
       markCompleted(contentType, contentId, points);
+      analyticsRef.current.finished = true;
+      track({ name: 'content_complete', contentType, contentId });
+      tally({ metric: 'content_complete', contentType, contentId });
+      // Bài cuối còn thiếu của khoá vừa xong (lần đầu): cộng một lượt "học xong cả khoá".
+      const courseLessonIds = course?.levels.flatMap((l) => l.lessons.map((x) => x.id)) ?? [];
+      if (
+        course &&
+        !wasCompleted &&
+        courseLessonIds.length > 0 &&
+        courseLessonIds.every((id) => id === contentId || isCompleted('lesson', id))
+      ) {
+        tally({ metric: 'course_complete', courseId: course.id });
+      }
     }
     // `replace`: back từ bài sau đưa về trang khoá học, không lùi qua từng bài đã học.
     if (goNext && next) leaveThen(() => navigate(next.href, { replace: true }));
@@ -722,6 +846,20 @@ export default function LessonPlayer({
     >
       <ReferenceProvider slugs={refSlugs} enabled={references}>
       <TextSelectionPopover onSuggest={openSuggestEdit} />
+      <ProgressDialog
+        open={progressOpen}
+        onClose={() => setProgressOpen(false)}
+        noun={noun}
+        title={title}
+        sections={sections}
+        stepsSeen={allRevealed || mode === 'choose' ? totalGroups : Math.min(visibleGroups, totalGroups)}
+        stepsTotal={totalGroups}
+        course={isLesson ? course : null}
+        currentId={contentId}
+        isCompleted={(id) => isCompleted('lesson', id) || (id === contentId && finishedHere)}
+        onJump={jumpToBlock}
+        returnFocusTo={() => progressBtnRef.current}
+      />
       <SuggestEditDialog
         open={suggestQuote !== null}
         onClose={closeSuggest}
@@ -765,6 +903,18 @@ export default function LessonPlayer({
             <span style={{ width: `${progress}%` }} />
           </div>
           <div className="pl__icons">
+            <button
+              ref={progressBtnRef}
+              type="button"
+              onClick={() => setProgressOpen(true)}
+              className="pl__icon-btn"
+              aria-label="Xem tiến độ"
+              aria-haspopup="dialog"
+              aria-expanded={progressOpen}
+              title="Tiến độ"
+            >
+              <ListChecks size={24} strokeWidth={1.75} aria-hidden="true" />
+            </button>
             <ReaderSettings
               buttonClassName="pl__icon-btn"
               icon={<IconAa size={28} />}
@@ -816,13 +966,18 @@ export default function LessonPlayer({
                   tabIndex={isCurrent ? -1 : undefined}
                 >
                   {group.map(({ block, index }, pos) => (
-                    <div key={index} className="pl__block">
+                    <div key={index} className="pl__block" data-block-index={index}>
                       <BlockRenderer
                         block={block}
                         index={index}
                         questionState={questionStates[index]}
                         onSelectAnswer={handleSelect}
-                        onInteractiveComplete={(idx) => setInteractiveBlockCompleted((prev) => ({ ...prev, [idx]: true }))}
+                        onInteractiveComplete={(idx) => {
+                          if (mode === 'learn' && !interactiveBlockCompleted[idx]) {
+                            track({ name: 'block_complete', contentType, contentId, blockIndex: idx, blockType: blocks[idx]?.type ?? 'unknown' });
+                          }
+                          setInteractiveBlockCompleted((prev) => ({ ...prev, [idx]: true }));
+                        }}
                         isLastVisible={isCurrent && pos === group.length - 1}
                         explanationRef={explanationRef}
                         isCurrentBlock={isCurrent}

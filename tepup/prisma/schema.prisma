@@ -978,3 +978,47 @@ enum ContentDraftTarget {
   /// Mục thư viện (Quản trị › Thư viện); `meta` giữ toàn bộ form của mục, `blocks` rỗng
   LIBRARY_ENTRY
 }
+
+/// Số liệu ẩn danh của người học (lib/analytics/, /api/events). Không IP, không UA,
+/// không user id, không nội dung người học gõ. `anonId` là mã ngẫu nhiên tự đổi sau
+/// 30 ngày ở trình duyệt; server không lưu gì nối hai mã với nhau. Giữ 365 ngày
+/// (cron /api/cron/analytics-cleanup). Xem CLAUDE.md › Analytics.
+model AnalyticsEvent {
+  id                BigInt   @id @default(autoincrement())
+  name              String
+  /// null khi người học tắt "Đóng góp số liệu ẩn danh" (chỉ còn event `error`)
+  anonId            String?  @db.Uuid
+  sessionId         String?  @db.Uuid
+  /// Giờ bắt đầu phiên, làm tròn xuống đầu giờ (không lưu thời điểm chính xác)
+  sessionHour       DateTime @db.Timestamptz(3)
+  /// Số giây kể từ đầu phiên
+  tOffsetS          Int      @default(0)
+  routeType         String?
+  contentType       String?
+  contentId         String?
+  blockIndex        Int?
+  blockType         String?
+  /// Chỉ các key trong danh sách đóng của lib/analytics/schema.ts
+  props             Json?
+  country           String?  @db.Char(2)
+  device            String?
+  browser           String?
+  firstSeenBucket   String?
+  lessonsDoneBucket String?
+
+  @@index([name, sessionHour])
+  @@index([contentId, name])
+  @@index([anonId])
+}
+
+/// Bộ đếm tổng, KHÔNG có mã nào: ai cũng cộng vào, kể cả người đã tắt tracking.
+/// `day` = ngày theo giờ VN; 1970-01-01 nghĩa là "không gắn ngày" (đáp án quiz).
+model AnalyticsTally {
+  metric   String
+  targetId String
+  key      String   @default("")
+  day      DateTime @db.Date
+  count    Int      @default(0)
+
+  @@id([metric, targetId, key, day])
+}

@@ -9,6 +9,7 @@ import ScrollJumpButtons from '@/components/ui/ScrollJumpButtons';
 import RouteProgressBar from '@/components/ui/RouteProgressBar';
 import NavigationHistoryTracker from '@/components/NavigationHistoryTracker';
 import FreshContent from '@/components/pwa/FreshContent';
+import AnalyticsProvider from '@/components/analytics/AnalyticsProvider';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -23,6 +24,8 @@ export default function Providers({ children }: ProvidersProps) {
       <NavigationHistoryTracker />
       {/* App đã cài: mở lại thì tự lấy nội dung / bản deploy mới. */}
       <FreshContent />
+      {/* Số liệu ẩn danh (CLAUDE.md › Analytics); không render gì. */}
+      <AnalyticsProvider />
       <ProgressProvider>
         <AIChatProvider>
           {children}

@@ -6,6 +6,7 @@ import FocusTrap from 'focus-trap-react';
 import { Settings, X, Sun, Moon, MonitorSmartphone, Minus, Plus, RefreshCw } from 'lucide-react';
 import { REFRESH_NOW_EVENT } from '@/components/pwa/FreshContent';
 import InstallGuide from './InstallGuide';
+import TrackingToggle from '@/components/analytics/TrackingToggle';
 import { OPEN_SETTINGS_EVENT, type SettingsSection } from '@/lib/pwa/platform';
 import {
   DEFAULT_READER_PREFS,
@@ -125,7 +126,7 @@ function ReadingPrefs() {
 
 /**
  * Nút ⚙ ở góc trên bên phải header (trang giấy, landing) và bảng Cài đặt:
- * hướng dẫn cài Tépup về máy (iOS / Android) và tuỳ chọn đọc.
+ * hướng dẫn cài Tépup về máy (iOS / Android), tuỳ chọn đọc và quyền riêng tư (số liệu ẩn danh).
  *
  * Mở từ chỗ khác bằng `openSettings('install')` (lib/pwa/platform). Hộp thoại
  * modal: focus vào nút đóng, Tab ở lại bên trong, Esc đóng, focus trả về nút ⚙.
@@ -233,6 +234,10 @@ export default function SettingsDialog({ buttonClassName = 'st-open' }: { button
                   <section aria-labelledby={`${titleId}-reading`} className="st-section">
                     <h3 id={`${titleId}-reading`}>Tuỳ chọn đọc</h3>
                     <ReadingPrefs />
+                  </section>
+                  <section aria-labelledby={`${titleId}-privacy`} className="st-section">
+                    <h3 id={`${titleId}-privacy`}>Quyền riêng tư</h3>
+                    <TrackingToggle />
                   </section>
                 </div>
               </div>

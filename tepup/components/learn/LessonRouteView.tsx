@@ -1,5 +1,6 @@
 import Link from '@/components/ui/AppLink';
 import LessonPlayer from '@/components/learn/LessonPlayer';
+import type { CourseOutline } from '@/components/learn/ProgressDialog';
 import { getCourseBySlug } from '@/lib/services/content-service';
 import { itemAfter, type NextItemLink } from '@/lib/utils/next-item';
 import type { LessonPage } from '@/lib/types/content';
@@ -20,6 +21,22 @@ async function nextLessonLink(data: LessonPage): Promise<NextItemLink | null> {
   if (!course) return null;
   const next = itemAfter(course.levels.flatMap((lvl) => lvl.lessons), data.lesson.id);
   return next ? { href: `/courses/${course.slug}/${next.slug}`, title: next.name } : null;
+}
+
+/** Course outline (visible lessons) for the player's "Tiến độ" dialog and the anonymous tally. Cached read. */
+async function courseOutline(data: LessonPage): Promise<CourseOutline | null> {
+  const course = await getCourseBySlug(data.course.slug);
+  if (!course) return null;
+  return {
+    id: course.id,
+    name: course.name,
+    href: `/courses/${course.slug}`,
+    levels: course.levels.map((lvl) => ({
+      id: lvl.id,
+      name: lvl.name,
+      lessons: lvl.lessons.map((l) => ({ id: l.id, name: l.name, href: `/courses/${course.slug}/${l.slug}` })),
+    })),
+  };
 }
 
 /**
@@ -94,6 +111,7 @@ export default async function LessonRouteView({
         references={tvReferencesEnabled()}
         headerExtra={staffLink}
         notices={<LessonNotices notices={notices} />}
+        course={await courseOutline(data)}
       />
     </>
   );

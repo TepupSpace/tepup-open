@@ -10,6 +10,7 @@
 import { useEffect } from 'react';
 import Link from '@/components/ui/AppLink';
 import { AlertTriangle } from 'lucide-react';
+import { trackBoundaryError } from '@/components/analytics/AnalyticsProvider';
 
 interface ErrorStateProps {
   error: Error & { digest?: string };
@@ -31,6 +32,7 @@ export default function ErrorState({
   // dòng log tương ứng ở phía server.
   useEffect(() => {
     console.error(error);
+    trackBoundaryError(error, 'boundary');
   }, [error]);
 
   return (

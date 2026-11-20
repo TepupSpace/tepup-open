@@ -12,6 +12,7 @@ import {
   type ReaderPrefs,
   type ReaderTheme,
 } from '@/lib/reader-prefs';
+import { track } from '@/lib/analytics/client';
 
 const THEMES: { value: ReaderTheme; label: string; Icon: typeof Sun }[] = [
   { value: 'light', label: 'Sáng', Icon: Sun },
@@ -79,9 +80,15 @@ export default function ReaderSettings({
 
   const update = useCallback((patch: Partial<ReaderPrefs>) => {
     const next = { ...prefs, ...patch };
+    for (const key of ['theme', 'font', 'size'] as const) {
+      if (patch[key] !== undefined && patch[key] !== prefs[key]) {
+        track({ name: 'setting_change', setting: key, value: String(patch[key]) });
+      }
+    }
     setPrefs(next);
     writeReaderPrefs(next);
   }, [prefs]);
+
 
   // Đóng khi bấm ra ngoài, hoặc Esc khi focus đang ở trong bảng/nút "Aa" (Esc trả focus về
   // nút). Esc ở chỗ khác thuộc về hộp thoại khác, không được cướp focus.
@@ -232,6 +239,7 @@ export default function ReaderSettings({
           >
             Về mặc định
           </button>
+
         </div>
       )}
     </div>

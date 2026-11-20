@@ -430,3 +430,76 @@
   width: 18px;
   height: 18px;
 }
+
+/* Quyền riêng tư: công tắc "Đóng góp số liệu ẩn danh" (components/analytics/TrackingToggle). */
+.st-track__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.st-track__hint {
+  display: block;
+  margin-top: 0.25rem;
+}
+.st-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 3.25rem;
+  height: 2rem;
+  margin-top: 0.125rem;
+  border-radius: 999px;
+  /* Viền đủ 3:1 với nền thẻ ở trạng thái tắt (WCAG 1.4.11). */
+  border: 1.5px solid var(--muted, #666);
+  background: #e6e6e6;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+.st-switch[aria-checked='true'] {
+  background: var(--red-fill, #da3c27);
+  border-color: var(--red-fill, #da3c27);
+}
+.st-switch[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.st-switch__knob {
+  position: absolute;
+  top: 50%;
+  left: 0.25rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transform: translateY(-50%);
+  transition: transform 0.15s;
+}
+.st-switch[aria-checked='true'] .st-switch__knob {
+  transform: translate(1.25rem, -50%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-switch,
+  .st-switch__knob {
+    transition: none;
+  }
+}
+.st-track__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin-top: 0.875rem;
+}
+.st-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink, #313131);
+  font: 600 0.9375rem / 1.375rem var(--sans);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.st-link:hover {
+  color: var(--red, #da3c27);
+}
