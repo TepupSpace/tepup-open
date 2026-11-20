@@ -2,7 +2,7 @@ import { Skeleton, SkeletonText } from '@/components/ui/Skeleton';
 
 /**
  * Khung `/courses/[slug]` (giao diện giấy, app/(paper)/courses/[slug]/course.css): cột trái
- * folder bìa + giới thiệu, cột phải các thẻ chương với hàng bài học — khớp LearningPath
+ * thẻ giới thiệu, cột phải các thẻ chương với hàng bài học — khớp LearningPath
  * để không bị giật khi nội dung về.
  */
 export default function CourseDetailSkeleton() {
@@ -13,9 +13,6 @@ export default function CourseDetailSkeleton() {
       </div>
       <main className="cp" aria-busy="true">
         <div className="cp-side">
-          <div className="cp-cover">
-            <Skeleton className="w-[220px] h-[289px] rounded-3xl" />
-          </div>
           <div className="cp-info">
             <Skeleton className="h-4 w-24 mb-3" />
             <Skeleton className="h-9 w-3/4 mb-3" />

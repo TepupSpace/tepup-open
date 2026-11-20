@@ -26,15 +26,6 @@
   flex-direction: column;
   gap: 16px;
 }
-.cp-cover {
-  display: flex;
-  justify-content: center;
-  padding-top: 8px;
-}
-.cp-cover .pf-folder {
-  /* folder trang trí, không bấm được */
-  pointer-events: none;
-}
 .cp-info {
   border-radius: 28px;
   background: #fff;
@@ -438,10 +429,6 @@ a.cp-story:hover .cp-story__title {
   .cp {
     padding: 12px 0 32px;
     gap: 16px;
-  }
-  /* folder bìa chiếm gần hết màn: bỏ trên mobile, giữ thẻ giới thiệu */
-  .cp-cover {
-    display: none;
   }
   .cp-info {
     padding: 20px;

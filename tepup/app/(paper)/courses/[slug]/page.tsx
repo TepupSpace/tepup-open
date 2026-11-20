@@ -4,10 +4,8 @@ import { notFound } from 'next/navigation';
 import { GraduationCap, Layers } from 'lucide-react';
 import BackButton from '@/components/BackButton';
 import LearningPath from '@/components/LearningPath';
-import FolderCard from '@/components/courses-hub/FolderCard';
 import { getCourseBySlug } from '@/lib/services/content-service';
 import { categoryColorStyle } from '@/lib/paper/category-colors';
-import { isAllowedMediaUrl } from '@/lib/security/safe-url';
 import RelatedStories, { RelatedStoriesSkeleton } from '@/components/RelatedStories';
 import CourseCredits from '@/components/learn/CourseCredits';
 
@@ -67,13 +65,6 @@ export default async function CoursePage({ params }: CoursePageProps) {
       </div>
       <main id="main-content" className="cp" style={categoryColorStyle(course.categoryColor)}>
         <aside className="cp-side" aria-label="Giới thiệu khoá học">
-          {/* Bìa folder trang trí (tên khoá đã có ở h1 bên cạnh): FolderCard không có href thì aria-hidden.
-              Chỉ khi khoá có ảnh bìa: không có thì folder chỉ là một tờ giấy trắng trơn. */}
-          {isAllowedMediaUrl(course.imageUrl) && (
-            <div className="cp-cover">
-              <FolderCard as="div" title={course.name} imageUrl={course.imageUrl} isNew={course.isNew} />
-            </div>
-          )}
           <div className="cp-info">
             {course.categoryName && <p className="cp-kicker">{course.categoryName}</p>}
             <h1 className="paper-serif">{course.name}</h1>
