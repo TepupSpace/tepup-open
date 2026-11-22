@@ -5,6 +5,7 @@ import type { LevelDisplay } from '@/lib/types/content';
 import { useProgress } from '@/lib/contexts/ProgressContext';
 import LessonNode from './LessonNode';
 import LessonStartCard from './LessonStartCard';
+import { chapterNumber } from '@/lib/course-display';
 
 interface LearningPathProps {
   levels: LevelDisplay[];
@@ -91,7 +92,7 @@ export default function LearningPath({ levels, courseSlug }: LearningPathProps) 
       {levels.map((level, levelIndex) => (
         <section key={level.id} className="cp-level" aria-labelledby={`cp-level-${level.id}`}>
           <header className="cp-level__head">
-            <p className="cp-level__kicker">Chương {levelIndex + 1}</p>
+            <p className="cp-level__kicker">Chương {chapterNumber(courseSlug, levelIndex)}</p>
             {/* h2: ngay dưới h1 tên khoá, không nhảy cấp */}
             <h2 id={`cp-level-${level.id}`} className="paper-serif">
               {level.name}

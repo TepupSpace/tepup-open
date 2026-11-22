@@ -100,6 +100,7 @@ LibraryEntry (topic, source, term, acronym, tool) ⇄ LibraryLink;  LibraryUsage
 - **Section titles are `heading` blocks.** Old seeds put them in `text.title`; `scripts/split-text-titles.ts` (2026-11-21, staging and production) moved them into a level-2 `heading` before the text, and the player's "Tiến độ › Bài này" lists headings (levels 1–2, else all). New content and seeds should use `heading` blocks, not `text.title`. In lessons without `step-break`s the player reveals one block per tap, but **a heading joins the block after it** (`computeGroups` in `LessonPlayer.tsx`), so a heading is never a step on its own.
 - Learner queries filter `isActive: true` (on the course too, for course and lesson pages), so an inactive course is admin-only. Missing/hidden courses and lessons are real HTTP 404s: the check sits in each route's `layout.tsx`, because a `notFound()` inside the `loading.tsx` Suspense boundary only produces a soft 404 (status 200).
 - Learner progress lives only in `localStorage` (`lib/contexts/ProgressContext.tsx`). `UserProgress` and `/api/progress` exist but no client uses them.
+- The course page labels chapters "Chương 1, 2, …" from the level order. Courses in `CHAPTERS_FROM_ZERO` (`lib/course-display.ts`: `critical-thinking-101`, which opens with a "Chương 0 - Mở đầu") count from 0. The list is by slug: renaming such a course's slug means updating it.
 
 ### Adding a new block type
 Touch all of these, or the block breaks somewhere:
