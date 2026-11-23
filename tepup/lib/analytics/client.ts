@@ -12,7 +12,7 @@
 
 import { firstSeenBucket, lessonsDoneBucket, STAFF_AREAS } from './buckets';
 import { isTrackingEnabled } from './consent';
-import { getAnonId, getFirstSeen, getSession } from './ids';
+import { ensureFirstSeen, getAnonId, getFirstSeen, getSession } from './ids';
 import type { AnalyticsBatch, AnalyticsEventInput, AnalyticsTallyInput } from './schema';
 
 type EventWithoutT = AnalyticsEventInput extends infer E ? (E extends AnalyticsEventInput ? Omit<E, 't'> : never) : never;
@@ -43,6 +43,30 @@ function completedLessons(): number {
     return Object.values(data.progress ?? {}).filter((p) => p.contentType === 'lesson' && p.completed).length;
   } catch {
     return 0;
+  }
+}
+
+function hasLocalProgress(): boolean {
+  try {
+    return window.localStorage.getItem(PROGRESS_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Gọi một lần khi app mở. Trình duyệt chưa từng có dấu "ngày đầu tiên" và chưa có tiến độ học
+ * → cộng 1 vào bộ đếm `new_browser` (không mã, ai cũng cộng như các bộ đếm tổng khác).
+ * Trình duyệt đã học trước khi có bộ đếm này (có tiến độ) không bị tính là mới.
+ */
+export function noteFirstVisit(): void {
+  try {
+    if (!inBrowser() || inStaffArea()) return;
+    const hadProgress = hasLocalProgress();
+    const { created } = ensureFirstSeen();
+    if (created && !hadProgress) tally({ metric: 'new_browser' });
+  } catch {
+    /* ignore */
   }
 }
 
@@ -110,6 +134,9 @@ export function flush(leaving: boolean): void {
     clearTimeout(timer);
     timer = null;
   }
+  // Phòng khi lô đầu tiên được gửi trước khi AnalyticsProvider kịp gọi (getFirstSeen bên dưới
+  // sẽ ghi dấu ngày và làm mất lượt "mới"). Gọi lại vô hại: lần sau `created` luôn false.
+  noteFirstVisit();
   if (!events.length && !tallies.length) return;
   const enabled = isTrackingEnabled();
   const pendingEvents = enabled ? events : events.filter((e) => e.name === 'error');

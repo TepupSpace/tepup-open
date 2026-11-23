@@ -7,6 +7,8 @@ import OpenPrivacySettings from '@/components/analytics/OpenPrivacySettings';
  * Trang công khai: Tepup thu thập gì (CLAUDE.md › Analytics). Chỉ nêu các DẠNG dữ liệu,
  * không liệt kê từng event. Thêm event thuộc một dạng mới → sửa trang này cùng commit.
  * Nội dung phải khớp đúng những gì lib/analytics/schema.ts cho phép gửi.
+ * Quyết định 2026-11-22 (docs/data-tracking-docs/du-lieu-va-bao-cao.md): viết bằng lời thường, KHÔNG nêu thời hạn
+ * lưu và không chi tiết kỹ thuật (tên khoá, "mã", số ngày); nhưng vẫn phải nêu đủ mọi dạng dữ liệu.
  */
 export const metadata: Metadata = {
   title: 'Tepup thu thập dữ liệu gì — Tepup',
@@ -17,11 +19,11 @@ export const metadata: Metadata = {
 const COLLECTED: { title: string; body: string }[] = [
   {
     title: 'Hoạt động học',
-    body: 'Bạn mở bài hay chương nào, học xong chưa, dừng ở phần nào, và trả lời câu hỏi đúng hay sai.',
+    body: 'Bạn mở bài hay chương nào, học xong chưa, dừng ở phần nào, trả lời câu hỏi đúng hay sai, và bạn có quay lại học tiếp trên cùng trình duyệt không.',
   },
   {
     title: 'Số đếm tổng',
-    body: 'Số lượt hoàn thành bài, chương và cả khoá, và số người chọn mỗi đáp án. Chỉ cộng vào con số chung, không gắn với mã nào, và vẫn được gửi khi bạn tắt “Đóng góp số liệu ẩn danh”.',
+    body: 'Số lượt hoàn thành bài, chương và cả khoá, số người chọn mỗi đáp án, và số trình duyệt lần đầu ghé Tepup. Chỉ cộng vào con số chung, không gắn với ai, và vẫn được gửi khi bạn tắt “Đóng góp số liệu ẩn danh”.',
   },
   {
     title: 'Cách dùng tính năng',
@@ -34,10 +36,6 @@ const COLLECTED: { title: string; body: string }[] = [
   {
     title: 'Thông tin chung về thiết bị',
     body: 'Quốc gia, loại thiết bị (điện thoại, máy tính bảng, máy tính) và loại trình duyệt. Không có thành phố hay vị trí chi tiết.',
-  },
-  {
-    title: 'Một mã ngẫu nhiên',
-    body: 'Trình duyệt của bạn tự tạo một mã ngẫu nhiên, tự đổi sau 30 ngày, để biết các lượt học có nối tiếp nhau không. Kèm theo là nhóm thô như “lần đầu” hay “quay lại sau một tuần”. Mã mới không nối được với mã cũ.',
   },
 ];
 
@@ -96,13 +94,13 @@ export default function DataPage() {
 
         <section aria-labelledby="keep" className="mb-10">
           <h2 id="keep" className="paper-serif text-2xl text-gray-900 mb-4">
-            Lưu ở đâu, bao lâu
+            Lưu ở đâu
           </h2>
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <p className="text-gray-700 mb-3">
               Số liệu nằm trong cơ sở dữ liệu của chính Tepup, không gửi cho bên thứ ba nào. Số liệu chi tiết được
-              xoá sau 1 năm; chỉ các con số tổng được giữ lại. Thời điểm bắt đầu mỗi lượt học chỉ được ghi đến giờ,
-              không đến phút.
+              tự động xoá định kỳ; chỉ các con số tổng được giữ lại. Thời điểm bắt đầu mỗi lượt học chỉ được ghi
+              đến giờ, không đến phút.
             </p>
             <p className="text-gray-700">Tiến độ học của bạn vẫn chỉ nằm trên máy bạn, như trước đây.</p>
           </div>
@@ -115,8 +113,8 @@ export default function DataPage() {
           <div className="bg-white rounded-xl border border-gray-100 p-5">
             <p className="text-gray-700 mb-3">
               Bấm nút <strong>⚙ Cài đặt</strong> ở góc trên bên phải, mục <strong>Quyền riêng tư</strong>, rồi tắt{' '}
-              <strong>“Đóng góp số liệu ẩn danh”</strong>. Khi tắt, Tepup không gửi gì có mã nữa và xoá mã trên máy bạn; chỉ còn cộng vào
-              các số đếm tổng và báo lỗi, đều không gắn mã.
+              <strong>“Đóng góp số liệu ẩn danh”</strong>. Khi tắt, Tepup quên trình duyệt này và không ghi lại hoạt động học
+              của bạn nữa; chỉ còn cộng vào các số đếm tổng và báo lỗi, đều không gắn với ai.
             </p>
             <p className="mb-3">
               <OpenPrivacySettings className="bg-teal-600 hover:bg-teal-700 rounded-full px-5 py-2.5 text-sm font-semibold" />

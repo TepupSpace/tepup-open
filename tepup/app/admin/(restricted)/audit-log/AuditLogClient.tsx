@@ -53,9 +53,11 @@ const ACTION_LABELS: Record<AuditAction, string> = {
   REVISION_PATROLLED: 'Đánh dấu đã kiểm tra',
   FLAG_SET: 'Gắn cờ bảo trì',
   FLAG_RESOLVED: 'Gỡ cờ bảo trì',
+  ANALYTICS_LEARNERS_LISTED: 'Xem danh sách người học (số liệu)',
+  ANALYTICS_JOURNEY_VIEWED: 'Xem hành trình một người học',
 };
 
-const TARGET_TYPES = ['USER', 'COURSE', 'LESSON', 'LEVEL', 'CHAPTER', 'LIBRARY_ENTRY', 'CONTRIBUTION', 'REVIEW_REQUEST', 'COMMENT', 'REVISION', 'FLAG'];
+const TARGET_TYPES = ['USER', 'COURSE', 'LESSON', 'LEVEL', 'CHAPTER', 'LIBRARY_ENTRY', 'CONTRIBUTION', 'REVIEW_REQUEST', 'COMMENT', 'REVISION', 'FLAG', 'ANALYTICS'];
 
 const EMPTY: Filters = { action: '', actor: '', targetType: '', targetId: '' };
 

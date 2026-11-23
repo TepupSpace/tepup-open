@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { flush, track } from '@/lib/analytics/client';
+import { flush, noteFirstVisit, track } from '@/lib/analytics/client';
 import { classifyPath } from '@/lib/analytics/buckets';
 import { safeDigest, scrubErrorMessage, scrubErrorName } from '@/lib/analytics/scrub';
 
@@ -21,6 +21,7 @@ export default function AnalyticsProvider() {
   }, [pathname]);
 
   useEffect(() => {
+    noteFirstVisit();
     const routeType = () => classifyPath(window.location.pathname).routeType;
     const onError = (e: ErrorEvent) => {
       // Lỗi tải script/ảnh của bên khác không có `error`; bỏ qua cho đỡ nhiễu.

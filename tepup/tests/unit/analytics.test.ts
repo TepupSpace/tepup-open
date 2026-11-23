@@ -195,7 +195,7 @@ describe('server helpers', () => {
   });
 });
 
-describe('rotating ids', () => {
+describe('anonymous ids', () => {
   function stubStorage() {
     const mk = () => {
       const m = new Map<string, string>();
@@ -212,14 +212,27 @@ describe('rotating ids', () => {
     stubStorage();
   });
 
-  it('keeps the anon id for 30 days, then makes an unrelated new one', async () => {
-    const { getAnonId, ANON_ID_TTL_MS } = await import('@/lib/analytics/ids');
+  it('keeps the same anon id for good (no 30-day rotation since 2026-11-22)', async () => {
+    const { getAnonId } = await import('@/lib/analytics/ids');
     const t0 = Date.UTC(2026, 10, 1);
     const a = getAnonId(t0);
-    expect(getAnonId(t0 + ANON_ID_TTL_MS - 1)).toBe(a);
-    const b = getAnonId(t0 + ANON_ID_TTL_MS);
-    expect(b).not.toBe(a);
-    expect(b).toMatch(/^[0-9a-f-]{36}$/);
+    expect(a).toMatch(/^[0-9a-f-]{36}$/);
+    expect(getAnonId(t0 + 31 * 864e5)).toBe(a);
+    expect(getAnonId(t0 + 400 * 864e5)).toBe(a);
+  });
+
+  it('keeps an id created under the old 30-day rule', async () => {
+    const old = { id: '3f2a1b4c-5d6e-4f70-8a9b-0c1d2e3f4a5b', createdAt: Date.UTC(2026, 9, 1) };
+    (globalThis.window as unknown as { localStorage: Storage }).localStorage.setItem('tepup_aid_v1', JSON.stringify(old));
+    const { getAnonId } = await import('@/lib/analytics/ids');
+    expect(getAnonId(Date.UTC(2026, 11, 1))).toBe(old.id);
+  });
+
+  it('marks the first visit as new exactly once', async () => {
+    const { ensureFirstSeen } = await import('@/lib/analytics/ids');
+    const now = Date.UTC(2026, 10, 22, 9);
+    expect(ensureFirstSeen(now).created).toBe(true);
+    expect(ensureFirstSeen(now + 1000).created).toBe(false);
   });
 
   it('resetAnonId gives a fresh id immediately', async () => {
@@ -235,5 +248,56 @@ describe('rotating ids', () => {
     expect(getSession(1_000 + SESSION_IDLE_MS - 1).id).toBe(s1.id);
     const later = 1_000 + 2 * SESSION_IDLE_MS;
     expect(getSession(later).id).not.toBe(s1.id);
+  });
+});
+
+describe('new browser tally', () => {
+  function stubBrowser(progress?: string) {
+    const m = new Map<string, string>();
+    if (progress) m.set('tepup_progress_v2', progress);
+    const store = {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+    };
+    const sent: string[] = [];
+    vi.stubGlobal('window', { localStorage: store, sessionStorage: store, location: { pathname: '/courses' } });
+    vi.stubGlobal('navigator', { globalPrivacyControl: true });
+    vi.stubGlobal('fetch', (_u: string, init: { body: string }) => {
+      sent.push(init.body);
+      return Promise.resolve(new Response(null, { status: 204 }));
+    });
+    return sent;
+  }
+  beforeEach(() => vi.resetModules());
+
+  it('schema accepts new_browser with no other keys', () => {
+    expect(analyticsBatch.safeParse({ v: 1, tallies: [{ metric: 'new_browser' }] }).success).toBe(true);
+    expect(analyticsBatch.safeParse({ v: 1, tallies: [{ metric: 'new_browser', anonId: 'x' }] }).success).toBe(false);
+  });
+
+  it('stores new_browser per day with no target', () => {
+    const rows = tallyRows([{ metric: 'new_browser' }, { metric: 'new_browser' }], Date.UTC(2026, 10, 22, 3));
+    expect(rows).toEqual([{ metric: 'new_browser', targetId: '', key: '', day: vnDay(Date.UTC(2026, 10, 22, 3)), count: 2 }]);
+  });
+
+  it('counts a fresh browser once, even with tracking off', async () => {
+    const sent = stubBrowser();
+    const { noteFirstVisit, flush } = await import('@/lib/analytics/client');
+    noteFirstVisit();
+    noteFirstVisit();
+    flush(false);
+    expect(sent).toHaveLength(1);
+    const batch = JSON.parse(sent[0]);
+    expect(batch.tallies).toEqual([{ metric: 'new_browser' }]);
+    expect(batch.ctx).toBeUndefined();
+  });
+
+  it('does not count a browser that already has learning progress', async () => {
+    const sent = stubBrowser('{"progress":{}}');
+    const { noteFirstVisit, flush } = await import('@/lib/analytics/client');
+    noteFirstVisit();
+    flush(false);
+    expect(sent).toHaveLength(0);
   });
 });

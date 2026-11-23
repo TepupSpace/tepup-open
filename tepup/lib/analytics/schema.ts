@@ -75,6 +75,8 @@ export const analyticsTally = z.discriminatedUnion('metric', [
   z.strictObject({ metric: z.literal('content_start'), contentType, contentId: id }),
   z.strictObject({ metric: z.literal('content_complete'), contentType, contentId: id }),
   z.strictObject({ metric: z.literal('course_complete'), courseId: id }),
+  /** Trình duyệt lần đầu ghé Tepup (gửi một lần): đếm người mới và cộng dồn, không cần mã. */
+  z.strictObject({ metric: z.literal('new_browser') }),
   z.strictObject({
     metric: z.literal('quiz_option'), contentId: id,
     /** block.id nếu có, nếu không thì `i<index>` */

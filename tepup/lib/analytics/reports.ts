@@ -119,21 +119,166 @@ export async function sessionsByDay(days: number) {
 }
 
 /**
- * Retention theo mã ẩn danh: trong các mã xuất hiện lần đầu trong khoảng [days, 8] ngày trước,
- * bao nhiêu % quay lại sau ≥1 ngày và ≥7 ngày. Mã tự đổi sau 30 ngày nên không có D30.
+ * Retention theo mã ẩn danh (mã cố định từ 2026-11-22):
+ * - D1/D7: các mã xuất hiện lần đầu trong khoảng [days, 8] ngày trước, bao nhiêu % quay lại
+ *   sau ≥1 ngày và ≥7 ngày.
+ * - D30: các mã xuất hiện lần đầu trong khoảng [days + 30, 31] ngày trước, bao nhiêu % quay lại
+ *   sau ≥30 ngày.
+ * Trước 2026-11-22 mã tự đổi sau 30 ngày, nên D30 của các nhóm cũ hơn thấp hơn thực tế.
  */
 export async function retention(days: number) {
-  const [r] = await prisma.$queryRaw<{ cohort: bigint; d1: bigint; d7: bigint }[]>(Prisma.sql`
+  const [r] = await prisma.$queryRaw<{ cohort: bigint; d1: bigint; d7: bigint; cohort30: bigint; d30: bigint }[]>(Prisma.sql`
     WITH firsts AS (
       SELECT "anonId", MIN("sessionHour") AS first_at, MAX("sessionHour") AS last_at
         FROM "AnalyticsEvent" WHERE "anonId" IS NOT NULL
        GROUP BY 1
     )
-    SELECT COUNT(*) AS cohort,
-           COUNT(*) FILTER (WHERE last_at >= first_at + interval '1 day') AS d1,
-           COUNT(*) FILTER (WHERE last_at >= first_at + interval '7 days') AS d7
-      FROM firsts
-     WHERE first_at >= now() - make_interval(days => ${days}::int)
-       AND first_at < now() - interval '8 days'`);
-  return { cohort: Number(r?.cohort ?? 0), d1: Number(r?.d1 ?? 0), d7: Number(r?.d7 ?? 0) };
+    SELECT COUNT(*) FILTER (WHERE w7) AS cohort,
+           COUNT(*) FILTER (WHERE w7 AND last_at >= first_at + interval '1 day') AS d1,
+           COUNT(*) FILTER (WHERE w7 AND last_at >= first_at + interval '7 days') AS d7,
+           COUNT(*) FILTER (WHERE w30) AS cohort30,
+           COUNT(*) FILTER (WHERE w30 AND last_at >= first_at + interval '30 days') AS d30
+      FROM (
+        SELECT first_at, last_at,
+               (first_at >= now() - make_interval(days => ${days}::int) AND first_at < now() - interval '8 days') AS w7,
+               (first_at >= now() - make_interval(days => ${days}::int + 30) AND first_at < now() - interval '31 days') AS w30
+          FROM firsts
+      ) f`);
+  return {
+    cohort: Number(r?.cohort ?? 0),
+    d1: Number(r?.d1 ?? 0),
+    d7: Number(r?.d7 ?? 0),
+    cohort30: Number(r?.cohort30 ?? 0),
+    d30: Number(r?.d30 ?? 0),
+  };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Số tiếp cận theo kỳ (báo cáo nhà tài trợ, docs/data-tracking-docs/du-lieu-va-bao-cao.md). Kỳ = ngày giờ VN,
+// hai đầu đều tính. "Người học" = mã trình duyệt (không phải người thật, không gồm người đã tắt).
+// ---------------------------------------------------------------------------------------------
+
+/** [from, to] (ngày VN) thành điều kiện trên "sessionHour", vẫn dùng được index. */
+function hourRange(from: string, to: string) {
+  return Prisma.sql`"sessionHour" >= (${from}::date::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')
+    AND "sessionHour" < ((${to}::date + 1)::timestamp AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
+}
+
+export type ReachSummary = {
+  learners: number;
+  returning: number;
+  sessions: number;
+  newBrowsers: number;
+  cumulativeBrowsers: number;
+  starts: number;
+  completes: number;
+  courseCompletes: number;
+};
+
+export async function reachSummary(from: string, to: string): Promise<ReachSummary> {
+  const [[ev], [tl]] = await Promise.all([
+    prisma.$queryRaw<{ learners: bigint; returning: bigint; sessions: bigint }[]>(Prisma.sql`
+      WITH ev AS (
+        SELECT "anonId", "sessionId", ("sessionHour" AT TIME ZONE 'Asia/Ho_Chi_Minh')::date AS d
+          FROM "AnalyticsEvent"
+         WHERE "anonId" IS NOT NULL AND ${hourRange(from, to)}
+      ), per AS (
+        SELECT "anonId", COUNT(DISTINCT d) AS days FROM ev GROUP BY 1
+      )
+      SELECT (SELECT COUNT(*) FROM per) AS learners,
+             (SELECT COUNT(*) FROM per WHERE days >= 2) AS returning,
+             (SELECT COUNT(DISTINCT "sessionId") FROM ev) AS sessions`),
+    prisma.$queryRaw<{ nb: bigint | null; cum: bigint | null; st: bigint | null; co: bigint | null; cc: bigint | null }[]>(Prisma.sql`
+      SELECT SUM("count") FILTER (WHERE "metric" = 'new_browser' AND "day" >= ${from}::date) AS nb,
+             SUM("count") FILTER (WHERE "metric" = 'new_browser') AS cum,
+             SUM("count") FILTER (WHERE "metric" = 'content_start' AND "day" >= ${from}::date) AS st,
+             SUM("count") FILTER (WHERE "metric" = 'content_complete' AND "day" >= ${from}::date) AS co,
+             SUM("count") FILTER (WHERE "metric" = 'course_complete' AND "day" >= ${from}::date) AS cc
+        FROM "AnalyticsTally"
+       WHERE "metric" IN ('new_browser', 'content_start', 'content_complete', 'course_complete')
+         AND "day" <= ${to}::date`),
+  ]);
+  return {
+    learners: Number(ev?.learners ?? 0),
+    returning: Number(ev?.returning ?? 0),
+    sessions: Number(ev?.sessions ?? 0),
+    newBrowsers: Number(tl?.nb ?? 0),
+    cumulativeBrowsers: Number(tl?.cum ?? 0),
+    starts: Number(tl?.st ?? 0),
+    completes: Number(tl?.co ?? 0),
+    courseCompletes: Number(tl?.cc ?? 0),
+  };
+}
+
+/** Ngày đầu tiên bộ đếm "trình duyệt mới" có số liệu (để ghi "tính từ …"). */
+export async function newBrowserCountingSince(): Promise<string | null> {
+  const [r] = await prisma.$queryRaw<{ d: Date | null }[]>(Prisma.sql`
+    SELECT MIN("day") AS d FROM "AnalyticsTally" WHERE "metric" = 'new_browser'`);
+  return r?.d ? r.d.toISOString().slice(0, 10) : null;
+}
+
+export type BreakdownRow = { key: string; learners: number };
+
+/** Người học theo quốc gia hoặc loại thiết bị. */
+export async function reachBreakdown(by: 'country' | 'device', from: string, to: string): Promise<BreakdownRow[]> {
+  const col = by === 'country' ? Prisma.sql`"country"` : Prisma.sql`"device"`;
+  const rows = await prisma.$queryRaw<{ key: string | null; learners: bigint }[]>(Prisma.sql`
+    SELECT ${col} AS key, COUNT(DISTINCT "anonId") AS learners
+      FROM "AnalyticsEvent"
+     WHERE "anonId" IS NOT NULL AND ${hourRange(from, to)}
+     GROUP BY 1 ORDER BY learners DESC`);
+  return rows.map((r) => ({ key: r.key ?? '', learners: Number(r.learners) }));
+}
+
+export type CourseReachRow = {
+  courseId: string;
+  name: string;
+  learners: number;
+  starts: number;
+  completes: number;
+  courseCompletes: number;
+};
+
+/** Theo khoá: người học (mã đã mở ít nhất một bài), lượt bắt đầu/học xong bài, học xong cả khoá. */
+export async function courseReach(from: string, to: string): Promise<CourseReachRow[]> {
+  const rows = await prisma.$queryRaw<
+    { courseId: string; name: string; learners: bigint; starts: bigint; completes: bigint; courses: bigint }[]
+  >(Prisma.sql`
+    WITH ppl AS (
+      SELECT l."courseId" AS cid, COUNT(DISTINCT e."anonId") AS learners
+        FROM "AnalyticsEvent" e JOIN "Lesson" l ON l."id" = e."contentId"
+       WHERE e."name" = 'content_start' AND e."contentType" = 'lesson' AND e."anonId" IS NOT NULL
+         AND ${hourRange(from, to)}
+       GROUP BY 1
+    ), tl AS (
+      SELECT l."courseId" AS cid,
+             SUM(t."count") FILTER (WHERE t."metric" = 'content_start') AS starts,
+             SUM(t."count") FILTER (WHERE t."metric" = 'content_complete') AS completes
+        FROM "AnalyticsTally" t JOIN "Lesson" l ON l."id" = t."targetId"
+       WHERE t."metric" IN ('content_start', 'content_complete') AND t."key" = 'lesson'
+         AND t."day" BETWEEN ${from}::date AND ${to}::date
+       GROUP BY 1
+    ), cc AS (
+      SELECT t."targetId" AS cid, SUM(t."count") AS courses
+        FROM "AnalyticsTally" t
+       WHERE t."metric" = 'course_complete' AND t."day" BETWEEN ${from}::date AND ${to}::date
+       GROUP BY 1
+    )
+    SELECT c."id" AS "courseId", c."name",
+           COALESCE(ppl.learners, 0) AS learners, COALESCE(tl.starts, 0) AS starts,
+           COALESCE(tl.completes, 0) AS completes, COALESCE(cc.courses, 0) AS courses
+      FROM "Course" c
+      LEFT JOIN ppl ON ppl.cid = c."id"
+      LEFT JOIN tl ON tl.cid = c."id"
+      LEFT JOIN cc ON cc.cid = c."id"
+     WHERE ppl.cid IS NOT NULL OR tl.cid IS NOT NULL OR cc.cid IS NOT NULL
+     ORDER BY learners DESC, starts DESC`);
+  return rows.map((r) => ({
+    courseId: r.courseId,
+    name: r.name,
+    learners: Number(r.learners),
+    starts: Number(r.starts),
+    completes: Number(r.completes),
+    courseCompletes: Number(r.courses),
+  }));
 }

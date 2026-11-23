@@ -30,7 +30,11 @@ export type AuditAction =
   | 'COMMENT_HIDDEN'
   | 'REVISION_PATROLLED'
   | 'FLAG_SET'
-  | 'FLAG_RESOLVED';
+  | 'FLAG_RESOLVED'
+  // Số liệu học: xem danh sách mã / hành trình một mã. targetType 'ANALYTICS'; KHÔNG ghi mã
+  // (AuditLog không xoá được, sẽ sống lâu hơn hạn 365 ngày của dữ liệu học).
+  | 'ANALYTICS_LEARNERS_LISTED'
+  | 'ANALYTICS_JOURNEY_VIEWED';
 
 export interface AuditInput {
   actorId: string | null;

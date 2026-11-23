@@ -73,6 +73,9 @@ export function tallyRows(tallies: AnalyticsTallyInput[], now: number): TallyRow
       case 'course_complete':
         row = { metric: t.metric, targetId: t.courseId, key: '', day };
         break;
+      case 'new_browser':
+        row = { metric: t.metric, targetId: '', key: '', day };
+        break;
       case 'quiz_option':
         // Đáp án có thể lộ quan điểm: không mã, KHÔNG ngày.
         row = { metric: t.metric, targetId: t.contentId, key: `${t.blockKey}:${t.optionId}`, day: NO_DAY };

@@ -35,11 +35,11 @@ export default function TrackingToggle() {
     if (next) resetAnonId(); // bật lại sau này sẽ là một mã hoàn toàn mới
     setTrackingSwitchedOff(next);
     setOff(next);
-    setNote(next ? 'Đã tắt. Tepup chỉ còn cộng vào số đếm tổng, không gắn mã.' : 'Đã bật.');
+    setNote(next ? 'Đã tắt. Tepup quên trình duyệt này, chỉ còn cộng vào số đếm tổng.' : 'Đã bật.');
   };
 
   const hint = gpc
-    ? 'Trình duyệt của bạn đang bật “Global Privacy Control”, nên Tepup không gửi số liệu có mã.'
+    ? 'Trình duyệt của bạn đang bật “Global Privacy Control”, nên Tepup không ghi lại hoạt động học của bạn.'
     : 'Giúp đánh giá bài học nào được học xong và chỗ nào khó. Không làm lộ danh tính.';
 
   return (

@@ -30,14 +30,21 @@ export default async function AdminLayout({
 
   return (
     <SessionProvider>
-      <DesktopOnlyNotice />
+      <div className="print:hidden">
+        <DesktopOnlyNotice />
+      </div>
       {/* `reader`: tuỳ chọn đọc (sáng/tối, phông, cỡ chữ) áp dụng ở đây như ở trang học.
           `staff`: giao diện giấy (app/staff-paper.css), dùng token --pl-* nên chế độ tối vẫn chạy. */}
       <div className={`reader staff ${fraunces.variable} ${beVietnam.variable} min-h-screen`}>
-        <AdminSidebar />
-        <div className="lg:pl-64 transition-all duration-300">
-          <AdminHeader />
-          <main id="main-content" className="p-6">{children}</main>
+        {/* print:hidden: báo cáo nhà tài trợ in được gọn (chỉ phần nội dung). */}
+        <div className="print:hidden">
+          <AdminSidebar />
+        </div>
+        <div className="lg:pl-64 print:pl-0 transition-all duration-300">
+          <div className="print:hidden">
+            <AdminHeader />
+          </div>
+          <main id="main-content" className="p-6 print:p-0">{children}</main>
         </div>
       </div>
     </SessionProvider>
