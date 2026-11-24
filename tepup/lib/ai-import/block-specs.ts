@@ -356,6 +356,34 @@ export const BLOCK_SPECS: Record<string, BlockSpec> = {
         'Quy luật chỉ là "ba số tăng dần". Trong thí nghiệm của Wason (1960), phần lớn người tham gia chỉ thử các bộ số hợp với phỏng đoán của mình (8-10-12, 20-22-24…), nên không bao giờ thấy phỏng đoán sai.',
     },
   },
+  'base-rate-crowd': {
+    label: 'Đám đông tỉ lệ nền',
+    purpose:
+      'Lưới 1.000 người chia theo tỉ lệ dân số thật của 2-4 nhóm. Người học chỉnh "% mỗi nhóm khớp mô tả" rồi bật lọc để thấy trong những người khớp mô tả, nhóm nào thật sự đông hơn. Dùng để minh hoạ thiên kiến đại diện và tỉ lệ nền (giống khuôn mẫu chưa chắc đã có khả năng cao).',
+    fields: [
+      '`description`: mô tả "giống khuôn mẫu" của một người.',
+      '`subject` (tuỳ chọn): tên người được mô tả, dùng trong câu kết quả.',
+      '`groups`: 2-4 nhóm, mỗi nhóm có `id`, `label`, `population` (số người thật, > 0), `matchPercent` (0-100, % nhóm đó khớp mô tả), `color` (sky | amber | emerald | violet, tuỳ chọn).',
+      '`targetGroupId`: id của nhóm mà mô tả trông "giống".',
+      '`insight` (tuỳ chọn): lời chốt hiện sau khi lọc.',
+    ],
+    rules: [
+      '`population` phải là số liệu thật có nguồn, ghi nguồn trong bài.',
+      'Nhóm đích thường là nhóm nhỏ hơn nhiều; % khớp mô tả của nó cao hơn nhóm lớn, để người học thấy tỉ lệ nền vẫn thắng.',
+    ],
+    example: {
+      type: 'base-rate-crowd',
+      title: 'Đám đông theo tỉ lệ thật',
+      subject: 'anh Nam',
+      description: 'Anh Nam đeo kính, nói năng chừng mực, thích đọc sách, hay viết bài phân tích dài trên Facebook.',
+      groups: [
+        { id: 'g1', label: 'Giảng viên đại học', population: 90700, matchPercent: 30, color: 'sky' },
+        { id: 'g2', label: 'Người làm nông, lâm nghiệp, thuỷ sản', population: 13700000, matchPercent: 1, color: 'amber' },
+      ],
+      targetGroupId: 'g1',
+      insight: 'Mô tả giống giảng viên hơn gấp 30 lần, nhưng người làm nông đông hơn gấp khoảng 150 lần, nên người khớp mô tả vẫn chủ yếu là người làm nông.',
+    },
+  },
 
   'pair-match': {
     label: 'Nối cặp',

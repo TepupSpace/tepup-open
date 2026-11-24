@@ -5,6 +5,7 @@ export { default as BiasDetectorBlockComponent } from './BiasDetectorBlock';
 export { default as PerspectiveSwitchBlockComponent } from './PerspectiveSwitchBlock';
 export { default as HotColdGuessBlockComponent } from './HotColdGuessBlock';
 export { default as RuleDiscoveryBlockComponent } from './RuleDiscoveryBlock';
+export { default as BaseRateCrowdBlockComponent } from './BaseRateCrowdBlock';
 export { default as PairMatchBlockComponent } from './PairMatchBlock';
 export { default as FlipCardBlockComponent } from './FlipCardBlock';
 export { default as SortBucketBlockComponent } from './SortBucketBlock';

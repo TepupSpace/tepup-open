@@ -57,6 +57,8 @@ export function normalizeBlock(block: unknown): unknown {
       };
     case 'rule-discovery':
       return { ...block, options: fillIds(block.options) };
+    case 'base-rate-crowd':
+      return { ...block, groups: fillIds(block.groups, 'g') };
     case 'pair-match':
       return { ...block, pairs: fillIds(block.pairs, 'p') };
     case 'flip-card':

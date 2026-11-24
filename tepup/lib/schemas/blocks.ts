@@ -480,6 +480,48 @@ export const hotColdGuessBlockSchema = z.object({
   context: z.string().optional(),
 });
 
+/** Kiểm chung cho block base-rate-crowd (schema thường và schema nghiêm ngặt). */
+function refineBaseRateCrowd(
+  b: { groups: { id: string; population: number; matchPercent: number }[]; targetGroupId: string },
+  ctx: Ctx
+) {
+  if (b.groups.length < 2 || b.groups.length > 4) {
+    ctx.addIssue({ code: 'custom', message: `cần 2-4 nhóm (đang có ${b.groups.length})`, path: ['groups'] });
+  }
+  refineUniqueIds(ctx, b.groups, 'groups');
+  b.groups.forEach((g, i) => {
+    if (!(g.population > 0)) ctx.addIssue({ code: 'custom', message: 'số người phải lớn hơn 0', path: ['groups', i, 'population'] });
+    if (!(g.matchPercent >= 0 && g.matchPercent <= 100)) {
+      ctx.addIssue({ code: 'custom', message: '% khớp mô tả phải từ 0 đến 100', path: ['groups', i, 'matchPercent'] });
+    }
+  });
+  if (!b.groups.some((g) => g.id === b.targetGroupId)) {
+    ctx.addIssue({ code: 'custom', message: 'nhóm đích không trỏ tới nhóm nào', path: ['targetGroupId'] });
+  }
+}
+
+export const baseRateCrowdBlockSchema = z
+  .object({
+    ...idField,
+    type: z.literal('base-rate-crowd'),
+    title: z.string().optional(),
+    instruction: z.string().optional(),
+    subject: z.string().optional(),
+    description: z.string(),
+    groups: z.array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        population: z.number(),
+        matchPercent: z.number(),
+        color: z.enum(['sky', 'amber', 'emerald', 'violet']).optional(),
+      })
+    ),
+    targetGroupId: z.string(),
+    insight: z.string().optional(),
+  })
+  .superRefine(refineBaseRateCrowd);
+
 /** Biến hợp lệ trong `rule` của block rule-discovery. */
 export const RULE_DISCOVERY_VARS = ['a', 'b', 'c'] as const;
 
@@ -629,6 +671,7 @@ export const BLOCK_SCHEMAS = {
   'perspective-switch': perspectiveSwitchBlockSchema,
   'hot-cold-guess': hotColdGuessBlockSchema,
   'rule-discovery': ruleDiscoveryBlockSchema,
+  'base-rate-crowd': baseRateCrowdBlockSchema,
   'pair-match': pairMatchBlockSchema,
   'flip-card': flipCardBlockSchema,
   'sort-bucket': sortBucketBlockSchema,
@@ -1046,6 +1089,28 @@ export const STRICT_BLOCK_SCHEMAS = {
     options: arr(choiceOption, L.options),
     explanation: textStr,
   }),
+  'base-rate-crowd': z
+    .object({
+      ...idField,
+      type: z.literal('base-rate-crowd'),
+      title: shortStr.optional(),
+      instruction: textStr.optional(),
+      subject: shortStr.optional(),
+      description: textStr,
+      groups: arr(
+        z.object({
+          id: str(L.id),
+          label: shortStr,
+          population: num.min(0).max(10_000_000_000),
+          matchPercent: num.min(0).max(100),
+          color: z.enum(['sky', 'amber', 'emerald', 'violet']).optional(),
+        }),
+        4
+      ),
+      targetGroupId: str(L.id),
+      insight: textStr.optional(),
+    })
+    .superRefine(refineBaseRateCrowd),
   'pair-match': z.object({
     ...idField,
     type: z.literal('pair-match'),

@@ -2,9 +2,9 @@ import {
   Type, Image, Lightbulb, ListChecks, BookOpen,
   Calculator, SlidersHorizontal, PieChart, ScanSearch, Users, Thermometer,
   Puzzle, TrendingUp, BarChart3, Sliders, Brain, Zap, Milestone,
-  Waypoints, SquareStack, Boxes, FlaskConical,
+  Waypoints, SquareStack, Boxes, FlaskConical, Grid3x3,
 } from 'lucide-react';
-import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, PerspectiveSwitchBlock, HotColdGuessBlock, RuleDiscoveryBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
+import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, PerspectiveSwitchBlock, HotColdGuessBlock, RuleDiscoveryBlock, BaseRateCrowdBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
 import type { CustomBlockInstance } from '@/lib/types/custom-block';
 
 /**
@@ -35,6 +35,7 @@ export const blockTypes: { type: string; label: string; icon: React.ElementType;
   { type: 'flip-card', label: 'Lật thẻ', icon: SquareStack, group: 'explainer' },
   { type: 'calculator', label: 'Máy tính', icon: Calculator, group: 'explainer' },
   { type: 'slider-simulator', label: 'Simulator', icon: SlidersHorizontal, group: 'explainer' },
+  { type: 'base-rate-crowd', label: 'Đám đông tỉ lệ nền', icon: Grid3x3, group: 'explainer' },
   { type: 'budget-allocator', label: 'Phân bổ ngân sách', icon: PieChart, group: 'explainer' },
 ];
 
@@ -64,6 +65,7 @@ const BLOCK_HUE: Record<string, BlockHue> = {
   'perspective-switch': 'violet',
   'hot-cold-guess':     'teal',
   'rule-discovery':     'indigo',
+  'base-rate-crowd':    'sky',
   'custom':             'violet',
   'step-break':         'sky',
 };
@@ -167,6 +169,8 @@ export function getBlockPreview(block: ContentBlock): string {
       return block.title || block.question?.slice(0, 60) || '(Hot/Cold Guess)';
     case 'rule-discovery':
       return block.title || block.question?.slice(0, 60) || '(Tìm quy luật)';
+    case 'base-rate-crowd':
+      return block.title || block.description?.slice(0, 60) || '(Đám đông tỉ lệ nền)';
     case 'pair-match':
       return block.title || `Nối cặp: ${block.pairs?.length ?? 0} cặp`;
     case 'flip-card':
@@ -283,6 +287,19 @@ export function createEmptyBlock(type: string): ContentBlock {
         ],
         explanation: '',
       } as RuleDiscoveryBlock;
+    case 'base-rate-crowd':
+      return {
+        type: 'base-rate-crowd',
+        title: 'Đám đông theo tỉ lệ thật',
+        subject: '',
+        description: '',
+        groups: [
+          { id: 'g1', label: '', population: 1000, matchPercent: 50, color: 'sky' },
+          { id: 'g2', label: '', population: 100000, matchPercent: 5, color: 'amber' },
+        ],
+        targetGroupId: 'g1',
+        insight: '',
+      } as BaseRateCrowdBlock;
     case 'pair-match':
       return {
         type: 'pair-match',

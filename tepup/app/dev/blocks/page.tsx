@@ -8,6 +8,7 @@ import {
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
   RuleDiscoveryBlockComponent,
+  BaseRateCrowdBlockComponent,
   PairMatchBlockComponent,
   FlipCardBlockComponent,
   SortBucketBlockComponent,
@@ -21,6 +22,7 @@ import type {
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
   RuleDiscoveryBlock,
+  BaseRateCrowdBlock,
   PairMatchBlock,
   FlipCardBlock,
   SortBucketBlock,
@@ -29,6 +31,19 @@ import type {
 // ==========================================
 // MOCK DATA — Vietnamese Social Science Content
 // ==========================================
+
+const mockBaseRateCrowd: BaseRateCrowdBlock = {
+  type: 'base-rate-crowd',
+  title: 'Đám đông theo tỉ lệ thật',
+  subject: 'anh Nam',
+  description: 'Anh Nam đeo kính, nói năng chừng mực, thích đọc sách, hay viết bài phân tích dài trên Facebook.',
+  groups: [
+    { id: 'g1', label: 'Giảng viên đại học', population: 90700, matchPercent: 30, color: 'sky' },
+    { id: 'g2', label: 'Người làm nông, lâm nghiệp, thuỷ sản', population: 13700000, matchPercent: 1, color: 'amber' },
+  ],
+  targetGroupId: 'g1',
+  insight: 'Mô tả giống giảng viên hơn, nhưng người làm nông đông hơn gấp khoảng 150 lần.',
+};
 
 const mockRuleDiscovery: RuleDiscoveryBlock = {
   type: 'rule-discovery',
@@ -295,6 +310,9 @@ export default function DevBlocksPage() {
 
           <div className="mb-2 mt-6 text-sm text-gray-500 font-medium">C2. Tìm quy luật (2-4-6)</div>
           <RuleDiscoveryBlockComponent block={mockRuleDiscovery} onComplete={() => console.log('RuleDiscovery complete')} />
+
+          <div className="mb-2 mt-6 text-sm text-gray-500 font-medium">B4. Đám đông tỉ lệ nền</div>
+          <BaseRateCrowdBlockComponent block={mockBaseRateCrowd} onComplete={() => console.log('BaseRateCrowd complete')} />
         </section>
 
         {/* NHÓM D */}

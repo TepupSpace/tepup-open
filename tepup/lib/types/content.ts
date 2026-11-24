@@ -233,6 +233,32 @@ export interface RuleDiscoveryBlock {
   explanation: string;
 }
 
+/**
+ * Đám đông tỉ lệ nền: một lưới 1.000 hình nhỏ chia theo tỉ lệ dân số thật của các nhóm
+ * (`population`). Người học chỉnh "% mỗi nhóm khớp mô tả" và bật lọc "Chỉ giữ người khớp
+ * mô tả" để thấy trong những người khớp, nhóm nào thật sự đông hơn (thiên kiến đại diện,
+ * tỉ lệ nền). Số người khớp và khả năng thuộc `targetGroupId` tính từ `population` thật,
+ * không tính từ số chấm.
+ */
+export interface BaseRateCrowdBlock {
+  type: 'base-rate-crowd';
+  title?: string;
+  /** Hướng dẫn, markdown inline; bỏ trống thì dùng lời mặc định. */
+  instruction?: string;
+  /** Người được mô tả, dùng trong câu kết quả ("Khả năng anh Nam là …"). Bỏ trống: "người được mô tả". */
+  subject?: string;
+  /** Mô tả "giống khuôn mẫu", markdown inline. */
+  description: string;
+  /** 2-4 nhóm. `population`: số người thật; `matchPercent`: % mặc định của nhóm khớp mô tả (0-100). */
+  groups: { id: string; label: string; population: number; matchPercent: number; color?: BaseRateCrowdColor }[];
+  /** Nhóm mà mô tả "giống" (thường là nhóm nhỏ). Phải là id của một nhóm. */
+  targetGroupId: string;
+  /** Lời chốt, markdown inline; hiện sau khi bật lọc. */
+  insight?: string;
+}
+
+export type BaseRateCrowdColor = 'sky' | 'amber' | 'emerald' | 'violet';
+
 // === NHÓM D: Ghép nối / Ghi nhớ / Phân loại ===
 
 /** Nối mỗi mục cột trái với đúng một mục cột phải. Luôn cân 1-1. */
@@ -376,6 +402,7 @@ type ContentBlockUnion =
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
   | RuleDiscoveryBlock
+  | BaseRateCrowdBlock
   | PairMatchBlock
   | FlipCardBlock
   | SortBucketBlock

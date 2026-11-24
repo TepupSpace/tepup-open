@@ -36,6 +36,7 @@ const WIDGET_TYPES = new Set([
   'perspective-switch',
   'hot-cold-guess',
   'rule-discovery',
+  'base-rate-crowd',
   'pair-match',
   'flip-card',
   'sort-bucket',

@@ -177,6 +177,19 @@ export interface RuleDiscoveryBlock {
   explanation: string;
 }
 
+export type BaseRateCrowdColor = 'sky' | 'amber' | 'emerald' | 'violet';
+
+export interface BaseRateCrowdBlock {
+  type: 'base-rate-crowd';
+  title?: string;
+  instruction?: string;
+  subject?: string;
+  description: string;
+  groups: { id: string; label: string; population: number; matchPercent: number; color?: BaseRateCrowdColor }[];
+  targetGroupId: string;
+  insight?: string;
+}
+
 export interface PairMatchBlock {
   type: 'pair-match';
   title?: string;
@@ -216,6 +229,7 @@ export type ContentBlock =
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
   | RuleDiscoveryBlock
+  | BaseRateCrowdBlock
   | PairMatchBlock
   | FlipCardBlock
   | SortBucketBlock

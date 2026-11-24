@@ -11,6 +11,7 @@ import {
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
   RuleDiscoveryBlockComponent,
+  BaseRateCrowdBlockComponent,
 } from '@/components/blocks';
 
 import type {
@@ -21,6 +22,7 @@ import type {
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
   RuleDiscoveryBlock,
+  BaseRateCrowdBlock,
 } from '@/lib/types/content';
 
 // ==========================================
@@ -164,6 +166,19 @@ const mockHotColdGuess: HotColdGuessBlock = {
   context: 'GDP bình quân đầu người VN năm 2023 đạt khoảng 4,284 USD. Con số này tăng gần 10 lần so với năm 2000 (390 USD). Tuy nhiên, GDP bình quân không phản ánh bất bình đẳng.',
 };
 
+const mockBaseRateCrowd: BaseRateCrowdBlock = {
+  type: 'base-rate-crowd',
+  title: 'Đám đông theo tỉ lệ thật',
+  subject: 'anh Nam',
+  description: 'Anh Nam đeo kính, nói năng chừng mực, thích đọc sách, hay viết bài phân tích dài trên Facebook.',
+  groups: [
+    { id: 'g1', label: 'Giảng viên đại học', population: 90700, matchPercent: 30, color: 'sky' },
+    { id: 'g2', label: 'Người làm nông, lâm nghiệp, thuỷ sản', population: 13700000, matchPercent: 1, color: 'amber' },
+  ],
+  targetGroupId: 'g1',
+  insight: 'Mô tả giống giảng viên hơn, nhưng người làm nông đông hơn gấp khoảng 150 lần.',
+};
+
 const mockRuleDiscovery: RuleDiscoveryBlock = {
   type: 'rule-discovery',
   title: 'Tìm quy luật bí mật',
@@ -190,6 +205,7 @@ const SECTIONS: { label: string; node: React.ReactNode }[] = [
   { label: 'Perspective Switch (B3)', node: <PerspectiveSwitchBlockComponent block={mockPerspectiveSwitch} /> },
   { label: 'Hot / Cold Guess (C1)', node: <HotColdGuessBlockComponent block={mockHotColdGuess} /> },
   { label: 'Tìm quy luật 2-4-6 (C2)', node: <RuleDiscoveryBlockComponent block={mockRuleDiscovery} /> },
+  { label: 'Đám đông tỉ lệ nền (B4)', node: <BaseRateCrowdBlockComponent block={mockBaseRateCrowd} /> },
 ];
 
 export default function BlockDemoPage() {
