@@ -23,9 +23,13 @@ const CELL = 10;
 const DEFAULT_INSTRUCTION =
   'Mỗi hình là một người, chia theo đúng tỉ lệ ngoài đời. Chỉnh xem mỗi nhóm có bao nhiêu phần trăm khớp với mô tả, đoán trước nhóm nào đông hơn, rồi bấm lọc.';
 
-/** Màu theo bảng Tailwind (chế độ tối trỏ lại biến màu, xem app/reader.css). Không dùng mã hex. */
+/**
+ * Màu theo bảng Tailwind (chế độ tối trỏ lại biến màu, xem app/reader.css). Không dùng mã hex.
+ * "sky" vẽ bằng dải blue: trong trang học giấy, BlockShell accent="sky" trỏ cả dải sky về màu nhấn đỏ
+ * (components/learn/player-paper.css), sẽ làm nhóm này gần màu nhóm amber.
+ */
 const COLORS: Record<BaseRateCrowdColor, { fill: string; text: string; swatch: string }> = {
-  sky: { fill: 'fill-sky-600', text: 'text-sky-800', swatch: 'bg-sky-600' },
+  sky: { fill: 'fill-blue-600', text: 'text-blue-800', swatch: 'bg-blue-600' },
   amber: { fill: 'fill-amber-600', text: 'text-amber-800', swatch: 'bg-amber-600' },
   emerald: { fill: 'fill-emerald-600', text: 'text-emerald-800', swatch: 'bg-emerald-600' },
   violet: { fill: 'fill-violet-600', text: 'text-violet-800', swatch: 'bg-violet-600' },
