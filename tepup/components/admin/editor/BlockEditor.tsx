@@ -19,6 +19,8 @@ import CalculatorBlockEditor from './CalculatorBlockEditor';
 import SliderSimulatorBlockEditor from './SliderSimulatorBlockEditor';
 import BudgetAllocatorBlockEditor from './BudgetAllocatorBlockEditor';
 import BiasDetectorBlockEditor from './BiasDetectorBlockEditor';
+import ImageBiasDetectorBlockEditor from './ImageBiasDetectorBlockEditor';
+import BranchDiagnosisBlockEditor from './BranchDiagnosisBlockEditor';
 import PerspectiveSwitchBlockEditor from './PerspectiveSwitchBlockEditor';
 import HotColdGuessBlockEditor from './HotColdGuessBlockEditor';
 import RuleDiscoveryBlockEditor from './RuleDiscoveryBlockEditor';
@@ -50,6 +52,8 @@ export type {
   SliderSimulatorBlock,
   BudgetAllocatorBlock,
   BiasDetectorBlock,
+  ImageBiasDetectorBlock,
+  BranchDiagnosisBlock,
   PerspectiveSwitchBlock,
   HotColdGuessBlock,
   RuleDiscoveryBlock,
@@ -73,6 +77,8 @@ const BLOCK_EDITOR_MAP: Record<string, React.ComponentType<{ block: any; onChang
   'slider-simulator': SliderSimulatorBlockEditor,
   'budget-allocator': BudgetAllocatorBlockEditor,
   'bias-detector': BiasDetectorBlockEditor,
+  'image-bias-detector': ImageBiasDetectorBlockEditor,
+  'branch-diagnosis': BranchDiagnosisBlockEditor,
   'perspective-switch': PerspectiveSwitchBlockEditor,
   'hot-cold-guess': HotColdGuessBlockEditor,
   'rule-discovery': RuleDiscoveryBlockEditor,

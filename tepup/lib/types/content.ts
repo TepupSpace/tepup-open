@@ -168,7 +168,15 @@ export interface BiasDetectorBlock {
   type: 'bias-detector';
   title?: string;
   instruction: string;
+  /**
+   * 'marked' (mặc định, như block cũ): các cụm trong `segments` được tô sẵn, người học
+   * phân loại từng cụm. 'find': không tô gì; đoạn văn được tách thành câu
+   * (`splitSentences`), người học tự bấm vào câu mình cho là có lỗi. Câu chứa một cụm
+   * trong `segments` là câu có lỗi; câu khác bị chọn là "bắt nhầm".
+   */
+  mode?: 'marked' | 'find';
   article: {
+    /** Xuống dòng (`\n`) được giữ khi hiển thị. */
     text: string;
     source?: string;
   };
@@ -176,10 +184,76 @@ export interface BiasDetectorBlock {
     id: string;
     text: string;
     startIndex: number;
+    /** id trong `biasOptions`, hoặc `'none'` (NO_BIAS) cho cụm nhiễu không có lỗi (chế độ 'marked'). */
     biasType: string;
     explanation: string;
   }[];
   biasOptions: { id: string; label: string }[];
+}
+
+/**
+ * Soi thiên kiến trên một hình: tác giả khoanh các vùng ứng viên (toạ độ % của ảnh),
+ * gồm cả vùng không có lỗi (`biasType: 'none'`). Người học chạm vào vùng rồi chọn loại
+ * thiên kiến. 'marked': vùng hiện viền đánh số, phải xét hết; 'find': vùng ẩn, người học
+ * tự tìm (bàn phím vẫn Tab qua mọi vùng, kể cả vùng nhiễu, nên không lộ đáp án).
+ */
+export interface ImageBiasDetectorBlock {
+  type: 'image-bias-detector';
+  title?: string;
+  instruction: string;
+  mode?: 'marked' | 'find';
+  image: {
+    src: string;
+    /** Mô tả cả hình cho trình đọc màn hình. */
+    alt: string;
+    caption?: string;
+  };
+  regions: {
+    id: string;
+    /** Tên ngắn của phần hình, là tên đọc lên của vùng (VD "Giá gạch 890.000đ"). */
+    label: string;
+    /** Toạ độ góc trên trái và kích thước, tính bằng % chiều rộng/cao của ảnh (0-100). */
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    biasType: string;
+    explanation: string;
+  }[];
+  biasOptions: { id: string; label: string }[];
+}
+
+/**
+ * Chẩn đoán theo nhánh: mỗi tình huống, người học đi từ gốc của một cây quyết định
+ * (`nodes`, bắt đầu ở `rootId`) xuống tới lá, rồi (tuỳ chọn) chọn đáp án cuối
+ * (`final`, VD cách tự vệ). Chọn sai ở bước nào thì thử lại ở bước đó. Cây do tác giả
+ * định nghĩa, nên mỗi chương dùng Bước 0 của mình.
+ */
+export interface BranchDiagnosisBlock {
+  type: 'branch-diagnosis';
+  title?: string;
+  instruction?: string;
+  rootId: string;
+  nodes: {
+    id: string;
+    question: string;
+    /** `next`: id của nút tiếp theo; bỏ trống = lá (hết cây). */
+    choices: { id: string; label: string; next?: string }[];
+  }[];
+  /** Bước cuối sau khi tới lá, dùng chung cho mọi tình huống. */
+  final?: {
+    question: string;
+    options: { id: string; label: string }[];
+  };
+  cases: {
+    id: string;
+    /** Tình huống, markdown inline. */
+    text: string;
+    /** Đường đúng từ gốc: mỗi bước là một lựa chọn của nút đang đứng, kèm giải thích. */
+    steps: { choiceId: string; explanation: string }[];
+    /** Bắt buộc khi block có `final`. */
+    finalAnswer?: { optionId: string; explanation: string };
+  }[];
 }
 
 export interface PerspectiveSwitchBlock {
@@ -399,6 +473,8 @@ type ContentBlockUnion =
   | SliderSimulatorBlock
   | BudgetAllocatorBlock
   | BiasDetectorBlock
+  | ImageBiasDetectorBlock
+  | BranchDiagnosisBlock
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
   | RuleDiscoveryBlock

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" font-family="Arial, Helvetica, sans-serif">
+  <rect width="800" height="450" fill="#fff7ed"/>
+  <rect x="0" y="0" width="800" height="70" fill="#ea580c"/>
+  <text x="30" y="47" font-size="30" font-weight="bold" fill="#fff">SIÊU SALE 11.11</text>
+  <rect x="560" y="15" width="220" height="40" rx="8" fill="#7c2d12"/>
+  <text x="670" y="43" font-size="22" font-weight="bold" fill="#fff" text-anchor="middle">Còn 02:59:41</text>
+  <rect x="30" y="95" width="300" height="320" rx="16" fill="#fed7aa"/>
+  <text x="180" y="265" font-size="26" fill="#9a3412" text-anchor="middle">[ảnh áo khoác]</text>
+  <text x="370" y="140" font-size="30" font-weight="bold" fill="#1f2937">Áo khoác gió unisex</text>
+  <text x="370" y="200" font-size="28" fill="#6b7280" text-decoration="line-through">890.000đ</text>
+  <text x="370" y="260" font-size="48" font-weight="bold" fill="#dc2626">450.000đ</text>
+  <rect x="610" y="222" width="90" height="44" rx="8" fill="#dc2626"/>
+  <text x="655" y="252" font-size="24" font-weight="bold" fill="#fff" text-anchor="middle">-49%</text>
+  <text x="370" y="315" font-size="22" fill="#374151">Chất liệu: polyester, chống nước nhẹ</text>
+  <rect x="370" y="345" width="260" height="60" rx="12" fill="#ea580c"/>
+  <text x="500" y="384" font-size="26" font-weight="bold" fill="#fff" text-anchor="middle">MUA NGAY</text>
+</svg>

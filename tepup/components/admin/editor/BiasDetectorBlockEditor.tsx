@@ -3,6 +3,7 @@
 import { useId } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import type { BiasDetectorBlock } from './BlockEditor';
+import { NO_BIAS, NO_BIAS_LABEL } from '@/lib/blocks/bias-detector';
 
 interface Props {
   block: BiasDetectorBlock;
@@ -50,9 +51,17 @@ export default function BiasDetectorBlockEditor({ block, onChange }: Props) {
     field: 'id' | 'text' | 'biasType' | 'explanation',
     value: string,
   ) {
-    const segments = block.segments.map((s, i) =>
-      i === index ? { ...s, [field]: value } : s,
-    );
+    const segments = block.segments.map((s, i) => {
+      if (i !== index) return s;
+      const next = { ...s, [field]: value };
+      // Gõ cụm từ thì tự tìm vị trí của nó trong văn bản (lần xuất hiện đầu tiên);
+      // cụm xuất hiện nhiều lần thì chỉnh startIndex bằng tay.
+      if (field === 'text') {
+        const at = block.article.text.indexOf(value);
+        if (value && at >= 0) next.startIndex = at;
+      }
+      return next;
+    });
     onChange({ ...block, segments });
   }
 
@@ -102,6 +111,27 @@ export default function BiasDetectorBlockEditor({ block, onChange }: Props) {
           placeholder="VD: Đọc đoạn tin dưới đây. Click vào các cụm từ được highlight và chọn loại thiên lệch phù hợp."
           className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
+      </div>
+
+      {/* Mode */}
+      <div>
+        <label htmlFor={`${uid}-mode`} className="block text-sm font-medium text-gray-700 mb-1">
+          Chế độ
+        </label>
+        <select
+          id={`${uid}-mode`}
+          value={block.mode ?? 'marked'}
+          onChange={(e) => onChange({ ...block, mode: e.target.value as 'marked' | 'find' })}
+          className="w-full px-3 py-2 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+        >
+          <option value="marked">Tô sẵn các cụm (người học phân loại từng cụm)</option>
+          <option value="find">Tự tìm (không tô gì, người học tự chọn câu có lỗi)</option>
+        </select>
+        <p className="mt-1 text-xs text-gray-600">
+          {block.mode === 'find'
+            ? 'Văn bản được tách thành câu. Mỗi cụm bên dưới là chỗ có lỗi và phải nằm gọn trong một câu (mỗi câu tối đa một cụm). Câu không chứa cụm nào là câu không có lỗi.'
+            : `Chọn "${NO_BIAS_LABEL}" cho cụm nhiễu: người học phải nhận ra nó không có lỗi.`}
+        </p>
       </div>
 
       {/* Article */}
@@ -251,6 +281,7 @@ export default function BiasDetectorBlockEditor({ block, onChange }: Props) {
                           {o.label || o.id}
                         </option>
                       ))}
+                      {block.mode !== 'find' && <option value={NO_BIAS}>{NO_BIAS_LABEL} (cụm nhiễu)</option>}
                     </select>
                   </div>
                   <textarea

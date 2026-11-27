@@ -104,6 +104,9 @@ function checkMediaFields(block: Obj, path: string, issues: Issues) {
     case 'file':
       checkMedia(block.url, `${path}.url`, issues);
       break;
+    case 'image-bias-detector':
+      if (isObj(block.image)) checkMedia(block.image.src, `${path}.image.src`, issues);
+      break;
     case 'flip-card':
       if (Array.isArray(block.cards)) {
         block.cards.forEach((card, i) => {

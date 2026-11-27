@@ -1,3 +1,4 @@
+import type { ImageBiasDetectorBlock, BranchDiagnosisBlock } from '@/lib/types/content';
 import type { CustomBlockInstance, CustomBlockTypeConfig } from '@/lib/types/custom-block';
 
 export interface TextBlock {
@@ -132,6 +133,7 @@ export interface BiasDetectorBlock {
   type: 'bias-detector';
   title?: string;
   instruction: string;
+  mode?: 'marked' | 'find';
   article: { text: string; source?: string };
   segments: {
     id: string;
@@ -143,6 +145,7 @@ export interface BiasDetectorBlock {
   biasOptions: { id: string; label: string }[];
 }
 
+export type { ImageBiasDetectorBlock, BranchDiagnosisBlock } from '@/lib/types/content';
 export interface PerspectiveSwitchBlock {
   type: 'perspective-switch';
   title?: string;
@@ -226,6 +229,8 @@ export type ContentBlock =
   | SliderSimulatorBlock
   | BudgetAllocatorBlock
   | BiasDetectorBlock
+  | ImageBiasDetectorBlock
+  | BranchDiagnosisBlock
   | PerspectiveSwitchBlock
   | HotColdGuessBlock
   | RuleDiscoveryBlock

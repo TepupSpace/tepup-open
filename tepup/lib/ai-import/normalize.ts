@@ -65,6 +65,10 @@ export function normalizeBlock(block: unknown): unknown {
       return { ...block, cards: fillIds(block.cards, 'c') };
     case 'sort-bucket':
       return { ...block, buckets: fillIds(block.buckets, 'b'), items: fillIds(block.items, 'i') };
+    case 'image-bias-detector':
+      return { ...block, regions: fillIds(block.regions, 'r') };
+    case 'branch-diagnosis':
+      return { ...block, cases: fillIds(block.cases, 'case') };
     case 'bias-detector':
       return fixBiasIndexes({ ...block, segments: fillIds(block.segments, 's') });
     default:

@@ -33,6 +33,8 @@ const WIDGET_TYPES = new Set([
   'slider-simulator',
   'budget-allocator',
   'bias-detector',
+  'image-bias-detector',
+  'branch-diagnosis',
   'perspective-switch',
   'hot-cold-guess',
   'rule-discovery',

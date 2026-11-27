@@ -92,6 +92,9 @@ async function main() {
       if (b.type === 'question') inside.push(...(b.options ?? []).map((o: any) => o.text));
       if (b.type === 'flip-card') inside.push(...(b.cards ?? []).flatMap((c: any) => [c.front?.text, c.back?.text]));
       if (b.type === 'pair-match') inside.push(...(b.pairs ?? []).flatMap((p: any) => [p.left, p.right]));
+      if (b.type === 'bias-detector') inside.push(b.article?.text);
+      if (b.type === 'image-bias-detector') inside.push(...(b.regions ?? []).map((r: any) => r.label));
+      if (b.type === 'branch-diagnosis') inside.push(...(b.nodes ?? []).flatMap((n: any) => (n.choices ?? []).map((c: any) => c.label)), ...(b.final?.options ?? []).map((o: any) => o.label));
       if (b.type === 'sort-bucket') inside.push(...(b.items ?? []).map((i: any) => i.text));
       if (b.type === 'rule-discovery') inside.push(...(b.options ?? []).map((o: any) => o.text));
       if (b.type === 'base-rate-crowd') inside.push(...(b.groups ?? []).map((g: any) => g.label));

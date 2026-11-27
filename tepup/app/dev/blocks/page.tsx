@@ -1,10 +1,13 @@
 'use client';
 
+import { mockBiasDetectorFind, mockImageBiasDetector, mockBranchDiagnosis } from '@/lib/blocks/demo-mocks';
 import {
   CalculatorBlockComponent,
   SliderSimulatorBlockComponent,
   BudgetAllocatorBlockComponent,
   BiasDetectorBlockComponent,
+  ImageBiasDetectorBlockComponent,
+  BranchDiagnosisBlockComponent,
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
   RuleDiscoveryBlockComponent,
@@ -293,6 +296,15 @@ export default function DevBlocksPage() {
 
           <div className="mb-2 text-sm text-gray-500 font-medium">B1. Bias Detector</div>
           <BiasDetectorBlockComponent block={mockBiasDetector} onComplete={() => console.log('Bias complete')} />
+
+          <div className="mb-2 text-sm text-gray-500 font-medium">B1b. Bias Detector, chế độ tự tìm</div>
+          <BiasDetectorBlockComponent block={mockBiasDetectorFind} onComplete={() => console.log('Bias find complete')} />
+
+          <div className="mb-2 text-sm text-gray-500 font-medium">B5. Soi thiên kiến trong hình</div>
+          <ImageBiasDetectorBlockComponent block={mockImageBiasDetector} onComplete={() => console.log('Image bias complete')} />
+
+          <div className="mb-2 text-sm text-gray-500 font-medium">B6. Chẩn đoán theo nhánh</div>
+          <BranchDiagnosisBlockComponent block={mockBranchDiagnosis} onComplete={() => console.log('Branch complete')} />
 
           <div className="mb-2 text-sm text-gray-500 font-medium">B3. Perspective Switch</div>
           <PerspectiveSwitchBlockComponent block={mockPerspectiveSwitch} onComplete={() => console.log('Perspective complete')} />

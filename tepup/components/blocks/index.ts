@@ -2,6 +2,8 @@ export { default as CalculatorBlockComponent } from './CalculatorBlock';
 export { default as SliderSimulatorBlockComponent } from './SliderSimulatorBlock';
 export { default as BudgetAllocatorBlockComponent } from './BudgetAllocatorBlock';
 export { default as BiasDetectorBlockComponent } from './BiasDetectorBlock';
+export { default as ImageBiasDetectorBlockComponent } from './ImageBiasDetectorBlock';
+export { default as BranchDiagnosisBlockComponent } from './BranchDiagnosisBlock';
 export { default as PerspectiveSwitchBlockComponent } from './PerspectiveSwitchBlock';
 export { default as HotColdGuessBlockComponent } from './HotColdGuessBlock';
 export { default as RuleDiscoveryBlockComponent } from './RuleDiscoveryBlock';

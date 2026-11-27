@@ -249,6 +249,8 @@ export const BLOCK_SPECS: Record<string, BlockSpec> = {
       '`biasOptions`: các loại thiên lệch để chọn, mỗi loại có `id` và `label`.',
       '`segments`: cụm từ được đánh dấu. `text` phải là TRÍCH NGUYÊN VĂN từ `article.text`; `biasType` là một `id` trong biasOptions; `explanation` giải thích vì sao.',
       '`startIndex`: để 0 — hệ thống tự tính lại vị trí.',
+      '`mode` (tuỳ chọn): "marked" (mặc định, tô sẵn các cụm) hoặc "find" (không tô; người học tự chọn câu có lỗi; mỗi cụm phải nằm gọn trong một câu, mỗi câu tối đa một cụm).',
+      'Ở chế độ "marked", `biasType: "none"` là cụm nhiễu không có lỗi (không khai "none" trong biasOptions).',
     ],
     rules: ['Mỗi `segments[].text` phải xuất hiện y hệt (kể cả dấu) trong `article.text`.', '3–5 segments, 3–4 biasOptions.'],
     example: {
@@ -266,6 +268,61 @@ export const BLOCK_SPECS: Record<string, BlockSpec> = {
       segments: [
         { id: 's1', text: 'tăng phi mã', startIndex: 0, biasType: 'emotional', explanation: '"Phi mã" phóng đại mức tăng mà không đưa ra con số.' },
         { id: 's2', text: 'Mọi chuyên gia đều nói', startIndex: 0, biasType: 'overgeneral', explanation: 'Không có "mọi chuyên gia"; bài không dẫn ai cụ thể.' },
+      ],
+    },
+  },
+
+  'image-bias-detector': {
+    label: 'Soi thiên kiến trong hình',
+    purpose:
+      'Người học chạm vào các vùng của một hình (ảnh chụp màn hình mô phỏng, banner, bài đăng) và chọn loại thiên kiến. Có vùng nhiễu không có lỗi. Chế độ "marked" hiện viền đánh số; "find" ẩn vùng để người học tự tìm.',
+    fields: [
+      '`instruction`: hướng dẫn. `mode`: "marked" (mặc định) hoặc "find".',
+      '`image`: `src` (URL ảnh đã tải lên kho Tépup), `alt` (mô tả cả hình), `caption` (tuỳ chọn).',
+      '`biasOptions`: các loại thiên kiến, mỗi loại `id` + `label`. KHÔNG khai "none".',
+      '`regions`: mỗi vùng có `id`, `label` (tên ngắn của phần hình), `x`,`y`,`w`,`h` (phần trăm của ảnh, 0-100), `biasType` (id trong biasOptions, hoặc "none" cho vùng không có lỗi), `explanation`.',
+    ],
+    rules: ['Vùng nằm trong ảnh: x+w ≤ 100, y+h ≤ 100.', 'Có ít nhất một vùng "none" để người học không chọn bừa.', 'Ảnh phải được tác giả tải lên trước; AI không tự tạo URL ảnh.'],
+    example: {
+      type: 'image-bias-detector',
+      title: 'Soi một banner khuyến mãi',
+      instruction: 'Chạm vào từng vùng được đánh số rồi chọn loại thiên kiến.',
+      mode: 'marked',
+      image: { src: '', alt: 'Banner bán áo khoác: giá gạch 890.000đ, giá bán 450.000đ, ảnh người mẫu, nút Mua ngay.' },
+      biasOptions: [{ id: 'anchoring', label: 'Mỏ neo' }],
+      regions: [
+        { id: 'r1', label: 'Giá gạch 890.000đ', x: 5, y: 60, w: 30, h: 12, biasType: 'anchoring', explanation: 'Con số gạch đi là mỏ neo: nó làm 450.000đ trông rẻ.' },
+        { id: 'r2', label: 'Nút Mua ngay', x: 60, y: 80, w: 30, h: 12, biasType: 'none', explanation: 'Nút bấm bình thường, không kéo lệch phán đoán.' },
+      ],
+    },
+  },
+
+  'branch-diagnosis': {
+    label: 'Chẩn đoán theo nhánh',
+    purpose:
+      'Mỗi tình huống, người học đi từ gốc của một cây quyết định xuống lá (VD Bước 0 → nhánh con), chọn sai thì thử lại; tuỳ chọn có bước cuối (VD chọn cách tự vệ). Xong mỗi tình huống hiện cây với đường đúng.',
+    fields: [
+      '`rootId`: id nút gốc. `nodes`: mỗi nút có `id`, `question`, `choices` (mỗi lựa chọn `id`, `label`, `next` = id nút tiếp, bỏ trống nếu là lá).',
+      '`final` (tuỳ chọn): `question` + `options` (mỗi đáp án `id`, `label`).',
+      '`cases`: mỗi tình huống có `id`, `text`, `steps` (đường đúng từ gốc tới lá: mỗi bước `choiceId` + `explanation`), `finalAnswer` (`optionId` + `explanation`, bắt buộc khi có `final`).',
+    ],
+    rules: ['Cây không có vòng lặp.', '`steps` đi đúng từ gốc, bước cuối phải tới lá.', 'Tình huống không nêu tên đáp án; người học phải tự suy ra.'],
+    example: {
+      type: 'branch-diagnosis',
+      title: 'Mình đang lệch ở nhánh nào?',
+      rootId: 'n0',
+      nodes: [
+        { id: 'n0', question: 'Bước 0: lúc này mình đang…', choices: [{ id: 'doan', label: 'Đoán nhanh (chưa có sẵn niềm tin)' }, { id: 'giu', label: 'Giữ niềm tin cũ', next: 'n1' }] },
+        { id: 'n1', question: 'Niềm tin cũ đang bị thách thức thế nào?', choices: [{ id: 'tin-moi', label: 'Gặp tin mới' }, { id: 'bi-bac', label: 'Căn cứ cũ bị bác' }, { id: 'khac-y', label: 'Gặp người khác ý' }] },
+      ],
+      final: { question: 'Cách tự vệ hợp nhất?', options: [{ id: 'outside', label: 'Hỏi: trường hợp như thế này thường ra sao?' }, { id: 'popper', label: 'Tìm phép thử có thể cho thấy mình sai' }] },
+      cases: [
+        {
+          id: 'case1',
+          text: 'HR nói ngân sách vị trí khoảng 8 triệu rồi hỏi bạn mong muốn bao nhiêu. Bạn chưa từng tìm hiểu mức lương ngành này.',
+          steps: [{ choiceId: 'doan', explanation: 'Bạn chưa có sẵn ý kiến về mức lương, nên đang đoán nhanh, và con số 8 triệu là mỏ neo.' }],
+          finalAnswer: { optionId: 'outside', explanation: 'Tìm mức lương của những vị trí tương tự trước khi trả lời.' },
+        },
       ],
     },
   },

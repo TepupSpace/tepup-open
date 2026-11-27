@@ -2,9 +2,9 @@ import {
   Type, Image, Lightbulb, ListChecks, BookOpen,
   Calculator, SlidersHorizontal, PieChart, ScanSearch, Users, Thermometer,
   Puzzle, TrendingUp, BarChart3, Sliders, Brain, Zap, Milestone,
-  Waypoints, SquareStack, Boxes, FlaskConical, Grid3x3,
+  Waypoints, SquareStack, Boxes, FlaskConical, Grid3x3, ImageIcon, GitBranch,
 } from 'lucide-react';
-import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, PerspectiveSwitchBlock, HotColdGuessBlock, RuleDiscoveryBlock, BaseRateCrowdBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
+import type { ContentBlock, CalculatorBlock, SliderSimulatorBlock, BudgetAllocatorBlock, BiasDetectorBlock, ImageBiasDetectorBlock, BranchDiagnosisBlock, PerspectiveSwitchBlock, HotColdGuessBlock, RuleDiscoveryBlock, BaseRateCrowdBlock, PairMatchBlock, FlipCardBlock, SortBucketBlock, CustomBlockTypeFull } from './types';
 import type { CustomBlockInstance } from '@/lib/types/custom-block';
 
 /**
@@ -29,6 +29,8 @@ export const blockTypes: { type: string; label: string; icon: React.ElementType;
   { type: 'pair-match', label: 'Nối cặp', icon: Waypoints, group: 'question' },
   { type: 'sort-bucket', label: 'Phân loại vào rổ', icon: Boxes, group: 'question' },
   { type: 'bias-detector', label: 'Phát hiện thiên lệch', icon: ScanSearch, group: 'question' },
+  { type: 'image-bias-detector', label: 'Soi thiên kiến trong hình', icon: ImageIcon, group: 'question' },
+  { type: 'branch-diagnosis', label: 'Chẩn đoán theo nhánh', icon: GitBranch, group: 'question' },
   { type: 'perspective-switch', label: 'Đa góc nhìn', icon: Users, group: 'question' },
   { type: 'hot-cold-guess', label: 'Hot/Cold Guess', icon: Thermometer, group: 'question' },
   { type: 'rule-discovery', label: 'Tìm quy luật (2-4-6)', icon: FlaskConical, group: 'question' },
@@ -62,6 +64,8 @@ const BLOCK_HUE: Record<string, BlockHue> = {
   'slider-simulator':   'cyan',
   'budget-allocator':   'rose',
   'bias-detector':      'red',
+  'image-bias-detector': 'red',
+  'branch-diagnosis':   'indigo',
   'perspective-switch': 'violet',
   'hot-cold-guess':     'teal',
   'rule-discovery':     'indigo',
@@ -163,6 +167,10 @@ export function getBlockPreview(block: ContentBlock): string {
       return block.title || '(Phân bổ ngân sách)';
     case 'bias-detector':
       return block.title || block.instruction?.slice(0, 60) || '(Bias detector)';
+    case 'image-bias-detector':
+      return block.title || block.instruction?.slice(0, 60) || '(Soi thiên kiến trong hình)';
+    case 'branch-diagnosis':
+      return block.title || `Chẩn đoán theo nhánh: ${block.cases?.length ?? 0} tình huống`;
     case 'perspective-switch':
       return block.title || block.event?.slice(0, 60) || '(Đa góc nhìn)';
     case 'hot-cold-guess':
@@ -244,6 +252,34 @@ export function createEmptyBlock(type: string): ContentBlock {
         segments: [],
         biasOptions: [{ id: 'emotional', label: 'Ngôn ngữ cảm xúc' }],
       } as BiasDetectorBlock;
+    case 'image-bias-detector':
+      return {
+        type: 'image-bias-detector',
+        title: '',
+        instruction: 'Chạm vào từng vùng được đánh số rồi chọn loại thiên kiến.',
+        mode: 'marked',
+        image: { src: '', alt: '' },
+        regions: [],
+        biasOptions: [{ id: 'anchoring', label: 'Mỏ neo' }],
+      } as ImageBiasDetectorBlock;
+    case 'branch-diagnosis':
+      return {
+        type: 'branch-diagnosis',
+        title: 'Chẩn đoán theo nhánh',
+        instruction: '',
+        rootId: 'n1',
+        nodes: [
+          {
+            id: 'n1',
+            question: 'Bước 0: lúc này mình đang…',
+            choices: [
+              { id: 'c1', label: 'Lựa chọn A' },
+              { id: 'c2', label: 'Lựa chọn B' },
+            ],
+          },
+        ],
+        cases: [{ id: 'case1', text: '', steps: [{ choiceId: 'c1', explanation: '' }] }],
+      } as BranchDiagnosisBlock;
     case 'perspective-switch':
       return {
         type: 'perspective-switch',

@@ -1,5 +1,6 @@
 'use client';
 
+import { mockBiasDetectorFind, mockImageBiasDetector, mockBranchDiagnosis } from '@/lib/blocks/demo-mocks';
 import Link from '@/components/ui/AppLink';
 import { ArrowLeft } from 'lucide-react';
 
@@ -8,6 +9,8 @@ import {
   SliderSimulatorBlockComponent,
   BudgetAllocatorBlockComponent,
   BiasDetectorBlockComponent,
+  ImageBiasDetectorBlockComponent,
+  BranchDiagnosisBlockComponent,
   PerspectiveSwitchBlockComponent,
   HotColdGuessBlockComponent,
   RuleDiscoveryBlockComponent,
@@ -202,6 +205,9 @@ const SECTIONS: { label: string; node: React.ReactNode }[] = [
   { label: 'Slider Simulator (A2)', node: <SliderSimulatorBlockComponent block={mockSliderSimulator} /> },
   { label: 'Budget Allocator (A3)', node: <BudgetAllocatorBlockComponent block={mockBudgetAllocator} /> },
   { label: 'Bias Detector (B1)', node: <BiasDetectorBlockComponent block={mockBiasDetector} /> },
+  { label: 'Bias Detector, chế độ tự tìm (B1b)', node: <BiasDetectorBlockComponent block={mockBiasDetectorFind} /> },
+  { label: 'Soi thiên kiến trong hình (B5)', node: <ImageBiasDetectorBlockComponent block={mockImageBiasDetector} /> },
+  { label: 'Chẩn đoán theo nhánh (B6)', node: <BranchDiagnosisBlockComponent block={mockBranchDiagnosis} /> },
   { label: 'Perspective Switch (B3)', node: <PerspectiveSwitchBlockComponent block={mockPerspectiveSwitch} /> },
   { label: 'Hot / Cold Guess (C1)', node: <HotColdGuessBlockComponent block={mockHotColdGuess} /> },
   { label: 'Tìm quy luật 2-4-6 (C2)', node: <RuleDiscoveryBlockComponent block={mockRuleDiscovery} /> },

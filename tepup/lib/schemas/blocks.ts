@@ -22,6 +22,7 @@ import type {
 } from '@/lib/types/content';
 import { PAIR_MATCH_LIMITS, FLIP_CARD_LIMITS } from '@/lib/blockLimits';
 import { MAX_EXPR_LENGTH, evaluateCondition } from '@/lib/security/safe-expr';
+import { NO_BIAS, splitSentences, sentenceOfSegments } from '@/lib/blocks/bias-detector';
 
 const idField = { id: z.string().optional() };
 
@@ -410,12 +411,58 @@ export const budgetAllocatorBlockSchema = z
     b.outcomes.forEach((o, i) => refineExpr(ctx, o.condition, vars, ['outcomes', i, 'condition']));
   });
 
+/** Kiểm chung cho bias-detector (schema thường và schema nghiêm ngặt). */
+function refineBiasDetector(
+  b: {
+    mode?: 'marked' | 'find';
+    article: { text: string };
+    segments: { id: string; text: string; startIndex: number; biasType: string }[];
+    biasOptions: { id: string }[];
+  },
+  ctx: Ctx
+) {
+  refineUniqueIds(ctx, b.segments, 'segments');
+  refineUniqueIds(ctx, b.biasOptions, 'biasOptions');
+  const find = b.mode === 'find';
+  const optionIds = new Set(b.biasOptions.map((o) => o.id));
+  if (optionIds.has(NO_BIAS)) {
+    ctx.addIssue({ code: 'custom', message: `id "${NO_BIAS}" dành riêng cho "Không có lỗi", đừng khai trong biasOptions`, path: ['biasOptions'] });
+  }
+  let placed = true;
+  b.segments.forEach((s, i) => {
+    if (!b.article.text.includes(s.text)) {
+      placed = false;
+      ctx.addIssue({ code: 'custom', message: 'text phải là trích nguyên văn từ article.text', path: ['segments', i, 'text'] });
+    } else if (b.article.text.slice(s.startIndex, s.startIndex + s.text.length) !== s.text) {
+      placed = false;
+      ctx.addIssue({ code: 'custom', message: 'startIndex không khớp vị trí của text trong article.text', path: ['segments', i, 'startIndex'] });
+    }
+    if (s.biasType === NO_BIAS) {
+      if (find) ctx.addIssue({ code: 'custom', message: 'chế độ tự tìm không cần cụm "không có lỗi": câu không chứa cụm nào đã là câu không có lỗi', path: ['segments', i, 'biasType'] });
+    } else if (!optionIds.has(s.biasType)) {
+      ctx.addIssue({ code: 'custom', message: `biasType "${s.biasType}" không có trong biasOptions`, path: ['segments', i, 'biasType'] });
+    }
+  });
+  if (find && placed) {
+    const owner = sentenceOfSegments(splitSentences(b.article.text), b.segments);
+    const seen = new Map<number, number>();
+    owner.forEach((sen, i) => {
+      if (sen < 0) {
+        ctx.addIssue({ code: 'custom', message: 'ở chế độ tự tìm, mỗi cụm phải nằm gọn trong một câu', path: ['segments', i, 'text'] });
+      } else if (seen.has(sen)) {
+        ctx.addIssue({ code: 'custom', message: `câu này đã có cụm #${seen.get(sen)! + 1}; mỗi câu chỉ một cụm lỗi`, path: ['segments', i, 'text'] });
+      } else seen.set(sen, i);
+    });
+  }
+}
+
 export const biasDetectorBlockSchema = z
   .object({
     ...idField,
     type: z.literal('bias-detector'),
     title: z.string().optional(),
     instruction: z.string(),
+    mode: z.enum(['marked', 'find']).optional(),
     article: z.object({ text: z.string(), source: z.string().optional() }),
     segments: z.array(
       z.object({
@@ -428,21 +475,149 @@ export const biasDetectorBlockSchema = z
     ),
     biasOptions: z.array(z.object({ id: z.string(), label: z.string() })).min(1),
   })
-  .superRefine((b, ctx) => {
-    refineUniqueIds(ctx, b.segments, 'segments');
-    refineUniqueIds(ctx, b.biasOptions, 'biasOptions');
-    const optionIds = new Set(b.biasOptions.map((o) => o.id));
-    b.segments.forEach((s, i) => {
-      if (!b.article.text.includes(s.text)) {
-        ctx.addIssue({ code: 'custom', message: 'text phải là trích nguyên văn từ article.text', path: ['segments', i, 'text'] });
-      } else if (b.article.text.slice(s.startIndex, s.startIndex + s.text.length) !== s.text) {
-        ctx.addIssue({ code: 'custom', message: 'startIndex không khớp vị trí của text trong article.text', path: ['segments', i, 'startIndex'] });
-      }
-      if (!optionIds.has(s.biasType)) {
-        ctx.addIssue({ code: 'custom', message: `biasType "${s.biasType}" không có trong biasOptions`, path: ['segments', i, 'biasType'] });
-      }
+  .superRefine(refineBiasDetector);
+
+/** Kiểm chung cho image-bias-detector. */
+function refineImageBiasDetector(
+  b: {
+    regions: { id: string; x: number; y: number; w: number; h: number; biasType: string }[];
+    biasOptions: { id: string }[];
+  },
+  ctx: Ctx
+) {
+  refineUniqueIds(ctx, b.regions, 'regions');
+  refineUniqueIds(ctx, b.biasOptions, 'biasOptions');
+  const optionIds = new Set(b.biasOptions.map((o) => o.id));
+  if (optionIds.has(NO_BIAS)) {
+    ctx.addIssue({ code: 'custom', message: `id "${NO_BIAS}" dành riêng cho "Không có lỗi", đừng khai trong biasOptions`, path: ['biasOptions'] });
+  }
+  b.regions.forEach((r, i) => {
+    const inRange = (v: number) => v >= 0 && v <= 100;
+    if (![r.x, r.y, r.w, r.h].every(inRange) || r.w <= 0 || r.h <= 0 || r.x + r.w > 100.01 || r.y + r.h > 100.01) {
+      ctx.addIssue({ code: 'custom', message: 'vùng phải nằm trong ảnh: x, y, w, h tính bằng % (0-100), w và h lớn hơn 0', path: ['regions', i] });
+    }
+    if (r.biasType !== NO_BIAS && !optionIds.has(r.biasType)) {
+      ctx.addIssue({ code: 'custom', message: `biasType "${r.biasType}" không có trong biasOptions`, path: ['regions', i, 'biasType'] });
+    }
+  });
+}
+
+export const imageBiasDetectorBlockSchema = z
+  .object({
+    ...idField,
+    type: z.literal('image-bias-detector'),
+    title: z.string().optional(),
+    instruction: z.string(),
+    mode: z.enum(['marked', 'find']).optional(),
+    image: z.object({ src: z.string(), alt: z.string(), caption: z.string().optional() }),
+    regions: z.array(
+      z.object({
+        id: z.string(),
+        label: z.string(),
+        x: z.number(),
+        y: z.number(),
+        w: z.number(),
+        h: z.number(),
+        biasType: z.string(),
+        explanation: z.string(),
+      })
+    ),
+    biasOptions: z.array(z.object({ id: z.string(), label: z.string() })).min(1),
+  })
+  .superRefine(refineImageBiasDetector);
+
+/** Kiểm chung cho branch-diagnosis: cây hợp lệ (không vòng), mỗi tình huống đi đúng đường tới lá. */
+function refineBranchDiagnosis(
+  b: {
+    rootId: string;
+    nodes: { id: string; choices: { id: string; next?: string }[] }[];
+    final?: { options: { id: string }[] };
+    cases: { id: string; steps: { choiceId: string }[]; finalAnswer?: { optionId: string } }[];
+  },
+  ctx: Ctx
+) {
+  refineUniqueIds(ctx, b.nodes, 'nodes');
+  refineUniqueIds(ctx, b.cases, 'cases');
+  const byId = new Map(b.nodes.map((n) => [n.id, n]));
+  if (!byId.has(b.rootId)) ctx.addIssue({ code: 'custom', message: 'rootId không trỏ tới nút nào', path: ['rootId'] });
+  b.nodes.forEach((n, i) => {
+    refineUniqueIds(ctx, n.choices, `nodes.${i}.choices`);
+    if (n.choices.length < 2) ctx.addIssue({ code: 'custom', message: 'mỗi nút cần ít nhất 2 lựa chọn', path: ['nodes', i, 'choices'] });
+    n.choices.forEach((c, j) => {
+      if (c.next && !byId.has(c.next)) ctx.addIssue({ code: 'custom', message: `next "${c.next}" không trỏ tới nút nào`, path: ['nodes', i, 'choices', j, 'next'] });
     });
   });
+  // Vòng lặp: đi sâu từ mọi nút, gặp lại nút đang trên đường đi là có vòng.
+  const state = new Map<string, 1 | 2>();
+  let cyclic = false;
+  const visit = (id: string) => {
+    if (cyclic || state.get(id) === 2) return;
+    if (state.get(id) === 1) { cyclic = true; return; }
+    state.set(id, 1);
+    byId.get(id)?.choices.forEach((c) => c.next && byId.has(c.next) && visit(c.next));
+    state.set(id, 2);
+  };
+  b.nodes.forEach((n) => visit(n.id));
+  if (cyclic) {
+    ctx.addIssue({ code: 'custom', message: 'cây có vòng lặp (một nút dẫn ngược về nút trước nó)', path: ['nodes'] });
+    return;
+  }
+  if (b.final) {
+    refineUniqueIds(ctx, b.final.options, 'final.options');
+    if (b.final.options.length < 2) ctx.addIssue({ code: 'custom', message: 'bước cuối cần ít nhất 2 lựa chọn', path: ['final', 'options'] });
+  }
+  const finalIds = new Set(b.final?.options.map((o) => o.id) ?? []);
+  b.cases.forEach((c, i) => {
+    let node = byId.get(b.rootId);
+    for (let k = 0; k < c.steps.length; k++) {
+      const choice = node?.choices.find((ch) => ch.id === c.steps[k].choiceId);
+      if (!node || !choice) {
+        ctx.addIssue({ code: 'custom', message: `bước ${k + 1}: "${c.steps[k].choiceId}" không phải lựa chọn của nút đang đứng`, path: ['cases', i, 'steps', k, 'choiceId'] });
+        return;
+      }
+      node = choice.next ? byId.get(choice.next) : undefined;
+      if (!node && k < c.steps.length - 1) {
+        ctx.addIssue({ code: 'custom', message: `bước ${k + 1} đã tới lá, các bước sau thừa`, path: ['cases', i, 'steps'] });
+        return;
+      }
+    }
+    if (node) ctx.addIssue({ code: 'custom', message: 'đường đi chưa tới lá: thêm bước', path: ['cases', i, 'steps'] });
+    if (b.final) {
+      if (!c.finalAnswer) ctx.addIssue({ code: 'custom', message: 'block có bước cuối nên tình huống cần finalAnswer', path: ['cases', i, 'finalAnswer'] });
+      else if (!finalIds.has(c.finalAnswer.optionId)) ctx.addIssue({ code: 'custom', message: `"${c.finalAnswer.optionId}" không có trong final.options`, path: ['cases', i, 'finalAnswer', 'optionId'] });
+    }
+  });
+}
+
+export const branchDiagnosisBlockSchema = z
+  .object({
+    ...idField,
+    type: z.literal('branch-diagnosis'),
+    title: z.string().optional(),
+    instruction: z.string().optional(),
+    rootId: z.string(),
+    nodes: z
+      .array(
+        z.object({
+          id: z.string(),
+          question: z.string(),
+          choices: z.array(z.object({ id: z.string(), label: z.string(), next: z.string().optional() })),
+        })
+      )
+      .min(1),
+    final: z
+      .object({ question: z.string(), options: z.array(z.object({ id: z.string(), label: z.string() })) })
+      .optional(),
+    cases: z.array(
+      z.object({
+        id: z.string(),
+        text: z.string(),
+        steps: z.array(z.object({ choiceId: z.string(), explanation: z.string() })).min(1),
+        finalAnswer: z.object({ optionId: z.string(), explanation: z.string() }).optional(),
+      })
+    ),
+  })
+  .superRefine(refineBranchDiagnosis);
 
 export const perspectiveSwitchBlockSchema = z
   .object({
@@ -668,6 +843,8 @@ export const BLOCK_SCHEMAS = {
   'slider-simulator': sliderSimulatorBlockSchema,
   'budget-allocator': budgetAllocatorBlockSchema,
   'bias-detector': biasDetectorBlockSchema,
+  'image-bias-detector': imageBiasDetectorBlockSchema,
+  'branch-diagnosis': branchDiagnosisBlockSchema,
   'perspective-switch': perspectiveSwitchBlockSchema,
   'hot-cold-guess': hotColdGuessBlockSchema,
   'rule-discovery': ruleDiscoveryBlockSchema,
@@ -1036,24 +1213,79 @@ export const STRICT_BLOCK_SCHEMAS = {
     ),
     comparison: z.object({ label: shortStr, values: z.record(varId, num) }).optional(),
   }),
-  'bias-detector': z.object({
-    ...idField,
-    type: z.literal('bias-detector'),
-    title: shortStr.optional(),
-    instruction: textStr,
-    article: z.object({ text: str(L.long), source: shortStr.optional() }),
-    segments: arr(
-      z.object({
-        id: str(L.id),
-        text: textStr,
-        startIndex: z.number().int().min(0),
-        biasType: str(L.id),
-        explanation: textStr,
-      }),
-      L.items,
-    ),
-    biasOptions: arr(z.object({ id: str(L.id), label: shortStr }), L.options),
-  }),
+  'bias-detector': z
+    .object({
+      ...idField,
+      type: z.literal('bias-detector'),
+      title: shortStr.optional(),
+      instruction: textStr,
+      mode: z.enum(['marked', 'find']).optional(),
+      article: z.object({ text: str(L.long), source: shortStr.optional() }),
+      segments: arr(
+        z.object({
+          id: str(L.id),
+          text: textStr,
+          startIndex: z.number().int().min(0),
+          biasType: str(L.id),
+          explanation: textStr,
+        }),
+        L.items,
+      ),
+      biasOptions: arr(z.object({ id: str(L.id), label: shortStr }), L.options),
+    }),
+  'image-bias-detector': z
+    .object({
+      ...idField,
+      type: z.literal('image-bias-detector'),
+      title: shortStr.optional(),
+      instruction: textStr,
+      mode: z.enum(['marked', 'find']).optional(),
+      image: z.object({ src: urlStr, alt: textStr, caption: textStr.optional() }),
+      regions: arr(
+        z.object({
+          id: str(L.id),
+          label: shortStr,
+          x: num,
+          y: num,
+          w: num,
+          h: num,
+          biasType: str(L.id),
+          explanation: textStr,
+        }),
+        L.options,
+      ),
+      biasOptions: arr(z.object({ id: str(L.id), label: shortStr }), L.options),
+    })
+    .superRefine(refineImageBiasDetector),
+  'branch-diagnosis': z
+    .object({
+      ...idField,
+      type: z.literal('branch-diagnosis'),
+      title: shortStr.optional(),
+      instruction: textStr.optional(),
+      rootId: str(L.id),
+      nodes: arr(
+        z.object({
+          id: str(L.id),
+          question: textStr,
+          choices: arr(z.object({ id: str(L.id), label: shortStr, next: str(L.id).optional() }), L.options),
+        }),
+        L.options,
+      ),
+      final: z
+        .object({ question: textStr, options: arr(z.object({ id: str(L.id), label: shortStr }), L.options) })
+        .optional(),
+      cases: arr(
+        z.object({
+          id: str(L.id),
+          text: textStr,
+          steps: arr(z.object({ choiceId: str(L.id), explanation: textStr }), L.options),
+          finalAnswer: z.object({ optionId: str(L.id), explanation: textStr }).optional(),
+        }),
+        L.options,
+      ),
+    })
+    .superRefine(refineBranchDiagnosis),
   'perspective-switch': z.object({
     ...idField,
     type: z.literal('perspective-switch'),
