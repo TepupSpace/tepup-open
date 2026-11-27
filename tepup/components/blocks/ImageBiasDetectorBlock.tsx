@@ -150,8 +150,11 @@ export default function ImageBiasDetectorBlockComponent({ block, onComplete }: P
         <BlockedMedia kind="image" label={block.image.alt} />
       ) : (
         <figure className="mb-4">
+          {/* Màn hẹp: ảnh giữ tối thiểu 40rem để chữ trong ảnh còn đọc được, vuốt ngang trong khung
+              (trang không cuộn ngang). Vùng tính bằng % nên vẫn khớp. */}
+          <div className="overflow-x-auto rounded-xl">
           <div
-            className={`relative overflow-hidden rounded-xl border border-yellow-100 bg-white ${find && !checked ? 'cursor-crosshair' : ''}`}
+            className={`relative min-w-[40rem] overflow-hidden rounded-xl border border-yellow-100 bg-white ${find && !checked ? 'cursor-crosshair' : ''}`}
             role="group"
             aria-label={`Hình: ${block.image.alt}. ${regions.length} vùng để xét.`}
           >
@@ -184,7 +187,7 @@ export default function ImageBiasDetectorBlockComponent({ block, onComplete }: P
                 {showBadge(r.id) && (
                   <span
                     aria-hidden="true"
-                    className={`absolute -left-3 -top-3 inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow ${
+                    className={`absolute ${r.x >= 5 ? 'right-full top-0 mr-1' : 'left-1 top-1'} inline-flex h-6 min-w-[1.5rem] items-center justify-center rounded-full px-1 text-xs font-bold text-white shadow ${
                       checked
                         ? verdicts[r.id] === 'correct'
                           ? 'bg-green-700'
@@ -204,6 +207,8 @@ export default function ImageBiasDetectorBlockComponent({ block, onComplete }: P
               </button>
             ))}
           </div>
+          </div>
+          {regions.length > 0 && <p className="mt-1 text-xs text-gray-600 sm:hidden">Vuốt ngang để xem hết hình.</p>}
           {block.image.caption && <figcaption className="mt-2 text-xs italic text-gray-500">{block.image.caption}</figcaption>}
         </figure>
       )}
